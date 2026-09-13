@@ -1,65 +1,9 @@
-const fallbackCurrencies = [
-  'USD',
-  'EUR',
-  'GBP',
-  'RSD',
-  'CAD',
-  'AUD',
-  'CHF',
-  'JPY',
-  'SEK',
-  'NOK',
-  'DKK',
-  'PLN',
-  'CZK',
-  'INR',
-  'BRL',
-  'NZD',
-  'SGD',
-  'MXN',
-  'ARS',
-  'CLP',
-  'COP',
-  'ZAR',
-  'TRY',
-  'HKD',
-] as const;
+export const currencyOptions = ['EUR', 'USD', 'RSD'] as const;
 
-export type CurrencyCode = string;
-
-export const supportedCurrencies: readonly string[] =
-  typeof Intl.supportedValuesOf === 'function'
-    ? Intl.supportedValuesOf('currency')
-    : fallbackCurrencies;
-const supportedCurrencySet = new Set(supportedCurrencies);
-
-/** Familiar currencies come first; every runtime-supported ISO code remains selectable. */
-const familiarCurrencyOptions = fallbackCurrencies.filter((currency) =>
-  supportedCurrencySet.has(currency),
-);
-const familiarCurrencySet: Set<string> = new Set(familiarCurrencyOptions);
-const otherCurrencyOptions = supportedCurrencies
-  .filter((currency) => !familiarCurrencySet.has(currency))
-  .toSorted((left, right) => left.localeCompare(right));
-export const currencyOptions = [...new Set([...familiarCurrencyOptions, ...otherCurrencyOptions])];
+export type CurrencyCode = (typeof currencyOptions)[number];
 
 const currencyByRegion: Record<string, CurrencyCode> = {
-  AU: 'AUD',
-  CA: 'CAD',
-  CH: 'CHF',
-  CN: 'CNY',
-  GB: 'GBP',
-  JP: 'JPY',
-  BR: 'BRL',
-  CZ: 'CZK',
-  DK: 'DKK',
-  IN: 'INR',
-  NO: 'NOK',
-  NZ: 'NZD',
-  PL: 'PLN',
   RS: 'RSD',
-  SE: 'SEK',
-  SG: 'SGD',
   US: 'USD',
   AT: 'EUR',
   BE: 'EUR',
@@ -80,21 +24,6 @@ const currencyByRegion: Record<string, CurrencyCode> = {
   PT: 'EUR',
   SI: 'EUR',
   SK: 'EUR',
-  AR: 'ARS',
-  CL: 'CLP',
-  CO: 'COP',
-  HK: 'HKD',
-  ID: 'IDR',
-  IL: 'ILS',
-  KR: 'KRW',
-  MX: 'MXN',
-  RU: 'RUB',
-  SA: 'SAR',
-  TH: 'THB',
-  TR: 'TRY',
-  UA: 'UAH',
-  AE: 'AED',
-  ZA: 'ZAR',
 };
 
 const currencyByLanguage: Record<string, CurrencyCode> = {
@@ -141,7 +70,7 @@ export function detectCurrency(locale?: string): CurrencyCode {
 }
 
 export function isCurrencyCode(value: unknown): value is CurrencyCode {
-  return typeof value === 'string' && supportedCurrencies.includes(value);
+  return typeof value === 'string' && currencyOptions.some((currency) => currency === value);
 }
 
 export function currentLocale(): string {
@@ -170,6 +99,6 @@ export function formatCurrency(value: number, currency: CurrencyCode, locale?: s
       currency,
     }).format(value);
   } catch {
-    return `${currency} ${value.toFixed(currency === 'JPY' ? 0 : 2)}`;
+    return `${currency} ${value.toFixed(2)}`;
   }
 }
