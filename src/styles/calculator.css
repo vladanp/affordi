@@ -42,6 +42,7 @@
 
 .price-field {
   max-width: 22rem;
+  margin-top: 1.5rem;
 }
 
 .price-field > span:first-child {
@@ -74,16 +75,11 @@
 .result-primary {
   margin: 0.75rem 0 0;
   color: var(--color-accent-dark);
-  font-size: clamp(4rem, 14vw, 5rem);
+  font-size: clamp(3rem, 13vw, 5rem);
   font-weight: 760;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.06em;
   line-height: 1.03;
-}
-
-.result-primary-long {
-  font-size: clamp(3rem, 11.5vw, 4.25rem);
-  letter-spacing: -0.045em;
 }
 
 .price-error {

@@ -248,9 +248,6 @@ export function IncomeForm({
               ? getCurrencySymbol(values.currency, copy.locale)
               : values.currency}
           </span>
-          <span aria-hidden="true" className="currency-code">
-            {values.currency}
-          </span>
           <input
             aria-describedby={
               errors.netIncome

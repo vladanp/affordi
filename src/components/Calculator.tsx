@@ -17,8 +17,6 @@ interface CalculatorProps {
   settingsButtonRef?: RefObject<HTMLButtonElement | null>;
 }
 
-const LONG_RESULT_LENGTH = 18;
-
 export function Calculator({ settings, onOpenSettings, settingsButtonRef }: CalculatorProps) {
   const [itemPrice, setItemPrice] = useState('');
   const copy = createTranslator(settings.language);
@@ -59,9 +57,6 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
         <span className="price-input-wrap">
           <span aria-hidden="true" className="currency-symbol">
             {getCurrencySymbol(settings.currency, settings.language)}
-          </span>
-          <span aria-hidden="true" className="currency-code">
-            {settings.currency}
           </span>
           <input
             aria-label={copy.t('calculator.priceLabel')}
@@ -108,11 +103,7 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
               })}
             </span>
           </p>
-          <p
-            className={`result-primary${duration.length > LONG_RESULT_LENGTH ? ' result-primary-long' : ''}`}
-          >
-            {duration}
-          </p>
+          <p className="result-primary">{duration}</p>
         </div>
       ) : (
         <div aria-live="polite" className="empty-result">

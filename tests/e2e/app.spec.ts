@@ -121,9 +121,15 @@ test.describe('Affordi calculator', () => {
 
     const price = page.getByRole('textbox', { name: 'Unesite cenu' });
     await price.fill('36');
+    const firstFontSize = await page
+      .locator('.result-primary')
+      .evaluate((element) => getComputedStyle(element).getPropertyValue('font-size'));
     const firstHeadline = await page.locator('.result-primary').boundingBox();
     const firstPosition = await page.locator('.result-secondary').boundingBox();
     await price.fill('360');
+    const secondFontSize = await page
+      .locator('.result-primary')
+      .evaluate((element) => getComputedStyle(element).getPropertyValue('font-size'));
     const secondHeadline = await page.locator('.result-primary').boundingBox();
     const secondPosition = await page.locator('.result-secondary').boundingBox();
 
@@ -139,5 +145,6 @@ test.describe('Affordi calculator', () => {
     expect(secondPosition.y + secondPosition.height).toBeLessThanOrEqual(secondHeadline.y);
     expect(Math.abs(firstPosition.y - secondPosition.y)).toBeLessThan(2);
     expect(Math.abs(firstHeadline.y - secondHeadline.y)).toBeLessThan(2);
+    expect(firstFontSize).toBe(secondFontSize);
   });
 });

@@ -114,23 +114,11 @@
 
 .input-with-prefix input,
 .price-input-wrap input {
-  padding-left: 4.7rem;
+  padding-left: 3.5rem;
 }
 
 .input-with-prefix input {
   padding-right: 3.5rem;
-}
-
-.input-with-prefix .currency-code,
-.price-input-wrap .currency-code {
-  position: absolute;
-  top: 50%;
-  left: 2.35rem;
-  z-index: 1;
-  transform: translateY(-50%);
-  color: var(--color-muted);
-  font-size: 0.65rem;
-  letter-spacing: 0.03em;
 }
 
 .field-error {
