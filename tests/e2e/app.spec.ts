@@ -55,6 +55,7 @@ test.describe('Affordi calculator', () => {
     await income.fill('4000');
     await page.getByRole('button', { name: 'Save settings' }).click();
     await expect(page.getByRole('dialog')).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Settings' })).toBeFocused();
 
     await page.reload();
     await page.getByRole('button', { name: 'Settings' }).click();

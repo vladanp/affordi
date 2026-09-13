@@ -411,8 +411,6 @@ export function detectLocale(input?: string | readonly string[]): Locale {
   return 'en';
 }
 
-export const resolveLocale = detectLocale;
-
 function interpolate(template: string, values?: Readonly<Record<string, string | number>>): string {
   if (values === undefined) return template;
   return template.replace(/\{\{(\w+)\}\}/g, (match, name: string) => {
@@ -562,12 +560,4 @@ export function createTranslator(requestedLocale?: string): Translator {
     moreThanWeeks: (count) => t('duration.moreThanWeeks', { count: numberFor(locale, count) }),
     ofWork: (duration) => t('duration.ofWork', { duration }),
   };
-}
-
-export function translate(
-  locale: string | undefined,
-  key: TranslationKey,
-  values?: Readonly<Record<string, string | number>>,
-): string {
-  return createTranslator(locale).t(key, values);
 }

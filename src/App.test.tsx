@@ -143,6 +143,63 @@ describe('App', () => {
     expect(document.documentElement.dataset.theme).toBe('dark');
   });
 
+  it('previews language consistently and restores it when cancelled', () => {
+    localStorage.setItem(
+      'affordi.settings.v1',
+      JSON.stringify({
+        version: 1,
+        settings: {
+          netIncome: 3000,
+          payFrequency: 'monthly',
+          weeklyHours: 40,
+          workingDaysPerWeek: 5,
+          currency: 'EUR',
+          language: 'en',
+          theme: 'system',
+        },
+      }),
+    );
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Language' }), {
+      target: { value: 'fr' },
+    });
+    expect(document.documentElement.lang).toBe('fr');
+    expect(screen.getByRole('heading', { name: 'Réglages' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+    expect(document.documentElement.lang).toBe('en');
+    expect(screen.getByRole('button', { name: 'Settings' })).toHaveFocus();
+  });
+
+  it('restores the system theme after resetting from a theme preview', () => {
+    localStorage.setItem(
+      'affordi.settings.v1',
+      JSON.stringify({
+        version: 1,
+        settings: {
+          netIncome: 3000,
+          payFrequency: 'monthly',
+          weeklyHours: 40,
+          workingDaysPerWeek: 5,
+          currency: 'USD',
+          language: 'en',
+          theme: 'system',
+        },
+      }),
+    );
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Appearance' }), {
+      target: { value: 'dark' },
+    });
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    fireEvent.click(screen.getByRole('button', { name: 'Reset saved settings' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Reset$/ }));
+    expect(document.documentElement.dataset.theme).toBeUndefined();
+  });
+
   it('does not clear the app when storage refuses a reset', () => {
     localStorage.setItem(
       'affordi.settings.v1',

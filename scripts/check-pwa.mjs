@@ -76,6 +76,11 @@ assert(
   serviceWorker.includes('index.html'),
   'Generated service worker lacks the navigation fallback',
 );
+const precacheUrls = [...serviceWorker.matchAll(/url:"([^"]+)"/g)].map((match) => match[1]);
+assert(
+  precacheUrls.length === new Set(precacheUrls).size,
+  'Generated service worker contains duplicate precache entries',
+);
 assert(
   headers.includes('Content-Security-Policy') && headers.includes('/assets/*'),
   'Cloudflare headers are incomplete',

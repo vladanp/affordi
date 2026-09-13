@@ -89,6 +89,7 @@ jobs:
           path: .lighthouseci
           if-no-files-found: ignore
           include-hidden-files: true
+          retention-days: 7
 
   release:
     name: Semantic release
@@ -116,7 +117,7 @@ jobs:
   deploy:
     name: Deploy to Cloudflare Pages
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CLOUDFLARE_PROJECT_NAME != ''
-    needs: [validate, browsers, lighthouse]
+    needs: [validate, browsers, lighthouse, release]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:

@@ -1,28 +1,32 @@
 import { useState, type KeyboardEvent, type SyntheticEvent } from 'react';
 
 import { IncomeForm } from './IncomeForm';
-import { createTranslator } from '../domain/i18n';
+import { createTranslator, type Locale } from '../domain/i18n';
 import type { AffordiSettings } from '../domain/storage';
 import type { ThemePreference } from '../domain/theme';
 
 interface SettingsDialogProps {
+  language: Locale;
   settings: AffordiSettings;
   onClose: () => void;
+  onLanguagePreview: (language: Locale) => void;
   onReset: () => boolean;
   onSave: (settings: AffordiSettings) => void;
   onThemePreview: (theme: ThemePreference) => void;
 }
 
 export function SettingsDialog({
+  language,
   settings,
   onClose,
+  onLanguagePreview,
   onReset,
   onSave,
   onThemePreview,
 }: SettingsDialogProps) {
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [resetError, setResetError] = useState(false);
-  const copy = createTranslator(settings.language);
+  const copy = createTranslator(language);
 
   function handleCancel(event: SyntheticEvent<HTMLDialogElement>) {
     if (resetConfirmOpen) {
@@ -112,6 +116,7 @@ export function SettingsDialog({
               initialValues={settings}
               mode="edit"
               onCancel={onClose}
+              onLanguagePreview={onLanguagePreview}
               onSubmit={onSave}
               onThemePreview={onThemePreview}
             />
