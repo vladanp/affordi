@@ -1,0 +1,12 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:best-practices", ":enableVulnerabilityAlertsWithLabel(security)"],
+  "timezone": "Europe/Belgrade",
+  "schedule": ["before 6am on monday"],
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 5,
+  "vulnerabilityAlerts": {
+    "prConcurrentLimit": 5
+  },
+  "automerge": false
+}

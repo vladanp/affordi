@@ -60,14 +60,18 @@
 }
 
 @media (min-width: 40rem) and (min-height: 46rem) {
-  .setup-shell,
-  .calculator-shell {
+  .setup-shell {
     align-content: center;
     padding-block-start: max(var(--space-page), env(safe-area-inset-top));
   }
 }
 
 @media (max-width: 38rem) {
+  .result-panel,
+  .empty-result {
+    min-block-size: 19rem;
+  }
+
   .income-form {
     grid-template-columns: 1fr;
   }
@@ -75,6 +79,18 @@
   .form-heading,
   .form-actions {
     grid-column: auto;
+  }
+
+  .setup-details {
+    grid-column: auto;
+  }
+
+  .setup-details-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .setup-details-grid .field:first-child {
+    grid-column: 1 / -1;
   }
 
   .settings-dialog {

@@ -42,6 +42,7 @@
 
 .price-field {
   max-width: 22rem;
+  margin-top: 1.5rem;
 }
 
 .price-field > span:first-child {
@@ -56,10 +57,12 @@
   letter-spacing: -0.03em;
 }
 
-.result-panel {
+.result-panel,
+.empty-result {
   margin-top: 2.25rem;
   border-top: 1px solid var(--color-line);
   padding: 1.5rem 0 0;
+  min-block-size: 15rem;
 }
 
 .result-label,
@@ -70,15 +73,26 @@
 }
 
 .result-primary {
-  margin: 0.45rem 0 0.65rem;
+  margin: 0.75rem 0 0;
   color: var(--color-accent-dark);
-  font-size: clamp(4rem, 14vw, 5rem);
+  font-size: clamp(3rem, 13vw, 5rem);
   font-weight: 760;
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.06em;
   line-height: 1.03;
 }
 
+.price-error {
+  min-block-size: 2.1rem;
+}
+
+.price-error-hidden {
+  visibility: hidden;
+}
+
 .result-secondary {
+  min-block-size: 3rem;
+  margin-top: 0.4rem;
   font-size: 0.9rem;
 }
 
@@ -93,9 +107,6 @@
 .empty-result {
   display: grid;
   gap: 0.35rem;
-  margin-top: 2.25rem;
-  border-top: 1px solid var(--color-line);
-  padding-top: 1.5rem;
   color: var(--color-muted);
   font-size: 0.92rem;
 }

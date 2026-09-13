@@ -58,15 +58,14 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
           <span aria-hidden="true" className="currency-symbol">
             {getCurrencySymbol(settings.currency, settings.language)}
           </span>
-          <span aria-hidden="true" className="currency-code">
-            {settings.currency}
-          </span>
           <input
             aria-label={copy.t('calculator.priceLabel')}
             aria-describedby={
               priceError ? 'price-currency-description price-error' : 'price-currency-description'
             }
             aria-invalid={priceError}
+            autoComplete="off"
+            enterKeyHint="done"
             inputMode="decimal"
             onChange={handlePriceChange}
             placeholder="750"
@@ -77,11 +76,13 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
         <small className="visually-hidden" id="price-currency-description">
           {copy.t('calculator.priceDescription', { currency: settings.currency })}
         </small>
-        {priceError && (
-          <small className="field-error" id="price-error">
-            {copy.t('calculator.priceError')}
-          </small>
-        )}
+        <small
+          aria-hidden={!priceError}
+          className={`field-error price-error${priceError ? '' : ' price-error-hidden'}`}
+          id="price-error"
+        >
+          {copy.t('calculator.priceError')}
+        </small>
       </label>
 
       {duration !== null && percentage !== null && parsedPrice !== null ? (
@@ -91,7 +92,6 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
               price: formatCurrency(parsedPrice, settings.currency, settings.language),
             })}
           </p>
-          <p className="result-primary">{duration}</p>
           <p className="result-secondary">
             {secondaryDuration !== null && <span>≈ {secondaryDuration}</span>}
             <span className="result-percentage">
@@ -103,6 +103,7 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
               })}
             </span>
           </p>
+          <p className="result-primary">{duration}</p>
         </div>
       ) : (
         <div aria-live="polite" className="empty-result">

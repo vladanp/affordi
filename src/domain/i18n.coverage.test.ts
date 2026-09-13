@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createTranslator, supportedLocales, translationKeys } from './i18n';
 
 describe('translation catalog completeness', () => {
-  it('provides non-empty, interpolated copy for every supported locale and key', () => {
+  it('provides populated, interpolated copy for every supported locale and key', () => {
     const values = {
       currency: 'EUR',
       price: '€10',
@@ -11,6 +11,8 @@ describe('translation catalog completeness', () => {
       period: 'monthly',
       duration: '2 hours',
       count: 999_999,
+      hours: 40,
+      days: 5,
     } as const;
 
     for (const locale of supportedLocales) {

@@ -22,14 +22,15 @@
     "test:pwa": "playwright test tests/e2e/offline.spec.ts --project=chromium",
     "lighthouse": "lhci autorun --config=lighthouserc.json",
     "precommit:check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
-    "prepush:check": "pnpm verify && pnpm test:e2e",
+    "prepush:check": "pnpm run ci",
     "commitlint": "commitlint --last --verbose",
     "release": "semantic-release",
     "prepare": "node scripts/install-hooks.mjs",
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build && pnpm check:bundle && pnpm check:pwa",
-    "ci": "pnpm verify"
+    "ci": "pnpm verify && pnpm audit --audit-level moderate && pnpm test:e2e && pnpm lighthouse"
   },
   "dependencies": {
+    "lucide-react": "1.45.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },

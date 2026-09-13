@@ -40,10 +40,10 @@ describe('i18n', () => {
         { value: 1, unit: 'hour' },
         { value: 2, unit: 'minute' },
       ]),
-    ).toBe('1 hour 2 minutes');
+    ).toBe('1 hour and 2 minutes');
     expect(createTranslator('de').unit(2, 'hour')).toBe('2 Stunden');
     expect(createTranslator('fr').unit(1, 'workday')).toBe('1 journée de travail');
-    expect(createTranslator('it').unit(3, 'workweek')).toBe('3 settimane lavorative');
+    expect(createTranslator('it').unit(3, 'week')).toBe('3 settimane');
     expect(createTranslator('sr').unit(1, 'hour')).toBe('1 sat');
     expect(createTranslator('sr').unit(2, 'hour')).toBe('2 sata');
     expect(createTranslator('sr').unit(5, 'hour')).toBe('5 sati');
@@ -56,6 +56,13 @@ describe('i18n', () => {
     expect(
       createTranslator('sr').t('calculator.payContext', { percentage: '12,5', period: 'mesečno' }),
     ).toBe('12,5% vaše neto plate (mesečno)');
-    expect(createTranslator('en').moreThanWorkweeks(999_999)).toBe('More than 999,999 workweeks');
+    expect(createTranslator('en').moreThanWeeks(999_999)).toBe('More than 999,999 weeks');
+    expect(
+      createTranslator('en').t('form.workDefaultsSummary', {
+        currency: 'EUR',
+        hours: 40,
+        days: 5,
+      }),
+    ).toBe('EUR · 40 hours/week · 5 days/week');
   });
 });

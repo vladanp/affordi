@@ -28,6 +28,13 @@ export function App() {
   }
 
   function closeSettings() {
+    applyTheme(theme);
+    setShowSettings(false);
+    settingsButtonRef.current?.focus();
+  }
+
+  function saveAndCloseSettings(nextSettings: AffordiSettings) {
+    persist(nextSettings);
     setShowSettings(false);
     settingsButtonRef.current?.focus();
   }
@@ -50,7 +57,6 @@ export function App() {
         <div className="setup-intro">
           <p className="eyebrow">Affordi</p>
           <h1>{copy.t('app.tagline')}</h1>
-          <p className="lede">{copy.t('app.settingsStay')}</p>
         </div>
         <IncomeForm onSubmit={persist} />
         {storageNotice && (
@@ -79,10 +85,8 @@ export function App() {
         <SettingsDialog
           onClose={closeSettings}
           onReset={reset}
-          onSave={(nextSettings) => {
-            persist(nextSettings);
-            closeSettings();
-          }}
+          onSave={saveAndCloseSettings}
+          onThemePreview={applyTheme}
           settings={settings}
         />
       )}

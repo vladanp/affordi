@@ -18,6 +18,7 @@ html {
   min-width: 20rem;
   min-height: 100%;
   background: var(--color-page);
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -75,7 +76,7 @@ button {
   display: grid;
   align-content: start;
   padding-block-start: max(2rem, env(safe-area-inset-top));
-  gap: clamp(2rem, 7vw, 4.5rem);
+  gap: clamp(1.5rem, 5vw, 3rem);
 }
 
 .setup-intro {

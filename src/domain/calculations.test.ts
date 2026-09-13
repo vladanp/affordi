@@ -55,7 +55,7 @@ describe('calculateHourlyRate', () => {
 });
 
 describe('calculateWorkHours', () => {
-  it('calculates the reference monthly-income example without losing precision', () => {
+  it('calculates the reference monthly income example without losing precision', () => {
     expect(calculateHourlyRate(monthlySettings)).toBeCloseTo(17.307_692_307_7, 10);
     expect(calculateWorkHours(750, monthlySettings)).toBeCloseTo(43.333_333_333_3, 10);
   });

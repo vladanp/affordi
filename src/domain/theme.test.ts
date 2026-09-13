@@ -22,7 +22,7 @@ describe('theme preferences', () => {
     expect(isThemePreference(null)).toBe(false);
   });
 
-  it('uses the operating-system theme for system and removes explicit overrides', () => {
+  it('uses the operating system theme for system and removes explicit overrides', () => {
     const root = rootWithThemeColors();
     root.dataset.theme = 'dark';
 

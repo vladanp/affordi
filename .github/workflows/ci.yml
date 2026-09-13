@@ -16,6 +16,7 @@ jobs:
   validate:
     name: Validate
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -34,12 +35,13 @@ jobs:
         run: pnpm exec commitlint --last --verbose
       - name: Run formatting, lint, types, tests, build, bundle, and PWA checks
         run: pnpm run verify
-      - name: Audit production dependencies
-        run: pnpm audit --prod --audit-level high
+      - name: Audit dependencies
+        run: pnpm audit --audit-level moderate
 
   browsers:
     name: Playwright browsers
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -53,10 +55,19 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium firefox webkit
       - name: Run browser tests
         run: pnpm run test:e2e
+      - name: Upload Playwright report after failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report
+          path: playwright-report
+          if-no-files-found: ignore
+          retention-days: 7
 
   lighthouse:
     name: Lighthouse
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -84,6 +95,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [validate, browsers, lighthouse]
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
@@ -106,6 +118,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CLOUDFLARE_PROJECT_NAME != ''
     needs: [validate, browsers, lighthouse]
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
