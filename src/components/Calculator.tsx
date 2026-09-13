@@ -14,7 +14,7 @@ import type { AffordiSettings } from '../domain/storage';
 interface CalculatorProps {
   settings: AffordiSettings;
   onOpenSettings: () => void;
-  settingsButtonRef?: RefObject<HTMLButtonElement | null>;
+  settingsButtonRef: RefObject<HTMLButtonElement | null>;
 }
 
 export function Calculator({ settings, onOpenSettings, settingsButtonRef }: CalculatorProps) {

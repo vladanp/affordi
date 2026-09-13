@@ -1,4 +1,5 @@
 import { useState, type KeyboardEvent, type SyntheticEvent } from 'react';
+import { X } from 'lucide-react';
 
 import { IncomeForm } from './IncomeForm';
 import { createTranslator, type Locale } from '../domain/i18n';
@@ -62,19 +63,23 @@ export function SettingsDialog({
       }}
     >
       <div className="dialog-inner">
+        <div className="dialog-header">
+          {resetConfirmOpen ? (
+            <p className="eyebrow">Affordi</p>
+          ) : (
+            <h2 id="settings-title">{copy.t('settings.title')}</h2>
+          )}
+          <button
+            aria-label={copy.t('settings.close')}
+            className="icon-button"
+            onClick={onClose}
+            type="button"
+          >
+            <X aria-hidden="true" size={20} strokeWidth={1.75} />
+          </button>
+        </div>
         {resetConfirmOpen ? (
           <div className="reset-view">
-            <div className="dialog-header">
-              <p className="eyebrow">Affordi</p>
-              <button
-                aria-label={copy.t('settings.close')}
-                className="icon-button"
-                onClick={onClose}
-                type="button"
-              >
-                ×
-              </button>
-            </div>
             <h2 id="settings-title">{copy.t('settings.resetTitle')}</h2>
             <p className="reset-copy">{copy.t('settings.resetDescription')}</p>
             {resetError && (
@@ -84,12 +89,12 @@ export function SettingsDialog({
             )}
             <div className="form-actions">
               <button
+                autoFocus
                 className="button button-quiet"
                 onClick={() => {
                   setResetConfirmOpen(false);
                   setResetError(false);
                 }}
-                ref={(node) => node?.focus()}
                 type="button"
               >
                 {copy.t('settings.keep')}
@@ -101,17 +106,6 @@ export function SettingsDialog({
           </div>
         ) : (
           <>
-            <div className="dialog-header">
-              <h2 id="settings-title">{copy.t('settings.title')}</h2>
-              <button
-                aria-label={copy.t('settings.close')}
-                className="icon-button"
-                onClick={onClose}
-                type="button"
-              >
-                ×
-              </button>
-            </div>
             <IncomeForm
               initialValues={settings}
               mode="edit"

@@ -70,7 +70,7 @@ export function App() {
           <p className="eyebrow">Affordi</p>
           <h1>{copy.t('app.tagline')}</h1>
         </div>
-        <IncomeForm onLanguagePreview={setPreviewLanguage} onSubmit={persist} />
+        <IncomeForm onSubmit={persist} />
         {storageNotice && (
           <p className="storage-notice" role="status">
             {copy.t('storage.visitOnly')}
