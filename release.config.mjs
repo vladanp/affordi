@@ -1,0 +1,17 @@
+export default {
+  branches: ['main'],
+  tagFormat: 'v${version}',
+  plugins: [
+    '@semantic-release/commit-analyzer',
+    '@semantic-release/release-notes-generator',
+    [
+      '@semantic-release/github',
+      {
+        failComment: false,
+        failTitle: false,
+        releasedLabels: false,
+        successComment: false,
+      },
+    ],
+  ],
+};

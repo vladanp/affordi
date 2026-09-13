@@ -1,0 +1,101 @@
+.calculator-shell {
+  display: grid;
+  align-content: start;
+  padding-block-start: max(2rem, env(safe-area-inset-top));
+}
+
+.calculator-card {
+  width: min(100%, 40rem);
+  margin-inline: auto;
+}
+
+.calculator-card h1 {
+  max-width: none;
+  font-size: clamp(2rem, 6vw, 3.25rem);
+  letter-spacing: -0.055em;
+}
+
+.calculator-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2.25rem;
+}
+
+.calculator-topline .eyebrow {
+  margin: 0;
+}
+
+.text-button {
+  border: 0;
+  background: transparent;
+  color: var(--color-accent);
+  padding: 0.55rem 0.25rem;
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.text-button:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.price-field {
+  max-width: 22rem;
+}
+
+.price-field > span:first-child {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+.price-field input {
+  min-height: 4rem;
+  font-size: 1.6rem;
+  letter-spacing: -0.03em;
+}
+
+.result-panel {
+  margin-top: 2.25rem;
+  border-top: 1px solid var(--color-line);
+  padding: 1.5rem 0 0;
+}
+
+.result-label,
+.result-secondary {
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.result-primary {
+  margin: 0.45rem 0 0.65rem;
+  color: var(--color-accent-dark);
+  font-size: clamp(4rem, 14vw, 5rem);
+  font-weight: 760;
+  letter-spacing: -0.06em;
+  line-height: 1.03;
+}
+
+.result-secondary {
+  font-size: 0.9rem;
+}
+
+.result-secondary span {
+  display: block;
+}
+
+.result-secondary .result-percentage {
+  margin-top: 0.25rem;
+}
+
+.empty-result {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 2.25rem;
+  border-top: 1px solid var(--color-line);
+  padding-top: 1.5rem;
+  color: var(--color-muted);
+  font-size: 0.92rem;
+}
