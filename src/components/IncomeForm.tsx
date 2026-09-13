@@ -14,14 +14,23 @@ import { currencyOptions, getCurrencySymbol, isCurrencyCode } from '../domain/lo
 import { defaultSettings, type AffordiSettings } from '../domain/storage';
 import { isThemePreference, themePreferences, type ThemePreference } from '../domain/theme';
 
-interface IncomeFormProps {
-  initialValues?: AffordiSettings;
-  mode?: 'setup' | 'edit';
-  onCancel?: () => void;
-  onLanguagePreview?: (language: Locale) => void;
+interface IncomeFormBaseProps {
   onSubmit: (settings: AffordiSettings) => void;
-  onThemePreview?: (theme: ThemePreference) => void;
 }
+
+interface SetupIncomeFormProps extends IncomeFormBaseProps {
+  mode?: 'setup';
+}
+
+interface EditIncomeFormProps extends IncomeFormBaseProps {
+  initialValues: AffordiSettings;
+  mode: 'edit';
+  onCancel: () => void;
+  onLanguagePreview: (language: Locale) => void;
+  onThemePreview: (theme: ThemePreference) => void;
+}
+
+type IncomeFormProps = SetupIncomeFormProps | EditIncomeFormProps;
 
 interface FormValues {
   netIncome: string;
@@ -176,16 +185,10 @@ function validate(
   };
 }
 
-export function IncomeForm({
-  initialValues,
-  mode = 'setup',
-  onCancel,
-  onLanguagePreview,
-  onSubmit,
-  onThemePreview,
-}: IncomeFormProps) {
+export function IncomeForm(props: IncomeFormProps) {
+  const editMode = props.mode === 'edit';
   const [values, setValues] = useState<FormValues>(() => {
-    if (initialValues !== undefined) return valuesFromSettings(initialValues);
+    if (props.mode === 'edit') return valuesFromSettings(props.initialValues);
     const defaults = defaultSettings();
     return { ...valuesFromSettings(defaults), netIncome: '' };
   });
@@ -222,8 +225,12 @@ export function IncomeForm({
   );
 
   function update(name: keyof FormValues, value: string) {
-    if (name === 'theme' && isThemePreference(value)) onThemePreview?.(value);
-    if (name === 'language' && isLocale(value)) onLanguagePreview?.(value);
+    if (props.mode === 'edit' && name === 'theme' && isThemePreference(value)) {
+      props.onThemePreview(value);
+    }
+    if (props.mode === 'edit' && name === 'language' && isLocale(value)) {
+      props.onLanguagePreview(value);
+    }
     setValues((current) => ({ ...current, [name]: value }));
     setErrors((current) => ({ ...current, [name]: undefined }));
   }
@@ -233,7 +240,7 @@ export function IncomeForm({
     const result = validate(values, copy);
     setErrors(result.errors);
     if (result.settings !== undefined) {
-      onSubmit(result.settings);
+      props.onSubmit(result.settings);
       return;
     }
 
@@ -244,10 +251,12 @@ export function IncomeForm({
 
   return (
     <form className="income-form" onSubmit={handleSubmit} noValidate>
-      <div className="form-heading">
-        {mode === 'setup' && <h2>{copy.t('form.heading')}</h2>}
-        {mode === 'setup' && <p>{copy.t('form.setupNote')}</p>}
-      </div>
+      {!editMode && (
+        <div className="form-heading">
+          <h2>{copy.t('form.heading')}</h2>
+          <p>{copy.t('form.setupNote')}</p>
+        </div>
+      )}
 
       <div className="field">
         <label htmlFor="netIncome">{copy.t('form.incomeLabel')}</label>
@@ -312,7 +321,7 @@ export function IncomeForm({
         }))}
         value={values.payFrequency}
       />
-      {mode === 'setup' ? (
+      {!editMode ? (
         <details className="setup-details">
           <summary>
             <span>{copy.t('form.workDefaults')}</span>
@@ -329,7 +338,7 @@ export function IncomeForm({
       ) : (
         workSettingsFields
       )}
-      {mode === 'edit' && (
+      {editMode && (
         <>
           <SelectField
             error={errors.language}
@@ -354,13 +363,13 @@ export function IncomeForm({
       )}
 
       <div className="form-actions">
-        {onCancel && (
-          <button className="button button-quiet" onClick={onCancel} type="button">
+        {editMode && (
+          <button className="button button-quiet" onClick={props.onCancel} type="button">
             {copy.t('form.cancel')}
           </button>
         )}
         <button className="button button-primary" type="submit">
-          {mode === 'setup' ? copy.t('form.start') : copy.t('form.save')}
+          {editMode ? copy.t('form.save') : copy.t('form.start')}
         </button>
       </div>
     </form>
