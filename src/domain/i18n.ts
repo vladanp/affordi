@@ -520,7 +520,7 @@ export interface Translator {
   ofWork(duration: string): string;
 }
 
-/** Creates a small, dependency-free translator for components and domain formatters. */
+/** Creates a small translator without runtime dependencies for components and domain formatters. */
 export function createTranslator(requestedLocale?: string): Translator {
   const locale = detectLocale(requestedLocale);
   const catalog = catalogs[locale];

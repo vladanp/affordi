@@ -28,7 +28,7 @@ describe('localized duration formatting', () => {
     expect(formatPrimaryDuration(8, settings, language)).toBe(expected);
   });
 
-  it('translates long durations and the less-than-minute boundary', () => {
+  it('translates long durations and the less than minute boundary', () => {
     expect(formatWorkDuration(0.001, settings, 'fr')).toBe('Moins d’une minute');
     expect(formatPrimaryDuration(80, settings, 'it')).toBe('2 settimane');
     expect(formatWorkDuration(40_000_000, settings, 'sr')).toBe('Više od 999.999 nedelja');
