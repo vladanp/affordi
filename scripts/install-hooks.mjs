@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
+if (process.env.CI) process.exit(0);
+
 try {
   await access(resolve(projectRoot, '.git'), constants.F_OK);
 } catch {
