@@ -2,7 +2,13 @@ import { useState, type FormEvent } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
 import { isPayFrequency, payFrequencies } from '../domain/calculations';
-import { createTranslator, isLocale, supportedLocales, type Translator } from '../domain/i18n';
+import {
+  createTranslator,
+  isLocale,
+  supportedLocales,
+  type Locale,
+  type Translator,
+} from '../domain/i18n';
 import { parseDecimalInput } from '../domain/input';
 import { currencyOptions, getCurrencySymbol, isCurrencyCode } from '../domain/locale';
 import { defaultSettings, type AffordiSettings } from '../domain/storage';
@@ -12,6 +18,7 @@ interface IncomeFormProps {
   initialValues?: AffordiSettings;
   mode?: 'setup' | 'edit';
   onCancel?: () => void;
+  onLanguagePreview?: (language: Locale) => void;
   onSubmit: (settings: AffordiSettings) => void;
   onThemePreview?: (theme: ThemePreference) => void;
 }
@@ -173,6 +180,7 @@ export function IncomeForm({
   initialValues,
   mode = 'setup',
   onCancel,
+  onLanguagePreview,
   onSubmit,
   onThemePreview,
 }: IncomeFormProps) {
@@ -215,6 +223,7 @@ export function IncomeForm({
 
   function update(name: keyof FormValues, value: string) {
     if (name === 'theme' && isThemePreference(value)) onThemePreview?.(value);
+    if (name === 'language' && isLocale(value)) onLanguagePreview?.(value);
     setValues((current) => ({ ...current, [name]: value }));
     setErrors((current) => ({ ...current, [name]: undefined }));
   }

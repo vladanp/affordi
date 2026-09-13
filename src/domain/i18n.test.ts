@@ -1,12 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  createTranslator,
-  detectLocale,
-  supportedLocales,
-  translate,
-  type TranslationKey,
-} from './i18n';
+import { createTranslator, detectLocale, supportedLocales, type TranslationKey } from './i18n';
 
 describe('i18n', () => {
   afterEach(() => {
@@ -52,7 +46,7 @@ describe('i18n', () => {
 
   it('interpolates translated copy and exposes typed keys', () => {
     const key: TranslationKey = 'calculator.priceDescription';
-    expect(translate('fr', key, { currency: 'EUR' })).toBe('Prix en EUR.');
+    expect(createTranslator('fr').t(key, { currency: 'EUR' })).toBe('Prix en EUR.');
     expect(
       createTranslator('sr').t('calculator.payContext', { percentage: '12,5', period: 'mesečno' }),
     ).toBe('12,5% vaše neto plate (mesečno)');

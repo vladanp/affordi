@@ -4,7 +4,7 @@ import { Calculator } from './components/Calculator';
 import { IncomeForm } from './components/IncomeForm';
 import { SettingsDialog } from './components/SettingsDialog';
 import { UpdatePrompt } from './components/UpdatePrompt';
-import { createTranslator, detectLocale } from './domain/i18n';
+import { createTranslator, detectLocale, type Locale } from './domain/i18n';
 import { clearSettings, loadSettings, saveSettings, type AffordiSettings } from './domain/storage';
 import { applyTheme } from './domain/theme';
 
@@ -12,8 +12,10 @@ export function App() {
   const [settings, setSettings] = useState<AffordiSettings | null>(() => loadSettings());
   const [showSettings, setShowSettings] = useState(false);
   const [storageNotice, setStorageNotice] = useState(false);
+  const [previewLanguage, setPreviewLanguage] = useState<Locale | null>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
-  const language = settings?.language ?? detectLocale();
+  const restoreSettingsFocusRef = useRef(false);
+  const language = previewLanguage ?? settings?.language ?? detectLocale();
   const theme = settings?.theme ?? 'system';
   const copy = createTranslator(language);
 
@@ -22,6 +24,12 @@ export function App() {
     applyTheme(theme);
   }, [language, theme]);
 
+  useEffect(() => {
+    if (showSettings || !restoreSettingsFocusRef.current) return;
+    restoreSettingsFocusRef.current = false;
+    settingsButtonRef.current?.focus();
+  }, [showSettings]);
+
   function persist(nextSettings: AffordiSettings) {
     setSettings(nextSettings);
     setStorageNotice(!saveSettings(nextSettings));
@@ -29,14 +37,16 @@ export function App() {
 
   function closeSettings() {
     applyTheme(theme);
+    setPreviewLanguage(null);
+    restoreSettingsFocusRef.current = true;
     setShowSettings(false);
-    settingsButtonRef.current?.focus();
   }
 
   function saveAndCloseSettings(nextSettings: AffordiSettings) {
     persist(nextSettings);
+    setPreviewLanguage(null);
+    restoreSettingsFocusRef.current = true;
     setShowSettings(false);
-    settingsButtonRef.current?.focus();
   }
 
   function reset(): boolean {
@@ -45,6 +55,8 @@ export function App() {
       return false;
     }
 
+    applyTheme('system');
+    setPreviewLanguage(null);
     setSettings(null);
     setShowSettings(false);
     setStorageNotice(false);
@@ -58,7 +70,7 @@ export function App() {
           <p className="eyebrow">Affordi</p>
           <h1>{copy.t('app.tagline')}</h1>
         </div>
-        <IncomeForm onSubmit={persist} />
+        <IncomeForm onLanguagePreview={setPreviewLanguage} onSubmit={persist} />
         {storageNotice && (
           <p className="storage-notice" role="status">
             {copy.t('storage.visitOnly')}
@@ -84,6 +96,8 @@ export function App() {
       {showSettings && (
         <SettingsDialog
           onClose={closeSettings}
+          language={language}
+          onLanguagePreview={setPreviewLanguage}
           onReset={reset}
           onSave={saveAndCloseSettings}
           onThemePreview={applyTheme}
