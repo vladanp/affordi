@@ -1,0 +1,6 @@
+overrides:
+  lighthouse: 13.4.1
+  proxy-agent: 8.0.2
+  qs: 6.16.0
+  tmp: 0.2.7
+  uuid: 11.1.1

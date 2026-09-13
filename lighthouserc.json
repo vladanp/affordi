@@ -8,7 +8,6 @@
       "url": ["http://127.0.0.1:4174/"]
     },
     "assert": {
-      "preset": "lighthouse:recommended",
       "assertions": {
         "categories:performance": ["error", { "aggregationMethod": "median", "minScore": 0.98 }],
         "categories:accessibility": ["error", { "aggregationMethod": "median", "minScore": 1 }],
@@ -22,11 +21,7 @@
           "error",
           { "aggregationMethod": "median", "maxNumericValue": 0.1 }
         ],
-        "total-blocking-time": ["error", { "aggregationMethod": "median", "maxNumericValue": 200 }],
-        "network-dependency-tree-insight": "off",
-        "unused-javascript": "off",
-        "render-blocking-insight": "off",
-        "render-blocking-resources": "off"
+        "total-blocking-time": ["error", { "aggregationMethod": "median", "maxNumericValue": 200 }]
       }
     },
     "upload": {

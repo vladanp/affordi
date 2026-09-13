@@ -46,13 +46,13 @@ pnpm format          # Write Oxfmt formatting
 pnpm format:check    # Verify formatting
 pnpm typecheck       # Strict TypeScript
 pnpm verify          # Main local quality gates
-pnpm run ci          # Alias for the main local quality gates
+pnpm run ci          # All local CI gates, including browsers and Lighthouse
 pnpm lighthouse      # Production Lighthouse assertions
 ```
 
 With pnpm 12, bare `pnpm ci` is the package manager's frozen install alias. Use `pnpm run ci` for Affordi's quality script.
 
-The precommit hook runs the fast formatting, lint, type, and unit gates. Prepush adds the production checks and all Playwright projects. GitHub Actions remains authoritative.
+The precommit hook runs the fast formatting, lint, type, and unit gates. Prepush runs the complete local CI command, including the dependency audit, production checks, all Playwright projects, and Lighthouse. GitHub Actions remains authoritative.
 
 ## Product architecture
 
@@ -76,7 +76,7 @@ Automated checks validate the manifest, icons, service worker, offline reload, b
 
 ## CI and releases
 
-Pull requests and pushes to `main` run frozen installation, formatting, lint, strict types, coverage, production build, bundle and PWA validation, dependency audit, all three Playwright engines, axe, and Lighthouse. Actions are pinned to immutable commits and Dependabot proposes dependency and action updates without automatic merging.
+Pull requests and pushes to `main` run frozen installation, formatting, lint, strict types, coverage, production build, bundle and PWA validation, dependency audit, all three Playwright engines, axe, and Lighthouse. Actions are pinned to immutable commits. The free hosted Renovate App proposes dependency and action updates without automatic merging.
 
 After all gates pass on `main`, semantic-release analyzes Conventional Commits and creates a semantic tag plus GitHub Release notes. The project is private in the npm sense and is never published to npm.
 
