@@ -11,6 +11,8 @@ describe('translation catalog completeness', () => {
       period: 'monthly',
       duration: '2 hours',
       count: 999_999,
+      hours: 40,
+      days: 5,
     } as const;
 
     for (const locale of supportedLocales) {

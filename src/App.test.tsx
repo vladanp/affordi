@@ -15,27 +15,30 @@ describe('App', () => {
       screen.getByRole('heading', { name: 'See what things really cost in your time.' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Start calculating' })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'Take-home income' })).toHaveValue('');
+    const income = screen.getByLabelText('Take home income');
+    expect(income).toHaveAttribute('type', 'password');
+    expect(income).toHaveValue('');
+    expect(screen.getByText('Saved only on this device.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Show income' }));
+    expect(income).toHaveAttribute('type', 'text');
+    expect(screen.getByRole('button', { name: 'Hide income' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
   it('validates setup and calculates immediately with comma decimals', () => {
     render(<App />);
-    fireEvent.change(screen.getByRole('textbox', { name: 'Take-home income' }), {
+    fireEvent.change(screen.getByLabelText('Take home income'), {
       target: { value: '3000' },
-    });
-    fireEvent.change(screen.getByRole('textbox', { name: 'Work hours each week' }), {
-      target: { value: '40' },
-    });
-    fireEvent.change(screen.getByRole('textbox', { name: 'Work days each week' }), {
-      target: { value: '5' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Start calculating' }));
     fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
       target: { value: '750,00' },
     });
     expect(screen.getByText('43 hours of work')).toBeInTheDocument();
-    expect(screen.getByText(/5 workdays 3 hours/)).toBeInTheDocument();
-    expect(screen.getByText(/25% of your take-home pay \(monthly\)/)).toBeInTheDocument();
+    expect(screen.getByText(/5 workdays and 3 hours/)).toBeInTheDocument();
+    expect(screen.getByText(/25% of your take home pay \(monthly\)/)).toBeInTheDocument();
   });
 
   it('edits locale currency and resets only after inline confirmation', () => {
@@ -104,12 +107,40 @@ describe('App', () => {
       target: { value: '750' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    fireEvent.change(screen.getByRole('textbox', { name: 'Take-home income' }), {
+    fireEvent.change(screen.getByLabelText('Take home income'), {
       target: { value: '6000' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
     expect(screen.getByRole('textbox', { name: 'Enter a price' })).toHaveValue('750');
     expect(screen.getByText('22 hours of work')).toBeInTheDocument();
+  });
+
+  it('previews theme changes and restores the saved theme when cancelled', () => {
+    localStorage.setItem(
+      'affordi.settings.v1',
+      JSON.stringify({
+        version: 1,
+        settings: {
+          netIncome: 3000,
+          payFrequency: 'monthly',
+          weeklyHours: 40,
+          workingDaysPerWeek: 5,
+          currency: 'USD',
+          language: 'en',
+          theme: 'dark',
+        },
+      }),
+    );
+    render(<App />);
+
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Appearance' }), {
+      target: { value: 'light' },
+    });
+    expect(document.documentElement.dataset.theme).toBe('light');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(document.documentElement.dataset.theme).toBe('dark');
   });
 
   it('does not clear the app when storage refuses a reset', () => {
@@ -155,10 +186,10 @@ describe('App', () => {
     render(<App />);
     const price = screen.getByRole('textbox', { name: 'Enter a price' });
     fireEvent.change(price, { target: { value: '-1' } });
-    expect(screen.getByText(/valid non-negative price/)).toBeInTheDocument();
+    expect(screen.getByText(/price of 0 or more/)).toBeInTheDocument();
     fireEvent.change(price, { target: { value: '0' } });
     expect(screen.getByText('0 minutes of work')).toBeInTheDocument();
     fireEvent.change(price, { target: { value: '9'.repeat(400) } });
-    expect(screen.getByText(/valid non-negative price/)).toBeInTheDocument();
+    expect(screen.getByText(/price of 0 or more/)).toBeInTheDocument();
   });
 });

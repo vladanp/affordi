@@ -68,6 +68,11 @@
 }
 
 @media (max-width: 38rem) {
+  .result-panel,
+  .empty-result {
+    min-block-size: 19rem;
+  }
+
   .income-form {
     grid-template-columns: 1fr;
   }
@@ -75,6 +80,18 @@
   .form-heading,
   .form-actions {
     grid-column: auto;
+  }
+
+  .setup-details {
+    grid-column: auto;
+  }
+
+  .setup-details-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .setup-details-grid .field:first-child {
+    grid-column: 1 / -1;
   }
 
   .settings-dialog {
@@ -95,6 +112,12 @@
 
   .update-prompt div {
     flex-basis: 100%;
+  }
+}
+
+@media (max-width: 22rem) {
+  .result-primary-long {
+    font-size: 2.5rem;
   }
 }
 

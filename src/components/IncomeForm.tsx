@@ -1,17 +1,19 @@
 import { useState, type FormEvent } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 
 import { isPayFrequency, payFrequencies } from '../domain/calculations';
 import { createTranslator, isLocale, supportedLocales, type Translator } from '../domain/i18n';
 import { parseDecimalInput } from '../domain/input';
 import { currencyOptions, getCurrencySymbol, isCurrencyCode } from '../domain/locale';
 import { defaultSettings, type AffordiSettings } from '../domain/storage';
-import { isThemePreference, themePreferences } from '../domain/theme';
+import { isThemePreference, themePreferences, type ThemePreference } from '../domain/theme';
 
 interface IncomeFormProps {
   initialValues?: AffordiSettings;
   mode?: 'setup' | 'edit';
   onCancel?: () => void;
   onSubmit: (settings: AffordiSettings) => void;
+  onThemePreview?: (theme: ThemePreference) => void;
 }
 
 interface FormValues {
@@ -73,19 +75,22 @@ function SelectField({ error, label, name, onChange, options, value }: SelectFie
   return (
     <label className="field">
       <span>{label}</span>
-      <select
-        aria-describedby={error ? errorId : undefined}
-        aria-invalid={error !== undefined}
-        name={name}
-        onChange={(event) => onChange(name, event.target.value)}
-        value={value}
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <span className="select-wrap">
+        <select
+          aria-describedby={error ? errorId : undefined}
+          aria-invalid={error !== undefined}
+          name={name}
+          onChange={(event) => onChange(name, event.target.value)}
+          value={value}
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <span aria-hidden="true" className="select-chevron" />
+      </span>
       {error && (
         <small className="field-error" id={errorId}>
           {error}
@@ -164,16 +169,52 @@ function validate(
   };
 }
 
-export function IncomeForm({ initialValues, mode = 'setup', onCancel, onSubmit }: IncomeFormProps) {
+export function IncomeForm({
+  initialValues,
+  mode = 'setup',
+  onCancel,
+  onSubmit,
+  onThemePreview,
+}: IncomeFormProps) {
   const [values, setValues] = useState<FormValues>(() => {
     if (initialValues !== undefined) return valuesFromSettings(initialValues);
     const defaults = defaultSettings();
     return { ...valuesFromSettings(defaults), netIncome: '' };
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [incomeVisible, setIncomeVisible] = useState(false);
   const copy = createTranslator(values.language);
+  const workSettingsFields = (
+    <>
+      <SelectField
+        error={errors.currency}
+        label={copy.t('form.currencyLabel')}
+        name="currency"
+        onChange={update}
+        options={currencyOptions.map((currency) => ({ label: currency, value: currency }))}
+        value={values.currency}
+      />
+      <TextField
+        error={errors.weeklyHours}
+        inputMode="decimal"
+        label={copy.t('form.weeklyHoursLabel')}
+        name="weeklyHours"
+        onChange={update}
+        value={values.weeklyHours}
+      />
+      <TextField
+        error={errors.workingDaysPerWeek}
+        inputMode="numeric"
+        label={copy.t('form.workingDaysLabel')}
+        name="workingDaysPerWeek"
+        onChange={update}
+        value={values.workingDaysPerWeek}
+      />
+    </>
+  );
 
   function update(name: keyof FormValues, value: string) {
+    if (name === 'theme' && isThemePreference(value)) onThemePreview?.(value);
     setValues((current) => ({ ...current, [name]: value }));
     setErrors((current) => ({ ...current, [name]: undefined }));
   }
@@ -199,8 +240,8 @@ export function IncomeForm({ initialValues, mode = 'setup', onCancel, onSubmit }
         {mode === 'setup' && <p>{copy.t('form.setupNote')}</p>}
       </div>
 
-      <label className="field">
-        <span>{copy.t('form.incomeLabel')}</span>
+      <div className="field">
+        <label htmlFor="netIncome">{copy.t('form.incomeLabel')}</label>
         <span className="input-with-prefix">
           <span aria-hidden="true">
             {isCurrencyCode(values.currency)
@@ -211,30 +252,48 @@ export function IncomeForm({ initialValues, mode = 'setup', onCancel, onSubmit }
             {values.currency}
           </span>
           <input
-            aria-label={copy.t('form.incomeLabel')}
             aria-describedby={
               errors.netIncome
-                ? 'income-currency-description income-error'
-                : 'income-currency-description'
+                ? 'income-currency-description income-local-note income-error'
+                : 'income-currency-description income-local-note'
             }
             aria-invalid={errors.netIncome !== undefined}
+            autoComplete="off"
+            enterKeyHint="done"
+            id="netIncome"
             inputMode="decimal"
             name="netIncome"
             onChange={(event) => update('netIncome', event.target.value)}
             placeholder="3000"
-            type="text"
+            type={incomeVisible ? 'text' : 'password'}
             value={values.netIncome}
           />
+          <button
+            aria-label={copy.t(incomeVisible ? 'privacy.hideIncome' : 'privacy.showIncome')}
+            aria-pressed={incomeVisible}
+            className="income-visibility-button"
+            onClick={() => setIncomeVisible((visible) => !visible)}
+            type="button"
+          >
+            {incomeVisible ? (
+              <EyeOff aria-hidden="true" size={20} strokeWidth={1.75} />
+            ) : (
+              <Eye aria-hidden="true" size={20} strokeWidth={1.75} />
+            )}
+          </button>
         </span>
         <small className="visually-hidden" id="income-currency-description">
           {copy.t('form.incomeDescription', { currency: values.currency })}
+        </small>
+        <small className="local-only-note" id="income-local-note">
+          {copy.t('privacy.localOnly')}
         </small>
         {errors.netIncome && (
           <small className="field-error" id="income-error">
             {errors.netIncome}
           </small>
         )}
-      </label>
+      </div>
 
       <SelectField
         error={errors.payFrequency}
@@ -247,30 +306,23 @@ export function IncomeForm({ initialValues, mode = 'setup', onCancel, onSubmit }
         }))}
         value={values.payFrequency}
       />
-      <TextField
-        error={errors.weeklyHours}
-        inputMode="decimal"
-        label={copy.t('form.weeklyHoursLabel')}
-        name="weeklyHours"
-        onChange={update}
-        value={values.weeklyHours}
-      />
-      <TextField
-        error={errors.workingDaysPerWeek}
-        inputMode="numeric"
-        label={copy.t('form.workingDaysLabel')}
-        name="workingDaysPerWeek"
-        onChange={update}
-        value={values.workingDaysPerWeek}
-      />
-      <SelectField
-        error={errors.currency}
-        label={copy.t('form.currencyLabel')}
-        name="currency"
-        onChange={update}
-        options={currencyOptions.map((currency) => ({ label: currency, value: currency }))}
-        value={values.currency}
-      />
+      {mode === 'setup' ? (
+        <details className="setup-details">
+          <summary>
+            <span>{copy.t('form.workDefaults')}</span>
+            <small>
+              {copy.t('form.workDefaultsSummary', {
+                currency: values.currency,
+                hours: values.weeklyHours,
+                days: values.workingDaysPerWeek,
+              })}
+            </small>
+          </summary>
+          <div className="setup-details-grid">{workSettingsFields}</div>
+        </details>
+      ) : (
+        workSettingsFields
+      )}
       {mode === 'edit' && (
         <>
           <SelectField

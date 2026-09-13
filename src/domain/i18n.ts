@@ -6,7 +6,7 @@ export const supportedLocales = ['en', 'de', 'fr', 'it', 'sr'] as const;
 
 export type Locale = (typeof supportedLocales)[number];
 
-export type DurationUnit = 'minute' | 'hour' | 'workday' | 'day' | 'workweek';
+export type DurationUnit = 'minute' | 'hour' | 'workday' | 'week';
 
 export interface DurationPart {
   value: number;
@@ -19,7 +19,6 @@ export interface DurationPart {
  */
 export const translationKeys = [
   'app.tagline',
-  'app.settingsStay',
   'storage.visitOnly',
   'storage.couldNotSave',
   'calculator.settings',
@@ -35,6 +34,8 @@ export const translationKeys = [
   'form.incomeLabel',
   'form.incomeDescription',
   'form.payFrequencyLabel',
+  'form.workDefaults',
+  'form.workDefaultsSummary',
   'form.weeklyHoursLabel',
   'form.workingDaysLabel',
   'form.currencyLabel',
@@ -43,6 +44,9 @@ export const translationKeys = [
   'form.cancel',
   'form.start',
   'form.save',
+  'privacy.localOnly',
+  'privacy.showIncome',
+  'privacy.hideIncome',
   'validation.income',
   'validation.payFrequency',
   'validation.weeklyHours',
@@ -63,7 +67,8 @@ export const translationKeys = [
   'update.update',
   'update.dismiss',
   'duration.lessThanMinute',
-  'duration.moreThanWorkweeks',
+  'duration.moreThanWeeks',
+  'duration.and',
   'duration.ofWork',
   'theme.system',
   'theme.light',
@@ -75,22 +80,23 @@ type Catalog = Record<TranslationKey, string>;
 
 const english: Catalog = {
   'app.tagline': 'See what things really cost in your time.',
-  'app.settingsStay': 'Your settings stay on this device. You can change them anytime.',
   'storage.visitOnly': 'Saved for this visit. Your browser blocked local saving.',
   'storage.couldNotSave': 'Settings are available for this visit, but could not be saved.',
   'calculator.settings': 'Settings',
   'calculator.title': 'How much does it cost?',
   'calculator.priceLabel': 'Enter a price',
   'calculator.priceDescription': 'Price in {{currency}}.',
-  'calculator.priceError': 'Enter a valid non-negative price using numbers, . or ,.',
+  'calculator.priceError': 'Enter a price of 0 or more.',
   'calculator.resultIs': '{{price}} is',
   'calculator.emptyResult': 'Enter a price to see its time cost.',
-  'calculator.payContext': '{{percentage}}% of your take-home pay ({{period}})',
+  'calculator.payContext': '{{percentage}}% of your take home pay ({{period}})',
   'form.heading': 'Start with your income',
   'form.setupNote': 'One quick setup.',
-  'form.incomeLabel': 'Take-home income',
+  'form.incomeLabel': 'Take home income',
   'form.incomeDescription': 'Amount in {{currency}}, after tax.',
   'form.payFrequencyLabel': 'Pay frequency',
+  'form.workDefaults': 'Work schedule and currency',
+  'form.workDefaultsSummary': '{{currency}} · {{hours}} hours/week · {{days}} days/week',
   'form.weeklyHoursLabel': 'Work hours each week',
   'form.workingDaysLabel': 'Work days each week',
   'form.currencyLabel': 'Currency',
@@ -99,6 +105,9 @@ const english: Catalog = {
   'form.cancel': 'Cancel',
   'form.start': 'Start calculating',
   'form.save': 'Save settings',
+  'privacy.localOnly': 'Saved only on this device.',
+  'privacy.showIncome': 'Show income',
+  'privacy.hideIncome': 'Hide income',
   'validation.income': 'Enter an income greater than 0.',
   'validation.payFrequency': 'Choose how often you are paid.',
   'validation.weeklyHours': 'Use between 1 and 168 hours each week.',
@@ -119,7 +128,8 @@ const english: Catalog = {
   'update.update': 'Update',
   'update.dismiss': 'Dismiss notification',
   'duration.lessThanMinute': 'Less than 1 minute',
-  'duration.moreThanWorkweeks': 'More than {{count}} workweeks',
+  'duration.moreThanWeeks': 'More than {{count}} weeks',
+  'duration.and': 'and',
   'duration.ofWork': '{{duration}} of work',
   'theme.system': 'System',
   'theme.light': 'Light',
@@ -128,8 +138,6 @@ const english: Catalog = {
 
 const german: Catalog = {
   'app.tagline': 'Sieh, was Dinge wirklich an Zeit kosten.',
-  'app.settingsStay':
-    'Deine Einstellungen bleiben auf diesem Gerät. Du kannst sie jederzeit ändern.',
   'storage.visitOnly':
     'Für diesen Besuch gespeichert. Dein Browser hat das lokale Speichern blockiert.',
   'storage.couldNotSave':
@@ -147,6 +155,8 @@ const german: Catalog = {
   'form.incomeLabel': 'Nettoeinkommen',
   'form.incomeDescription': 'Betrag in {{currency}}, nach Steuern.',
   'form.payFrequencyLabel': 'Zahlungsrhythmus',
+  'form.workDefaults': 'Arbeitszeit und Währung',
+  'form.workDefaultsSummary': '{{currency}} · {{hours}} Std./Woche · {{days}} Tage/Woche',
   'form.weeklyHoursLabel': 'Arbeitsstunden pro Woche',
   'form.workingDaysLabel': 'Arbeitstage pro Woche',
   'form.currencyLabel': 'Währung',
@@ -155,6 +165,9 @@ const german: Catalog = {
   'form.cancel': 'Abbrechen',
   'form.start': 'Berechnung starten',
   'form.save': 'Einstellungen speichern',
+  'privacy.localOnly': 'Nur auf diesem Gerät gespeichert.',
+  'privacy.showIncome': 'Einkommen anzeigen',
+  'privacy.hideIncome': 'Einkommen ausblenden',
   'validation.income': 'Gib ein Einkommen über 0 ein.',
   'validation.payFrequency': 'Wähle aus, wie oft du bezahlt wirst.',
   'validation.weeklyHours': 'Verwende 1 bis 168 Stunden pro Woche.',
@@ -177,7 +190,8 @@ const german: Catalog = {
   'update.update': 'Aktualisieren',
   'update.dismiss': 'Benachrichtigung schließen',
   'duration.lessThanMinute': 'Weniger als 1 Minute',
-  'duration.moreThanWorkweeks': 'Mehr als {{count}} Arbeitswochen',
+  'duration.moreThanWeeks': 'Mehr als {{count}} Wochen',
+  'duration.and': 'und',
   'duration.ofWork': '{{duration}} Arbeitszeit',
   'theme.system': 'System',
   'theme.light': 'Hell',
@@ -186,8 +200,6 @@ const german: Catalog = {
 
 const french: Catalog = {
   'app.tagline': 'Voyez ce que les choses vous coûtent vraiment en temps.',
-  'app.settingsStay':
-    'Vos réglages restent sur cet appareil. Vous pouvez les modifier à tout moment.',
   'storage.visitOnly':
     'Enregistré pour cette visite. Votre navigateur a bloqué l’enregistrement local.',
   'storage.couldNotSave':
@@ -205,6 +217,8 @@ const french: Catalog = {
   'form.incomeLabel': 'Revenu net',
   'form.incomeDescription': 'Montant en {{currency}}, après impôts.',
   'form.payFrequencyLabel': 'Fréquence de paiement',
+  'form.workDefaults': 'Temps de travail et devise',
+  'form.workDefaultsSummary': '{{currency}} · {{hours}} h/semaine · {{days}} jours/semaine',
   'form.weeklyHoursLabel': 'Heures de travail par semaine',
   'form.workingDaysLabel': 'Jours travaillés par semaine',
   'form.currencyLabel': 'Devise',
@@ -213,6 +227,9 @@ const french: Catalog = {
   'form.cancel': 'Annuler',
   'form.start': 'Commencer le calcul',
   'form.save': 'Enregistrer les réglages',
+  'privacy.localOnly': 'Enregistré uniquement sur cet appareil.',
+  'privacy.showIncome': 'Afficher le revenu',
+  'privacy.hideIncome': 'Masquer le revenu',
   'validation.income': 'Saisissez un revenu supérieur à 0.',
   'validation.payFrequency': 'Choisissez la fréquence de votre paiement.',
   'validation.weeklyHours': 'Utilisez entre 1 et 168 heures par semaine.',
@@ -234,7 +251,8 @@ const french: Catalog = {
   'update.update': 'Mettre à jour',
   'update.dismiss': 'Fermer la notification',
   'duration.lessThanMinute': 'Moins d’une minute',
-  'duration.moreThanWorkweeks': 'Plus de {{count}} semaines de travail',
+  'duration.moreThanWeeks': 'Plus de {{count}} semaines',
+  'duration.and': 'et',
   'duration.ofWork': '{{duration}} de travail',
   'theme.system': 'Système',
   'theme.light': 'Clair',
@@ -243,8 +261,6 @@ const french: Catalog = {
 
 const italian: Catalog = {
   'app.tagline': 'Scopri quanto ti costano davvero le cose in termini di tempo.',
-  'app.settingsStay':
-    'Le tue impostazioni restano su questo dispositivo. Puoi cambiarle in qualsiasi momento.',
   'storage.visitOnly': 'Salvate per questa visita. Il browser ha bloccato il salvataggio locale.',
   'storage.couldNotSave':
     'Le impostazioni sono disponibili per questa visita, ma non è stato possibile salvarle.',
@@ -261,6 +277,8 @@ const italian: Catalog = {
   'form.incomeLabel': 'Reddito netto',
   'form.incomeDescription': 'Importo in {{currency}}, dopo le tasse.',
   'form.payFrequencyLabel': 'Frequenza di pagamento',
+  'form.workDefaults': 'Orario di lavoro e valuta',
+  'form.workDefaultsSummary': '{{currency}} · {{hours}} ore/settimana · {{days}} giorni/settimana',
   'form.weeklyHoursLabel': 'Ore di lavoro ogni settimana',
   'form.workingDaysLabel': 'Giorni lavorativi ogni settimana',
   'form.currencyLabel': 'Valuta',
@@ -269,6 +287,9 @@ const italian: Catalog = {
   'form.cancel': 'Annulla',
   'form.start': 'Inizia il calcolo',
   'form.save': 'Salva impostazioni',
+  'privacy.localOnly': 'Salvato solo su questo dispositivo.',
+  'privacy.showIncome': 'Mostra reddito',
+  'privacy.hideIncome': 'Nascondi reddito',
   'validation.income': 'Inserisci un reddito maggiore di 0.',
   'validation.payFrequency': 'Scegli con quale frequenza vieni pagato.',
   'validation.weeklyHours': 'Usa da 1 a 168 ore ogni settimana.',
@@ -290,7 +311,8 @@ const italian: Catalog = {
   'update.update': 'Aggiorna',
   'update.dismiss': 'Chiudi notifica',
   'duration.lessThanMinute': 'Meno di un minuto',
-  'duration.moreThanWorkweeks': 'Più di {{count}} settimane lavorative',
+  'duration.moreThanWeeks': 'Più di {{count}} settimane',
+  'duration.and': 'e',
   'duration.ofWork': '{{duration}} di lavoro',
   'theme.system': 'Sistema',
   'theme.light': 'Chiaro',
@@ -299,15 +321,13 @@ const italian: Catalog = {
 
 const serbian: Catalog = {
   'app.tagline': 'Pogledajte koliko vas stvari zaista koštaju u vremenu.',
-  'app.settingsStay':
-    'Vaša podešavanja ostaju na ovom uređaju. Možete ih promeniti kad god želite.',
   'storage.visitOnly': 'Sačuvano za ovu posetu. Vaš pregledač je blokirao lokalno čuvanje.',
   'storage.couldNotSave': 'Podešavanja su dostupna za ovu posetu, ali nisu mogla da budu sačuvana.',
   'calculator.settings': 'Podešavanja',
   'calculator.title': 'Koliko to košta u vremenu?',
   'calculator.priceLabel': 'Unesite cenu',
   'calculator.priceDescription': 'Cena u valuti {{currency}}.',
-  'calculator.priceError': 'Unesite važeću cenu koja nije negativna, koristeći cifre, . ili ,.',
+  'calculator.priceError': 'Unesite cenu od 0 ili više.',
   'calculator.resultIs': '{{price}} je',
   'calculator.emptyResult': 'Unesite cenu da vidite njen trošak u vremenu.',
   'calculator.payContext': '{{percentage}}% vaše neto plate ({{period}})',
@@ -316,6 +336,8 @@ const serbian: Catalog = {
   'form.incomeLabel': 'Neto prihod',
   'form.incomeDescription': 'Iznos u valuti {{currency}}, posle poreza.',
   'form.payFrequencyLabel': 'Učestalost isplate',
+  'form.workDefaults': 'Radno vreme i valuta',
+  'form.workDefaultsSummary': '{{currency}} · {{hours}} sati/nedeljno · {{days}} dana/nedeljno',
   'form.weeklyHoursLabel': 'Radni sati nedeljno',
   'form.workingDaysLabel': 'Radni dani nedeljno',
   'form.currencyLabel': 'Valuta',
@@ -324,6 +346,9 @@ const serbian: Catalog = {
   'form.cancel': 'Otkaži',
   'form.start': 'Započni računanje',
   'form.save': 'Sačuvaj podešavanja',
+  'privacy.localOnly': 'Čuva se samo na ovom uređaju.',
+  'privacy.showIncome': 'Prikaži prihod',
+  'privacy.hideIncome': 'Sakrij prihod',
   'validation.income': 'Unesite prihod veći od 0.',
   'validation.payFrequency': 'Izaberite koliko često primate platu.',
   'validation.weeklyHours': 'Unesite od 1 do 168 sati nedeljno.',
@@ -344,7 +369,8 @@ const serbian: Catalog = {
   'update.update': 'Ažuriraj',
   'update.dismiss': 'Zatvori obaveštenje',
   'duration.lessThanMinute': 'Manje od 1 minuta',
-  'duration.moreThanWorkweeks': 'Više od {{count}} radnih nedelja',
+  'duration.moreThanWeeks': 'Više od {{count}} nedelja',
+  'duration.and': 'i',
   'duration.ofWork': '{{duration}} rada',
   'theme.system': 'Sistem',
   'theme.light': 'Svetlo',
@@ -412,29 +438,25 @@ const unitForms: Record<Exclude<Locale, 'sr'>, Record<DurationUnit, readonly [st
     minute: ['minute', 'minutes'],
     hour: ['hour', 'hours'],
     workday: ['workday', 'workdays'],
-    day: ['day', 'days'],
-    workweek: ['workweek', 'workweeks'],
+    week: ['week', 'weeks'],
   },
   de: {
     minute: ['Minute', 'Minuten'],
     hour: ['Stunde', 'Stunden'],
     workday: ['Arbeitstag', 'Arbeitstage'],
-    day: ['Tag', 'Tage'],
-    workweek: ['Arbeitswoche', 'Arbeitswochen'],
+    week: ['Woche', 'Wochen'],
   },
   fr: {
     minute: ['minute', 'minutes'],
     hour: ['heure', 'heures'],
     workday: ['journée de travail', 'journées de travail'],
-    day: ['jour', 'jours'],
-    workweek: ['semaine de travail', 'semaines de travail'],
+    week: ['semaine', 'semaines'],
   },
   it: {
     minute: ['minuto', 'minuti'],
     hour: ['ora', 'ore'],
     workday: ['giornata lavorativa', 'giornate lavorative'],
-    day: ['giorno', 'giorni'],
-    workweek: ['settimana lavorativa', 'settimane lavorative'],
+    week: ['settimana', 'settimane'],
   },
 };
 
@@ -492,9 +514,9 @@ export interface Translator {
   language(language: Locale): string;
   theme(theme: ThemePreference): string;
   unit(value: number, unit: DurationUnit): string;
-  duration(parts: readonly DurationPart[]): string;
+  duration(parts: readonly (DurationPart | string)[]): string;
   lessThanMinute(): string;
-  moreThanWorkweeks(count: number): string;
+  moreThanWeeks(count: number): string;
   ofWork(duration: string): string;
 }
 
@@ -514,8 +536,7 @@ export function createTranslator(requestedLocale?: string): Translator {
         minute: ['minut', 'minuta', 'minuta'],
         hour: ['sat', 'sata', 'sati'],
         workday: ['radni dan', 'radna dana', 'radnih dana'],
-        day: ['dan', 'dana', 'dana'],
-        workweek: ['radna nedelja', 'radne nedelje', 'radnih nedelja'],
+        week: ['nedelja', 'nedelje', 'nedelja'],
       };
       const [one, few, many] = forms[durationUnit];
       return `${amount} ${serbianUnit(value, one, few, many)}`;
@@ -533,10 +554,12 @@ export function createTranslator(requestedLocale?: string): Translator {
     language: (language) => languageNames[language],
     theme: (theme) => t(`theme.${theme}`),
     unit,
-    duration: (parts) => parts.map((part) => unit(part.value, part.unit)).join(' '),
+    duration: (parts) =>
+      parts
+        .map((part) => (typeof part === 'string' ? part : unit(part.value, part.unit)))
+        .join(` ${t('duration.and')} `),
     lessThanMinute: () => t('duration.lessThanMinute'),
-    moreThanWorkweeks: (count) =>
-      t('duration.moreThanWorkweeks', { count: numberFor(locale, count) }),
+    moreThanWeeks: (count) => t('duration.moreThanWeeks', { count: numberFor(locale, count) }),
     ofWork: (duration) => t('duration.ofWork', { duration }),
   };
 }

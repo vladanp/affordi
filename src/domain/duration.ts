@@ -3,8 +3,8 @@ import { calculateHoursPerWorkday } from './calculations';
 import { createTranslator, type Locale, type Translator } from './i18n';
 
 const MINUTES_PER_HOUR = 60;
-const WORKWEEK_THRESHOLD = 2;
-const MAX_DISPLAYED_WORKWEEKS = 999_999;
+const WEEK_THRESHOLD = 2;
+const MAX_DISPLAYED_WEEKS = 999_999;
 
 function formatSubdayDuration(workHours: number, copy: Translator): string {
   const totalMinutes = workHours * MINUTES_PER_HOUR;
@@ -16,10 +16,10 @@ function formatSubdayDuration(workHours: number, copy: Translator): string {
   const hours = Math.floor(roundedMinutes / MINUTES_PER_HOUR);
   const minutes = roundedMinutes % MINUTES_PER_HOUR;
 
-  return [
+  return copy.duration([
     ...(hours > 0 ? [copy.unit(hours, 'hour')] : []),
     ...(minutes > 0 ? [copy.unit(minutes, 'minute')] : []),
-  ].join(' ');
+  ]);
 }
 
 function formatWorkdayDuration(
@@ -35,37 +35,37 @@ function formatWorkdayDuration(
     hours = 0;
   }
 
-  return [
+  return copy.duration([
     ...(workdays > 0 ? [copy.unit(workdays, 'workday')] : []),
     ...(hours > 0 ? [copy.unit(hours, 'hour')] : []),
-  ].join(' ');
+  ]);
 }
 
-function formatWorkweekDuration(
+function formatWeekDuration(
   workHours: number,
   hoursPerWorkday: number,
   workingDaysPerWeek: number,
   copy: Translator,
 ): string {
   const roundedWorkdays = Math.round(workHours / hoursPerWorkday);
-  const workweeks = Math.floor(roundedWorkdays / workingDaysPerWeek);
+  const weeks = Math.floor(roundedWorkdays / workingDaysPerWeek);
   const workdays = roundedWorkdays % workingDaysPerWeek;
 
-  if (workweeks > MAX_DISPLAYED_WORKWEEKS) {
-    return copy.moreThanWorkweeks(MAX_DISPLAYED_WORKWEEKS);
+  if (weeks > MAX_DISPLAYED_WEEKS) {
+    return copy.moreThanWeeks(MAX_DISPLAYED_WEEKS);
   }
 
   return copy.duration([
-    { value: workweeks, unit: 'workweek' },
-    ...(workdays > 0 ? [{ value: workdays, unit: 'day' } as const] : []),
+    { value: weeks, unit: 'week' },
+    ...(workdays > 0 ? [{ value: workdays, unit: 'workday' } as const] : []),
   ]);
 }
 
 /**
  * Formats working time with at most two useful units.
  *
- * Under one workday it uses hours and minutes, under two workweeks it uses
- * workdays and hours, and from two workweeks onward it uses workweeks and days.
+ * Under one workday it uses hours and minutes, under two weeks it uses
+ * workdays and hours, and from two weeks onward it uses weeks and workdays.
  */
 export function formatWorkDuration(
   workHours: number,
@@ -90,12 +90,12 @@ export function formatWorkDuration(
     return formatSubdayDuration(workHours, copy);
   }
 
-  const hoursPerWorkweek = settings.weeklyHours;
-  if (workHours < hoursPerWorkweek * WORKWEEK_THRESHOLD) {
+  const hoursPerWeek = settings.weeklyHours;
+  if (workHours < hoursPerWeek * WEEK_THRESHOLD) {
     return formatWorkdayDuration(workHours, hoursPerWorkday, copy);
   }
 
-  return formatWorkweekDuration(workHours, hoursPerWorkday, settings.workingDaysPerWeek, copy);
+  return formatWeekDuration(workHours, hoursPerWorkday, settings.workingDaysPerWeek, copy);
 }
 
 /** The headline duration: hours are the most useful unit for everyday purchases. */
@@ -119,11 +119,11 @@ export function formatPrimaryDuration(
     return copy.ofWork(formatSubdayDuration(workHours, copy));
   }
 
-  if (workHours < settings.weeklyHours * WORKWEEK_THRESHOLD) {
+  if (workHours < settings.weeklyHours * WEEK_THRESHOLD) {
     const roundedHours = Math.max(1, Math.round(workHours));
     return copy.ofWork(copy.unit(roundedHours, 'hour'));
   }
 
   const secondary = formatWorkDuration(workHours, settings, language);
-  return secondary === null ? null : copy.ofWork(secondary);
+  return secondary;
 }

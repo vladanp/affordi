@@ -11,10 +11,10 @@ const settings = {
 
 describe('localized duration formatting', () => {
   it.each([
-    ['de', '2 Stunden 35 Minuten'],
-    ['fr', '2 heures 35 minutes'],
-    ['it', '2 ore 35 minuti'],
-    ['sr', '2 sata 35 minuta'],
+    ['de', '2 Stunden und 35 Minuten'],
+    ['fr', '2 heures et 35 minutes'],
+    ['it', '2 ore e 35 minuti'],
+    ['sr', '2 sata i 35 minuta'],
   ] as const)('formats sub-day work in %s', (language, expected) => {
     expect(formatWorkDuration(2 + 35 / 60, settings, language)).toBe(expected);
   });
@@ -30,7 +30,7 @@ describe('localized duration formatting', () => {
 
   it('translates long durations and the less-than-minute boundary', () => {
     expect(formatWorkDuration(0.001, settings, 'fr')).toBe('Moins d’une minute');
-    expect(formatPrimaryDuration(80, settings, 'it')).toBe('2 settimane lavorative di lavoro');
-    expect(formatWorkDuration(40_000_000, settings, 'sr')).toBe('Više od 999.999 radnih nedelja');
+    expect(formatPrimaryDuration(80, settings, 'it')).toBe('2 settimane');
+    expect(formatWorkDuration(40_000_000, settings, 'sr')).toBe('Više od 999.999 nedelja');
   });
 });

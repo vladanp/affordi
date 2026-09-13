@@ -16,8 +16,9 @@ test.describe('localization and theme preferences', () => {
     await expect(page.getByRole('heading', { name: 'Beginne mit deinem Einkommen' })).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
-    await page.getByRole('textbox', { name: 'Nettoeinkommen' }).fill('3000');
+    await page.getByLabel('Nettoeinkommen').fill('3000');
     await page.getByRole('combobox', { name: 'Zahlungsrhythmus' }).selectOption('monthly');
+    await page.getByText('Arbeitszeit und Währung', { exact: true }).click();
     await page.getByRole('textbox', { name: 'Arbeitsstunden pro Woche' }).fill('40');
     await page.getByRole('textbox', { name: 'Arbeitstage pro Woche' }).fill('5');
     await page.getByRole('combobox', { name: 'Währung' }).selectOption('EUR');
@@ -32,6 +33,7 @@ test.describe('localization and theme preferences', () => {
     await expect(theme).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     await theme.selectOption('dark');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await language.selectOption('fr');
     await page
       .getByRole('button', { name: /Enregistrer les réglages|Einstellungen speichern/ })

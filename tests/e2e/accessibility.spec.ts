@@ -28,10 +28,14 @@ test.describe('Affordi accessibility', () => {
     await expectAccessible(page);
   });
 
-  test('primary flow is keyboard reachable', async ({ page }) => {
+  test('primary flow is keyboard reachable', async ({ browserName, page }) => {
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('textbox', { name: 'Take-home income' })).toBeFocused();
+    await expect(page.getByLabel('Take home income')).toBeFocused();
+    await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
+    await expect(page.getByRole('button', { name: 'Show income' })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('combobox', { name: 'Pay frequency' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.locator('summary')).toBeFocused();
   });
 });

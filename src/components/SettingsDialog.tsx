@@ -3,15 +3,23 @@ import { useState, type KeyboardEvent, type SyntheticEvent } from 'react';
 import { IncomeForm } from './IncomeForm';
 import { createTranslator } from '../domain/i18n';
 import type { AffordiSettings } from '../domain/storage';
+import type { ThemePreference } from '../domain/theme';
 
 interface SettingsDialogProps {
   settings: AffordiSettings;
   onClose: () => void;
   onReset: () => boolean;
   onSave: (settings: AffordiSettings) => void;
+  onThemePreview: (theme: ThemePreference) => void;
 }
 
-export function SettingsDialog({ settings, onClose, onReset, onSave }: SettingsDialogProps) {
+export function SettingsDialog({
+  settings,
+  onClose,
+  onReset,
+  onSave,
+  onThemePreview,
+}: SettingsDialogProps) {
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [resetError, setResetError] = useState(false);
   const copy = createTranslator(settings.language);
@@ -100,7 +108,13 @@ export function SettingsDialog({ settings, onClose, onReset, onSave }: SettingsD
                 ×
               </button>
             </div>
-            <IncomeForm initialValues={settings} mode="edit" onCancel={onClose} onSubmit={onSave} />
+            <IncomeForm
+              initialValues={settings}
+              mode="edit"
+              onCancel={onClose}
+              onSubmit={onSave}
+              onThemePreview={onThemePreview}
+            />
             <button
               className="reset-button"
               onClick={() => {

@@ -74,7 +74,7 @@ export function calculateHourlyRate(settings: IncomeSettings): number | null {
   return isFinitePositive(hourlyRate) ? hourlyRate : null;
 }
 
-/** Returns the work time for a non-negative item price, or null for invalid input. */
+/** Returns the work time for an item price of zero or more, or null for invalid input. */
 export function calculateWorkHours(itemPrice: number, settings: IncomeSettings): number | null {
   if (!Number.isFinite(itemPrice) || itemPrice < 0) {
     return null;

@@ -5,7 +5,7 @@ import { completeSetup } from './helpers';
 test.use({ serviceWorkers: 'allow' });
 
 test('installed app shell keeps calculator usable offline', async ({ page }) => {
-  test.skip(test.info().project.name !== 'chromium', 'The service-worker check runs once.');
+  test.skip(test.info().project.name !== 'chromium', 'The service worker check runs once.');
 
   await completeSetup(page);
   await page.getByRole('textbox', { name: 'Enter a price' }).fill('750');
