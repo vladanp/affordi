@@ -81,6 +81,8 @@ After all gates pass on `main`, semantic-release analyzes Conventional Commits a
 
 ## Cloudflare Pages
 
+Production: [affordi.pages.dev](https://affordi.pages.dev)
+
 Affordi is a static app and fits Cloudflare Pages' free plan. Production deploys run from the final GitHub Actions job, after every quality gate passes. This also lets the build use the exact Node and pnpm versions in `mise.toml`; Cloudflare's native Pages build image does not read mise configuration.
 
 After the finished repository is pushed to GitHub:
