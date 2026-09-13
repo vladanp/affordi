@@ -85,7 +85,7 @@ Affordi is a static app and fits Cloudflare Pages' free plan. Production deploys
 
 After the finished repository is pushed to GitHub:
 
-1. Create a Direct Upload Pages project named `affordi` with production branch `main`: `pnpm dlx wrangler@4.131.1 pages project create affordi --production-branch main`.
+1. Create a Direct Upload Pages project named `affordi` with production branch `main`: `npx --yes wrangler@4.131.1 pages project create affordi --production-branch main --force`. Current Wrangler releases otherwise delegate new Pages projects to Workers; `--force` is only needed when creating the project.
 2. Add the repository variable `CLOUDFLARE_PROJECT_NAME=affordi`.
 3. Add `CLOUDFLARE_ACCOUNT_ID` and a scoped `CLOUDFLARE_API_TOKEN` repository secret. The token only needs permission to edit Pages deployments for the selected account.
 

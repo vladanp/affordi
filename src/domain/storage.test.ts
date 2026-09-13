@@ -27,13 +27,16 @@ describe('settings persistence', () => {
     expect(JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY) ?? '').version).toBe(1);
   });
 
-  it.each(['not json', '{}', '{"version":2}', '{"version":1,"settings":{"netIncome":0}}'])(
-    'recovers from malformed data: %s',
-    (raw) => {
-      localStorage.setItem(SETTINGS_STORAGE_KEY, raw);
-      expect(loadSettings()).toBeNull();
-    },
-  );
+  it.each([
+    'not json',
+    '{}',
+    '{"version":2}',
+    '{"version":1,"settings":{"netIncome":0}}',
+    JSON.stringify({ version: 1, settings: { ...settings, currency: 'GBP' } }),
+  ])('recovers from malformed data: %s', (raw) => {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, raw);
+    expect(loadSettings()).toBeNull();
+  });
 
   it('never throws when storage is unavailable', () => {
     const getItem = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
