@@ -12,10 +12,10 @@ test.describe('Affordi calculator', () => {
     await completeSetup(page);
 
     await expect(page.getByText('Enter a price to see its time cost.')).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'Enter a price' })).toBeFocused();
+    await expect(page.getByRole('textbox', { name: 'Enter a price' })).not.toBeFocused();
     await page.reload();
     await expect(page.getByRole('heading', { name: 'How much does it cost?' })).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'Enter a price' })).toBeFocused();
+    await expect(page.getByRole('textbox', { name: 'Enter a price' })).not.toBeFocused();
     await expect(page.getByRole('heading', { name: 'Start with your income' })).toHaveCount(0);
   });
 
@@ -26,7 +26,7 @@ test.describe('Affordi calculator', () => {
     await price.fill('750');
 
     await expect(page.getByText('43 hours of work')).toBeVisible();
-    await expect(page.getByText('25% of your monthly take home pay')).toBeVisible();
+    await expect(page.getByText('25.0% of your monthly take home pay')).toBeVisible();
     await price.fill('-1');
     await expect(page.getByText('Enter a price of 0 or more.')).toBeVisible();
     await price.fill('36.5');

@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type RefObject } from 'react';
+import { useRef, useState, type ChangeEvent, type FormEvent, type RefObject } from 'react';
 
 import {
   calculateHoursPerWorkday,
@@ -17,8 +17,18 @@ interface CalculatorProps {
   settingsButtonRef: RefObject<HTMLButtonElement | null>;
 }
 
+function formatIncomePercentage(percentage: number, locale: string): string {
+  const options = { minimumFractionDigits: 1, maximumFractionDigits: 1 } as const;
+  if (percentage > 0 && percentage < 0.1) {
+    return `<${(0.1).toLocaleString(locale, options)}`;
+  }
+  return percentage.toLocaleString(locale, options);
+}
+
 export function Calculator({ settings, onOpenSettings, settingsButtonRef }: CalculatorProps) {
   const [itemPrice, setItemPrice] = useState('');
+  const priceInputRef = useRef<HTMLInputElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
   const copy = createTranslator(settings.language);
   const parsedPrice = parseDecimalInput(itemPrice, settings.language);
   const workHours = parsedPrice === null ? null : calculateWorkHours(parsedPrice, settings);
@@ -37,6 +47,16 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
     setItemPrice(event.target.value);
   }
 
+  function handlePriceSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const activeElement = event.currentTarget.ownerDocument.activeElement;
+    if (activeElement instanceof HTMLElement && event.currentTarget.contains(activeElement)) {
+      activeElement.blur();
+    }
+    priceInputRef.current?.blur();
+    resultRef.current?.scrollIntoView?.({ block: 'nearest' });
+  }
+
   return (
     <section aria-labelledby="calculator-title" className="calculator-card">
       <div className="calculator-topline">
@@ -52,8 +72,10 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
       </div>
       <h1 id="calculator-title">{copy.t('calculator.title')}</h1>
 
-      <label className="price-field">
-        <span className="visually-quiet">{copy.t('calculator.priceLabel')}</span>
+      <form className="price-field" onSubmit={handlePriceSubmit}>
+        <label className="visually-quiet" htmlFor="item-price">
+          {copy.t('calculator.priceLabel')}
+        </label>
         <span className="price-input-wrap">
           <span aria-hidden="true" className="currency-symbol">
             {getCurrencySymbol(settings.currency, settings.language)}
@@ -65,14 +87,18 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
             }
             aria-invalid={priceError}
             autoComplete="off"
-            autoFocus
             enterKeyHint="done"
+            id="item-price"
             inputMode="decimal"
             onChange={handlePriceChange}
             placeholder="750"
+            ref={priceInputRef}
             type="text"
             value={itemPrice}
           />
+          <button aria-controls="calculator-result" className="price-done-button" type="submit">
+            {copy.t('calculator.done')}
+          </button>
         </span>
         <small className="visually-hidden" id="price-currency-description">
           {copy.t('calculator.priceDescription', { currency: settings.currency })}
@@ -84,10 +110,10 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
         >
           {copy.t('calculator.priceError')}
         </small>
-      </label>
+      </form>
 
       {duration !== null && percentage !== null && parsedPrice !== null ? (
-        <div aria-live="polite" className="result-panel">
+        <div aria-live="polite" className="result-panel" id="calculator-result" ref={resultRef}>
           <p className="result-label">
             {copy.t('calculator.resultIs', {
               price: formatCurrency(parsedPrice, settings.currency, settings.language),
@@ -97,9 +123,7 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
             {secondaryDuration !== null && <span>≈ {secondaryDuration}</span>}
             <span className="result-percentage">
               {copy.t('calculator.payContext', {
-                percentage: percentage.toLocaleString(settings.language, {
-                  maximumFractionDigits: 1,
-                }),
+                percentage: formatIncomePercentage(percentage, settings.language),
                 period: copy.payPeriod(settings.payFrequency),
               })}
             </span>
@@ -107,7 +131,7 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
           <p className="result-primary">{duration}</p>
         </div>
       ) : (
-        <div aria-live="polite" className="empty-result">
+        <div aria-live="polite" className="empty-result" id="calculator-result" ref={resultRef}>
           <span>{copy.t('calculator.emptyResult')}</span>
         </div>
       )}
