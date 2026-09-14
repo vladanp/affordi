@@ -5,7 +5,6 @@ export async function completeSetup(page: Page) {
   await expect(page.getByRole('heading', { name: 'Start with your income' })).toBeVisible();
   await page.getByLabel('Take home income').fill('3000');
   await page.getByRole('combobox', { name: 'Pay frequency' }).selectOption('monthly');
-  await page.getByText('Work schedule and currency', { exact: true }).click();
   await page.getByRole('textbox', { name: 'Work hours each week' }).fill('40');
   await page.getByRole('textbox', { name: 'Work days each week' }).fill('5');
   await page.getByRole('combobox', { name: 'Currency' }).selectOption('EUR');

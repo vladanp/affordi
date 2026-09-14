@@ -20,6 +20,15 @@ describe('localized duration formatting', () => {
   });
 
   it.each([
+    ['de', '1 Tag und 4 Stunden'],
+    ['fr', '1 jour et 4 heures'],
+    ['it', '1 giorno e 4 ore'],
+    ['sr', '1 dan i 4 sata'],
+  ] as const)('uses plain day wording in %s', (language, expected) => {
+    expect(formatWorkDuration(12, settings, language)).toBe(expected);
+  });
+
+  it.each([
     ['de', '8 Stunden Arbeitszeit'],
     ['fr', '8 heures de travail'],
     ['it', '8 ore di lavoro'],

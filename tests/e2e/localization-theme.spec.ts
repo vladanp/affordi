@@ -18,7 +18,6 @@ test.describe('localization and theme preferences', () => {
 
     await page.getByLabel('Nettoeinkommen').fill('3000');
     await page.getByRole('combobox', { name: 'Zahlungsrhythmus' }).selectOption('monthly');
-    await page.getByText('Arbeitszeit und Währung', { exact: true }).click();
     await page.getByRole('textbox', { name: 'Arbeitsstunden pro Woche' }).fill('40');
     await page.getByRole('textbox', { name: 'Arbeitstage pro Woche' }).fill('5');
     await page.getByRole('combobox', { name: 'Währung' }).selectOption('EUR');

@@ -36,6 +36,6 @@ test.describe('Affordi accessibility', () => {
     await page.keyboard.press('Tab');
     await expect(page.getByRole('combobox', { name: 'Pay frequency' })).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(page.locator('summary')).toBeFocused();
+    await expect(page.getByRole('combobox', { name: 'Currency' })).toBeFocused();
   });
 });

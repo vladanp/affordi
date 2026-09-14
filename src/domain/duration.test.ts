@@ -19,11 +19,11 @@ describe('formatWorkDuration', () => {
     [1, '1 hour'],
     [2 + 35 / 60, '2 hours and 35 minutes'],
     [7.5, '7 hours and 30 minutes'],
-    [8, '1 workday'],
-    [12, '1 workday and 4 hours'],
-    [43.333_333, '5 workdays and 3 hours'],
+    [8, '1 day'],
+    [12, '1 day and 4 hours'],
+    [43.333_333, '5 days and 3 hours'],
     [80, '2 weeks'],
-    [136, '3 weeks and 2 workdays'],
+    [136, '3 weeks and 2 days'],
   ] as const)('formats %s hours as %s', (hours, expected) => {
     expect(formatWorkDuration(hours, settings, 'en')).toBe(expected);
   });
@@ -31,18 +31,18 @@ describe('formatWorkDuration', () => {
   it('uses custom working days to derive natural day and week units', () => {
     const fourDayWeek = { ...settings, weeklyHours: 32, workingDaysPerWeek: 4 };
 
-    expect(formatWorkDuration(12, fourDayWeek, 'en')).toBe('1 workday and 4 hours');
-    expect(formatWorkDuration(80, fourDayWeek, 'en')).toBe('2 weeks and 2 workdays');
+    expect(formatWorkDuration(12, fourDayWeek, 'en')).toBe('1 day and 4 hours');
+    expect(formatWorkDuration(80, fourDayWeek, 'en')).toBe('2 weeks and 2 days');
   });
 
   it('normalizes rounding across a workday boundary', () => {
-    expect(formatWorkDuration(15.6, settings, 'en')).toBe('2 workdays');
+    expect(formatWorkDuration(15.6, settings, 'en')).toBe('2 days');
   });
 
   it('rounds the smallest displayed unit deterministically', () => {
     expect(formatWorkDuration(2 + 34.4 / 60, settings, 'en')).toBe('2 hours and 34 minutes');
     expect(formatWorkDuration(2 + 34.6 / 60, settings, 'en')).toBe('2 hours and 35 minutes');
-    expect(formatWorkDuration(84, settings, 'en')).toBe('2 weeks and 1 workday');
+    expect(formatWorkDuration(84, settings, 'en')).toBe('2 weeks and 1 day');
   });
 
   it('caps impractically large output so it cannot break the interface', () => {
@@ -75,6 +75,6 @@ describe('formatPrimaryDuration', () => {
     expect(formatPrimaryDuration(80, settings, 'en')).toBe('2 weeks');
     expect(
       formatPrimaryDuration(80, { ...settings, weeklyHours: 32, workingDaysPerWeek: 4 }, 'en'),
-    ).toBe('2 weeks and 2 workdays');
+    ).toBe('2 weeks and 2 days');
   });
 });

@@ -64,8 +64,8 @@ function formatWeekDuration(
 /**
  * Formats working time with at most two useful units.
  *
- * Under one workday it uses hours and minutes, under two weeks it uses
- * workdays and hours, and from two weeks onward it uses weeks and workdays.
+ * Under one day it uses hours and minutes, under two weeks it uses days and
+ * hours, and from two weeks onward it uses weeks and days.
  */
 export function formatWorkDuration(
   workHours: number,
