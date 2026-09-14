@@ -13,6 +13,7 @@
         "categories:accessibility": ["error", { "aggregationMethod": "median", "minScore": 1 }],
         "categories:best-practices": ["error", { "aggregationMethod": "median", "minScore": 1 }],
         "categories:seo": ["error", { "aggregationMethod": "median", "minScore": 1 }],
+        "categories:agentic-browsing": ["error", { "aggregationMethod": "median", "minScore": 1 }],
         "largest-contentful-paint": [
           "error",
           { "aggregationMethod": "median", "maxNumericValue": 2000 }

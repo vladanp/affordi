@@ -1,0 +1,10 @@
+# Affordi
+
+> Affordi is a privacy-first calculator that converts a price into the work time needed to afford it.
+
+People enter their take-home pay, work schedule, currency, and a price. Calculations and saved settings stay in the browser, and no account is required.
+
+## Site
+
+- [Affordi calculator](https://affordi.pages.dev/): Use the calculator in any supported language and install it as a progressive web app.
+- [Affordi source and documentation](https://github.com/vladanp/affordi): Review the source code, README, development commands, and release history.

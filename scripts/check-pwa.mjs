@@ -25,11 +25,12 @@ function pngInfo(buffer) {
   };
 }
 
-const [manifestText, html, serviceWorker, headers] = await Promise.all([
+const [manifestText, html, serviceWorker, headers, llmsText] = await Promise.all([
   readFile(pathFor('manifest.webmanifest'), 'utf8'),
   readFile(pathFor('index.html'), 'utf8'),
   readFile(pathFor('sw.js'), 'utf8'),
   readFile(pathFor('_headers'), 'utf8'),
+  readFile(pathFor('llms.txt'), 'utf8'),
 ]);
 const manifest = JSON.parse(manifestText);
 assert(manifest.id === '/', 'Manifest id must be /');
@@ -108,4 +109,11 @@ assert(
   inlineStyle !== undefined && headers.includes(contentSecurityPolicyHash(inlineStyle)),
   'Cloudflare CSP does not allow the generated entry stylesheet',
 );
-console.log('PWA artifacts valid: manifest, icons, service worker, HTML metadata, and headers.');
+assert(/^# [^#\n]+/m.test(llmsText), 'llms.txt must identify the site with an H1 heading');
+assert(
+  /\[[^\]]+\]\(https:\/\/[^)]+\)/.test(llmsText),
+  'llms.txt must link to the site or its supporting documentation',
+);
+console.log(
+  'PWA artifacts valid: manifest, icons, service worker, HTML metadata, headers, and llms.txt.',
+);
