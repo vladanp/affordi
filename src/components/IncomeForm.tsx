@@ -300,9 +300,6 @@ export function IncomeForm(props: IncomeFormProps) {
         <small className="visually-hidden" id="income-currency-description">
           {copy.t('form.incomeDescription', { currency: values.currency })}
         </small>
-        <small className="local-only-note" id="income-local-note">
-          {copy.t('privacy.localOnly')}
-        </small>
         {errors.netIncome && (
           <small className="field-error" id="income-error">
             {errors.netIncome}
@@ -321,23 +318,10 @@ export function IncomeForm(props: IncomeFormProps) {
         }))}
         value={values.payFrequency}
       />
-      {!editMode ? (
-        <details className="setup-details">
-          <summary>
-            <span>{copy.t('form.workDefaults')}</span>
-            <small>
-              {copy.t('form.workDefaultsSummary', {
-                currency: values.currency,
-                hours: values.weeklyHours,
-                days: values.workingDaysPerWeek,
-              })}
-            </small>
-          </summary>
-          <div className="setup-details-grid">{workSettingsFields}</div>
-        </details>
-      ) : (
-        workSettingsFields
-      )}
+      <p className="local-only-note form-privacy-note" id="income-local-note">
+        {copy.t('privacy.localOnly')}
+      </p>
+      {workSettingsFields}
       {editMode && (
         <>
           <SelectField

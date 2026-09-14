@@ -1,6 +1,6 @@
 # Affordi
 
-Affordi answers one focused question: **How long do I need to work to afford this?** Enter a price to translate its cost into working time, workdays, and a secondary share of take home pay.
+Affordi answers one focused question: **How long do I need to work to afford this?** Enter a price to translate its cost into working time, days, and a secondary share of take home pay.
 
 Affordi has no account, backend, analytics, advertising, or tracking. Income settings stay in `localStorage` on the device and the installed app works offline.
 

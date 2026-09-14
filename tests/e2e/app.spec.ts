@@ -12,8 +12,10 @@ test.describe('Affordi calculator', () => {
     await completeSetup(page);
 
     await expect(page.getByText('Enter a price to see its time cost.')).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Enter a price' })).toBeFocused();
     await page.reload();
     await expect(page.getByRole('heading', { name: 'How much does it cost?' })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Enter a price' })).toBeFocused();
     await expect(page.getByRole('heading', { name: 'Start with your income' })).toHaveCount(0);
   });
 
@@ -24,7 +26,7 @@ test.describe('Affordi calculator', () => {
     await price.fill('750');
 
     await expect(page.getByText('43 hours of work')).toBeVisible();
-    await expect(page.getByText('25% of your take home pay (monthly)')).toBeVisible();
+    await expect(page.getByText('25% of your monthly take home pay')).toBeVisible();
     await price.fill('-1');
     await expect(page.getByText('Enter a price of 0 or more.')).toBeVisible();
     await price.fill('36.5');
@@ -44,6 +46,30 @@ test.describe('Affordi calculator', () => {
     await expect(income).toHaveValue('3000.50');
     await page.getByRole('button', { name: 'Hide income' }).click();
     await expect(income).toHaveAttribute('type', 'password');
+  });
+
+  test('aligns the primary setup controls in Chromium', async ({ browserName, page }) => {
+    test.skip(browserName !== 'chromium', 'This check targets the requested Chrome layout audit.');
+
+    await page.setViewportSize({ width: 900, height: 900 });
+    await page.reload();
+
+    const income = await page.getByLabel('Take home income').boundingBox();
+    const frequency = await page.getByLabel('Pay frequency').boundingBox();
+    const note = await page.getByText('Saved only on this device.').boundingBox();
+
+    if (income === null || frequency === null || note === null) {
+      throw new Error('Setup controls and privacy note must have layout boxes.');
+    }
+
+    expect(Math.abs(income.y - frequency.y)).toBeLessThan(2);
+    expect(Math.abs(income.height - frequency.height)).toBeLessThan(2);
+    expect(note.y).toBeGreaterThan(
+      Math.max(income.y + income.height, frequency.y + frequency.height),
+    );
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
   });
 
   test('edits settings, preserves them after reload, and resets local data', async ({ page }) => {
@@ -88,11 +114,15 @@ test.describe('Affordi calculator', () => {
     ).toBe(true);
   });
 
-  test('keeps the first setup action in a phone viewport', async ({ page }) => {
+  test('keeps every setup field accessible in a phone viewport', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload();
 
-    await expect(page.getByText('USD · 40 hours/week · 5 days/week')).toBeVisible();
+    await expect(page.getByLabel('Currency')).toBeVisible();
+    await expect(page.getByLabel('Work hours each week')).toBeVisible();
+    await expect(page.getByLabel('Work days each week')).toBeVisible();
+    await expect(page.locator('details')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Start calculating' }).scrollIntoViewIfNeeded();
     await expect(page.getByRole('button', { name: 'Start calculating' })).toBeInViewport();
   });
 

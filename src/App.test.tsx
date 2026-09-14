@@ -37,8 +37,8 @@ describe('App', () => {
       target: { value: '750,00' },
     });
     expect(screen.getByText('43 hours of work')).toBeInTheDocument();
-    expect(screen.getByText(/5 workdays and 3 hours/)).toBeInTheDocument();
-    expect(screen.getByText(/25% of your take home pay \(monthly\)/)).toBeInTheDocument();
+    expect(screen.getByText(/5 days and 3 hours/)).toBeInTheDocument();
+    expect(screen.getByText(/25% of your monthly take home pay/)).toBeInTheDocument();
   });
 
   it('edits locale currency and resets only after inline confirmation', () => {

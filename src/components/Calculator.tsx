@@ -65,6 +65,7 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
             }
             aria-invalid={priceError}
             autoComplete="off"
+            autoFocus
             enterKeyHint="done"
             inputMode="decimal"
             onChange={handlePriceChange}
