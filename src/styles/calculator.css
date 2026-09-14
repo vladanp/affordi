@@ -45,7 +45,7 @@
   margin-top: 1.5rem;
 }
 
-.price-field > span:first-child {
+.price-field > .visually-quiet {
   font-size: 0.85rem;
   font-weight: 500;
   color: var(--color-muted);
@@ -57,12 +57,33 @@
   letter-spacing: -0.03em;
 }
 
+.price-done-button {
+  position: absolute;
+  top: 50%;
+  right: 0.45rem;
+  display: none;
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: 0.6rem;
+  background: var(--color-icon-surface);
+  color: var(--color-accent);
+  padding-inline: 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 750;
+  transform: translateY(-50%);
+}
+
+.price-done-button:hover {
+  color: var(--color-accent-dark);
+}
+
 .result-panel,
 .empty-result {
   margin-top: 2.25rem;
   border-top: 1px solid var(--color-line);
   padding: 1.5rem 0 0;
   min-block-size: 15rem;
+  scroll-margin-block: 1rem;
 }
 
 .result-label,

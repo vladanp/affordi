@@ -42,6 +42,8 @@ pnpm test:a11y       # Browser accessibility flows
 pnpm test:pwa        # Chromium offline and service worker flow
 pnpm lint            # Oxlint with type aware React checks
 pnpm lint:fix        # Apply safe lint fixes
+pnpm run doctor        # React correctness, security, and architecture audit
+pnpm run doctor:design # Focused React UI design audit
 pnpm format          # Write Oxfmt formatting
 pnpm format:check    # Verify formatting
 pnpm typecheck       # Strict TypeScript
@@ -65,9 +67,9 @@ With pnpm 12, bare `pnpm ci` is the package manager's frozen install alias. Use 
 
 The precommit hook runs formatting, lint, TypeScript, and unit tests. The prepush hook runs the complete local CI command, including dependency audit, production checks, Playwright, accessibility, and Lighthouse.
 
-Pull requests and pushes to `main` run the same gates in GitHub Actions. Required checks protect `main`, actions are pinned to immutable commits, and CodeQL scans the repository. Renovate proposes weekly dependency and action updates without automatic merging.
+Pull requests and pushes to `main` run the same gates in GitHub Actions. Required checks protect `main`, actions are pinned to immutable commits, and CodeQL scans the repository. Every browser run uploads its Playwright report with phone-sized UI audit screenshots. Renovate proposes weekly dependency and action updates without automatic merging.
 
-After all `main` checks pass, semantic-release creates the appropriate tag and GitHub Release from Conventional Commits. The final job then deploys the same commit to Cloudflare Pages.
+After all `main` checks pass, semantic-release creates the appropriate tag and GitHub Release from Conventional Commits. The final job then deploys the same commit to the protected production environment on Cloudflare Pages and verifies that the live app shell exactly matches the validated build.
 
 ## PWA
 

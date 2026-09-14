@@ -38,7 +38,7 @@ describe('App', () => {
     });
     expect(screen.getByText('43 hours of work')).toBeInTheDocument();
     expect(screen.getByText(/5 days and 3 hours/)).toBeInTheDocument();
-    expect(screen.getByText(/25% of your monthly take home pay/)).toBeInTheDocument();
+    expect(screen.getByText(/25\.0% of your monthly take home pay/)).toBeInTheDocument();
   });
 
   it('edits locale currency and resets only after inline confirmation', () => {
@@ -248,5 +248,29 @@ describe('App', () => {
     expect(screen.getByText('0 minutes of work')).toBeInTheDocument();
     fireEvent.change(price, { target: { value: '9'.repeat(400) } });
     expect(screen.getByText(/price of 0 or more/)).toBeInTheDocument();
+  });
+
+  it('shows precise small percentages and dismisses the price input on submit', () => {
+    localStorage.setItem(
+      'affordi.settings.v1',
+      JSON.stringify({
+        version: 1,
+        settings: {
+          netIncome: 3000,
+          payFrequency: 'monthly',
+          weeklyHours: 40,
+          workingDaysPerWeek: 5,
+          currency: 'USD',
+        },
+      }),
+    );
+    render(<App />);
+    const price = screen.getByRole('textbox', { name: 'Enter a price' });
+    price.focus();
+    fireEvent.change(price, { target: { value: '1' } });
+
+    expect(screen.getByText('<0.1% of your monthly take home pay')).toBeInTheDocument();
+    fireEvent.submit(price.closest('form')!);
+    expect(price).not.toHaveFocus();
   });
 });

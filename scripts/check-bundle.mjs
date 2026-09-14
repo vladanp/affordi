@@ -2,9 +2,10 @@ import { readdir, readFile } from 'node:fs/promises';
 import { gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 
-const assetsPath = join(process.cwd(), 'dist', 'assets');
+const outputPath = join(process.cwd(), 'dist');
+const assetsPath = join(outputPath, 'assets');
 const files = await readdir(assetsPath);
-const assets = await Promise.all(
+const fileAssets = await Promise.all(
   files
     .filter((file) => /\.(?:js|css)$/.test(file))
     .map(async (file) => {
@@ -12,6 +13,18 @@ const assets = await Promise.all(
       return { file, content };
     }),
 );
+const html = await readFile(join(outputPath, 'index.html'), 'utf8');
+const inlineAssets = [
+  ...[...html.matchAll(/<script type="module">([\s\S]*?)<\/script>/g)].map((match, index) => ({
+    file: `inline-${index}.js`,
+    content: Buffer.from(match[1] ?? ''),
+  })),
+  ...[...html.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((match, index) => ({
+    file: `inline-${index}.css`,
+    content: Buffer.from(match[1] ?? ''),
+  })),
+];
+const assets = [...fileAssets, ...inlineAssets];
 
 function total(extension) {
   return assets

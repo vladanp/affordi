@@ -67,6 +67,14 @@
 }
 
 @media (max-width: 38rem) {
+  .price-input-wrap input {
+    padding-inline-end: 5.75rem;
+  }
+
+  .price-done-button {
+    display: block;
+  }
+
   .result-panel,
   .empty-result {
     min-block-size: 19rem;
@@ -100,6 +108,16 @@
 
   .update-prompt div {
     flex-basis: 100%;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .price-input-wrap input {
+    padding-inline-end: 5.75rem;
+  }
+
+  .price-done-button {
+    display: block;
   }
 }
 

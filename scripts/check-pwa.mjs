@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
 const root = new URL('../dist/', import.meta.url);
@@ -5,6 +6,10 @@ const pathFor = (name) => new URL(name, root);
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function contentSecurityPolicyHash(source) {
+  return `'sha256-${createHash('sha256').update(source).digest('base64')}'`;
 }
 
 function pngInfo(buffer) {
@@ -69,6 +74,12 @@ assert(
   'iOS/PWA HTML metadata is incomplete',
 );
 assert(
+  html.includes('<script type="module">') && html.includes('<style>'),
+  'The entry script and stylesheet must be inlined in the app shell',
+);
+const inlineScript = html.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1];
+const inlineStyle = html.match(/<style>([\s\S]*?)<\/style>/)?.[1];
+assert(
   serviceWorker.includes('precacheAndRoute') && serviceWorker.includes('cleanupOutdatedCaches'),
   'Generated service worker is missing complete precaching',
 );
@@ -84,5 +95,17 @@ assert(
 assert(
   headers.includes('Content-Security-Policy') && headers.includes('/assets/*'),
   'Cloudflare headers are incomplete',
+);
+assert(
+  !headers.includes('__ENTRY_') && /script-src[^;]*'sha256-/.test(headers),
+  'Cloudflare CSP hashes were not generated',
+);
+assert(
+  inlineScript !== undefined && headers.includes(contentSecurityPolicyHash(inlineScript)),
+  'Cloudflare CSP does not allow the generated entry script',
+);
+assert(
+  inlineStyle !== undefined && headers.includes(contentSecurityPolicyHash(inlineStyle)),
+  'Cloudflare CSP does not allow the generated entry stylesheet',
 );
 console.log('PWA artifacts valid: manifest, icons, service worker, HTML metadata, and headers.');
