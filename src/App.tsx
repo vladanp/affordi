@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { Calculator } from './components/Calculator';
 import { IncomeForm } from './components/IncomeForm';
@@ -13,13 +13,14 @@ export function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [storageNotice, setStorageNotice] = useState(false);
   const [previewLanguage, setPreviewLanguage] = useState<Locale | null>(null);
+  const [previewTheme, setPreviewTheme] = useState<AffordiSettings['theme'] | null>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const restoreSettingsFocusRef = useRef(false);
   const language = previewLanguage ?? settings?.language ?? detectLocale();
-  const theme = settings?.theme ?? 'system';
+  const theme = previewTheme ?? settings?.theme ?? 'system';
   const copy = createTranslator(language);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.lang = language;
     applyTheme(theme);
   }, [language, theme]);
@@ -36,8 +37,9 @@ export function App() {
   }
 
   function closeSettings() {
-    applyTheme(theme);
+    applyTheme(settings?.theme ?? 'system');
     setPreviewLanguage(null);
+    setPreviewTheme(null);
     restoreSettingsFocusRef.current = true;
     setShowSettings(false);
   }
@@ -45,6 +47,7 @@ export function App() {
   function saveAndCloseSettings(nextSettings: AffordiSettings) {
     persist(nextSettings);
     setPreviewLanguage(null);
+    setPreviewTheme(null);
     restoreSettingsFocusRef.current = true;
     setShowSettings(false);
   }
@@ -57,6 +60,7 @@ export function App() {
 
     applyTheme('system');
     setPreviewLanguage(null);
+    setPreviewTheme(null);
     setSettings(null);
     setShowSettings(false);
     setStorageNotice(false);
@@ -100,7 +104,7 @@ export function App() {
           onLanguagePreview={setPreviewLanguage}
           onReset={reset}
           onSave={saveAndCloseSettings}
-          onThemePreview={applyTheme}
+          onThemePreview={setPreviewTheme}
           settings={settings}
         />
       )}

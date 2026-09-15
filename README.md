@@ -12,7 +12,7 @@ Affordi has no account, backend, analytics, advertising, or tracking. Income set
 - `vite-plugin-pwa` with a generated Workbox service worker
 - Vitest and React Testing Library
 - Playwright on Chromium, Firefox, and WebKit, with axe accessibility checks
-- Oxlint and Oxfmt
+- Oxlint, Oxfmt, actionlint, React Doctor, and Fallow
 - Lighthouse CI and semantic-release
 
 Exact Node and pnpm versions are declared in `mise.toml`. Application dependencies are pinned exactly.
@@ -44,6 +44,9 @@ pnpm lint            # Oxlint with type aware React checks
 pnpm lint:fix        # Apply safe lint fixes
 pnpm run doctor        # React correctness, security, and architecture audit
 pnpm run doctor:design # Focused React UI design audit
+pnpm fallow:check      # Deterministic dead-code CI gate
+pnpm fallow:audit      # Changed-code structural review
+pnpm lint:actions      # GitHub Actions validation
 pnpm format          # Write Oxfmt formatting
 pnpm format:check    # Verify formatting
 pnpm typecheck       # Strict TypeScript
@@ -65,13 +68,13 @@ With pnpm 12, bare `pnpm ci` is the package manager's frozen install alias. Use 
 
 ## Quality and automation
 
-The precommit hook runs formatting, lint, TypeScript, and unit tests. The prepush hook runs the complete local CI command, including dependency audit, production checks, Playwright, accessibility, and Lighthouse.
+The precommit hook runs formatting, source and workflow linting, TypeScript, and unit tests. The prepush hook runs the main verification suite. `pnpm run ci` adds dependency audit, all three browser engines, accessibility, PWA flows, screenshot comparisons, and Lighthouse when a release-sensitive change needs the complete local pipeline.
 
-Pull requests and pushes to `main` run the same gates in GitHub Actions. Required checks protect `main`, actions are pinned to immutable commits, and CodeQL scans the repository. Every browser run uploads its Playwright report with phone-sized UI audit screenshots. Renovate proposes weekly dependency and action updates without automatic merging.
+Pull requests and pushes to `main` run the same gates in GitHub Actions. Required checks protect `main`, actions are pinned to immutable commits, actionlint validates workflow syntax, Fallow gates dead code and audits changed-code risk, and CodeQL scans the repository. Every browser run compares phone-sized screenshots to reviewed baselines and uploads the Playwright report as audit evidence. Renovate proposes weekly dependency and action updates without automatic merging.
 
 Lighthouse must score 100 for performance, accessibility, best practices, SEO, and agentic browsing across three runs. The built app also validates its `llms.txt` agent summary before deployment.
 
-After all `main` checks pass, semantic-release creates the appropriate tag and GitHub Release from Conventional Commits. The final job then deploys the same commit to the protected production environment on Cloudflare Pages and verifies that the live app shell exactly matches the validated build.
+After all `main` checks pass, semantic-release creates the appropriate tag and GitHub Release from Conventional Commits. The final job downloads the exact artifact produced by validation, deploys it to the protected Cloudflare Pages environment, and verifies every published file plus critical security headers. A daily production smoke workflow detects later drift or availability failures.
 
 ## PWA
 

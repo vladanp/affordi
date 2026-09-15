@@ -24,7 +24,7 @@ function storage(): Storage | null {
   }
 }
 
-export function isValidAffordiSettings(value: unknown): value is AffordiSettings {
+function isValidAffordiSettings(value: unknown): value is AffordiSettings {
   if (
     typeof value !== 'object' ||
     value === null ||

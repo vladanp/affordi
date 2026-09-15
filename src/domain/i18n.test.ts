@@ -36,6 +36,7 @@ describe('i18n', () => {
       ]),
     ).toBe('1 hour and 2 minutes');
     expect(createTranslator('de').unit(2, 'hour')).toBe('2 Stunden');
+    expect(createTranslator('fr').unit(0, 'minute')).toBe('0 minute');
     expect(createTranslator('fr').unit(1, 'workday')).toBe('1 jour');
     expect(createTranslator('it').unit(3, 'week')).toBe('3 settimane');
     expect(createTranslator('sr').unit(1, 'hour')).toBe('1 sat');

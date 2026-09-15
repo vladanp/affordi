@@ -452,6 +452,13 @@ const unitForms: Record<Exclude<Locale, 'sr'>, Record<DurationUnit, readonly [st
   },
 };
 
+const pluralRulesByLocale: Record<Exclude<Locale, 'sr'>, Intl.PluralRules> = {
+  en: new Intl.PluralRules('en'),
+  de: new Intl.PluralRules('de'),
+  fr: new Intl.PluralRules('fr'),
+  it: new Intl.PluralRules('it'),
+};
+
 const payFrequencyForms: Record<Locale, Record<PayFrequency, string>> = {
   en: {
     hourly: 'Hourly',
@@ -535,7 +542,7 @@ export function createTranslator(requestedLocale?: string): Translator {
     }
 
     const [singular, plural] = unitForms[locale][durationUnit];
-    return `${amount} ${value === 1 ? singular : plural}`;
+    return `${amount} ${pluralRulesByLocale[locale].select(value) === 'one' ? singular : plural}`;
   }
 
   return {
