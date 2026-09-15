@@ -34,6 +34,7 @@ test.describe('localization and theme preferences', () => {
     await theme.selectOption('dark');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await language.selectOption('fr');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
     await expect(page.getByRole('heading', { name: 'Réglages' })).toBeVisible();
     await page.getByRole('button', { name: 'Enregistrer les réglages' }).click();

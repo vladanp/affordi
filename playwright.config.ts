@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const usePrebuiltApp = process.env.AFFORDI_USE_PREBUILT === 'true';
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -23,7 +25,7 @@ export default defineConfig({
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   ],
   webServer: {
-    command: 'pnpm build && pnpm preview --host 127.0.0.1 --port 4173',
+    command: `${usePrebuiltApp ? '' : 'pnpm build && '}pnpm preview --host 127.0.0.1 --port 4173`,
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

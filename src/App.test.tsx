@@ -139,7 +139,11 @@ describe('App', () => {
       target: { value: 'light' },
     });
     expect(document.documentElement.dataset.theme).toBe('light');
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Language' }), {
+      target: { value: 'fr' },
+    });
+    expect(document.documentElement.dataset.theme).toBe('light');
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
     expect(document.documentElement.dataset.theme).toBe('dark');
   });
 

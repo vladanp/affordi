@@ -2,7 +2,7 @@
   "ci": {
     "collect": {
       "numberOfRuns": 3,
-      "startServerCommand": "pnpm build && pnpm preview --host 127.0.0.1 --port 4174",
+      "startServerCommand": "pnpm preview --host 127.0.0.1 --port 4174",
       "startServerReadyPattern": "4174",
       "startServerReadyTimeout": 30000,
       "url": ["http://127.0.0.1:4174/"]

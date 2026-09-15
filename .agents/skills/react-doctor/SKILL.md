@@ -1,55 +1,48 @@
 ---
 name: react-doctor
-description: Use when finishing a feature, fixing a bug, before committing React code, or when the user types `/doctor`, asks to scan, triage, or clean up React diagnostics. Covers lint, accessibility, bundle size, architecture. Includes a regression check and a full local-triage workflow that fetches the canonical playbook.
-version: '1.2.0'
+description: Use when finishing a feature, fixing a bug, before committing React code, or when the user types `/doctor`, asks to scan, triage, or clean up React diagnostics. Covers lint, accessibility, bundle size, architecture, and local regression triage.
 ---
 
 # React Doctor
 
 Scans React codebases for security, performance, correctness, and architecture issues. Outputs a 0–100 health score.
 
-## After making React code changes:
+## After making React code changes
 
-Run `npx react-doctor@latest --verbose --scope changed` and check the score did not regress.
+Run `pnpm exec react-doctor --verbose --scope changed` and check the score did not regress. If it dropped, fix the regressions before committing.
 
-If the score dropped, fix the regressions before committing.
+## General cleanup or code improvement
 
-## For general cleanup or code improvement:
+Run `pnpm exec react-doctor --verbose --scope full`. Fix issues by severity: errors first, then warnings.
 
-Run `npx react-doctor@latest --verbose` (the default `--scope full`) to scan the full codebase. Fix issues by severity — errors first, then warnings.
+## Focused UI design audit
 
-## For a focused UI design audit:
+Run `pnpm exec react-doctor design --verbose --scope full`. This selects design-tagged UI composition, typography, interaction, accessibility, and motion rules.
 
-Run `npx react-doctor@latest design --verbose`. This selects only design-tagged UI composition, typography, interaction, accessibility, and motion rules, including focused rules that remain opt-in during a general health scan.
+## Runtime performance problems
 
-## For runtime performance problems:
+Run `pnpm exec react-doctor scan <url> --format json` in an interactive terminal. React Doctor opens an isolated Chrome profile and records a trace while the user reproduces the slow interaction. Read the structured summary first, then inspect the local `.json.gz` trace for CPU, browser, and React component evidence.
 
-Run `npx react-doctor@latest scan <url> --format json` in an interactive terminal. React Doctor opens an isolated system Chrome profile, records a DevTools trace while the user reproduces the slow interaction, and flashes purple outlines with component names as React renders. It stops when they press Enter. Read the structured summary first, then inspect the returned local `.json.gz` trace for CPU, browser, and React component evidence.
+If the user needs authenticated browser state, use `--cdp <remote-debugging-url>`. Chrome must already be running with remote debugging. Never ask for cookies or copy the user's browser profile. Treat traces as sensitive local application data and never upload them without explicit permission.
 
-If the user needs their authenticated browser state, use `--cdp <remote-debugging-url>`. This requires Chrome to already be running with remote debugging. Never ask for cookies or copy the user's browser profile. Treat the trace as sensitive local application data and never upload it without explicit permission.
+## `/doctor` full local triage
 
-## /doctor — full local triage workflow
+When the user requests a full React Doctor triage:
 
-When the user types `/doctor`, says "run react doctor", or asks for a full triage / cleanup pass (not just a regression check), fetch the canonical local-triage playbook and follow every step in it:
-
-```bash
-curl --fail --silent --show-error \
-  --header 'Cache-Control: no-cache' \
-  https://www.react.doctor/prompts/react-doctor-agent.md
-```
-
-The playbook is the single source of truth — a scan → filter → triage → fix → validate loop that edits the working tree directly (never commits, never opens PRs). Updating the prompt at its source updates every agent on its next fetch — no skill reinstall needed.
-
-Pair it with the matching per-rule prompts at `https://www.react.doctor/prompts/rules/<plugin>/<rule>.md` (fetched on demand inside the playbook) so each fix uses the canonical, reviewer-tested recipe.
+1. Run the full general and design scans with the pinned project dependency.
+2. Inspect every diagnostic in source context. Classify it as a defect, justified exception, or false positive.
+3. Fix high-confidence defects in scope. Do not suppress a rule or reshape sound code merely to raise the score.
+4. Run targeted tests, then the changed scan. Before handoff, rerun both full scans.
+5. Report remaining diagnostics and the evidence for any exception.
 
 ## Configuring or explaining rules
 
-When the user wants to understand a rule, disagrees with one, or wants to disable / tune which rules run (not fix code), read [references/explain.md](references/explain.md) and follow it. Start with `npx react-doctor@latest rules explain <rule>`, then apply the narrowest control via `npx react-doctor@latest rules disable|set|category|ignore-tag …`, which edits your `doctor.config.*` (or `package.json#reactDoctor`).
+When the user wants to understand or configure a rule, read [references/explain.md](references/explain.md). Start with `pnpm exec react-doctor rules explain <rule>`, then apply the narrowest control via `pnpm exec react-doctor rules disable|set|category|ignore-tag …`.
 
 ## Command
 
 ```bash
-npx react-doctor@latest --verbose --scope changed
+pnpm exec react-doctor --verbose --scope changed
 ```
 
 | Flag              | Purpose                                                          |

@@ -4,6 +4,7 @@ import { completeSetup } from './helpers';
 
 async function attachScreenshot(page: Page, testInfo: TestInfo, name: string, fullPage = false) {
   const screenshot = await page.screenshot({ animations: 'disabled', fullPage });
+  expect(screenshot).toMatchSnapshot(`${name}.png`, { maxDiffPixelRatio: 0.01 });
   await testInfo.attach(name, { body: screenshot, contentType: 'image/png' });
 }
 
