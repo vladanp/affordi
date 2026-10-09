@@ -29,13 +29,18 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Check commit messages
         if: github.event_name == 'pull_request'
-        run: pnpm exec commitlint --from "${{ github.event.pull_request.base.sha }}" --to "${{ github.event.pull_request.head.sha }}" --verbose
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: pnpm exec commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
       - name: Check pushed commit title
         if: github.event_name == 'push'
         run: git log -1 --pretty=%s | pnpm exec commitlint --verbose
       - name: Audit changed code with Fallow
         if: github.event_name == 'pull_request'
-        run: pnpm exec fallow audit --base "${{ github.event.pull_request.base.sha }}"
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: pnpm exec fallow audit --base "$BASE_SHA"
       - name: Run formatting, lint, types, tests, build, bundle, and PWA checks
         run: pnpm run verify
       - name: Audit dependencies
