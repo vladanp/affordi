@@ -5,7 +5,7 @@ description: Use when finishing a feature, fixing a bug, before committing React
 
 # React Doctor
 
-Scans React codebases for security, performance, correctness, and architecture issues. Outputs a 0–100 health score.
+Scans React codebases for security, performance, correctness, and architecture issues. Outputs a health score from 0 to 100.
 
 ## After making React code changes
 
