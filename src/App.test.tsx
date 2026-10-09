@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App';
@@ -16,11 +16,12 @@ describe('App', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Start calculating' })).toBeInTheDocument();
     const income = screen.getByLabelText('Take home income');
-    expect(income).toHaveAttribute('type', 'password');
+    expect(income).toHaveAttribute('type', 'text');
+    expect(income).toHaveAttribute('data-masked', 'true');
     expect(income).toHaveValue('');
     expect(screen.getByText('Saved only on this device.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Show income' }));
-    expect(income).toHaveAttribute('type', 'text');
+    expect(income).toHaveAttribute('data-masked', 'false');
     expect(screen.getByRole('button', { name: 'Hide income' })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -56,9 +57,7 @@ describe('App', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    fireEvent.change(screen.getByRole('combobox', { name: 'Currency' }), {
-      target: { value: 'EUR' },
-    });
+    fireEvent.click(screen.getByRole('radio', { name: 'EUR' }));
     fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
       target: { value: '10' },
     });
@@ -135,9 +134,7 @@ describe('App', () => {
 
     expect(document.documentElement.dataset.theme).toBe('dark');
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    fireEvent.change(screen.getByRole('combobox', { name: 'Appearance' }), {
-      target: { value: 'light' },
-    });
+    fireEvent.click(screen.getByRole('radio', { name: 'Light' }));
     expect(document.documentElement.dataset.theme).toBe('light');
     fireEvent.change(screen.getByRole('combobox', { name: 'Language' }), {
       target: { value: 'fr' },
@@ -195,9 +192,7 @@ describe('App', () => {
     render(<App />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    fireEvent.change(screen.getByRole('combobox', { name: 'Appearance' }), {
-      target: { value: 'dark' },
-    });
+    fireEvent.click(screen.getByRole('radio', { name: 'Dark' }));
     expect(document.documentElement.dataset.theme).toBe('dark');
     fireEvent.click(screen.getByRole('button', { name: 'Reset saved settings' }));
     fireEvent.click(screen.getByRole('button', { name: /^Reset$/ }));
@@ -276,5 +271,95 @@ describe('App', () => {
     expect(screen.getByText('<0.1% of your monthly take home pay')).toBeInTheDocument();
     fireEvent.submit(price.closest('form')!);
     expect(price).not.toHaveFocus();
+  });
+
+  it('rejects impossible work schedules during setup', () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText('Take home income'), { target: { value: '3000' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Work hours each week' }), {
+      target: { value: '100' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Work days each week' }), {
+      target: { value: '4' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Start calculating' }));
+    expect(screen.getByText('Use no more than 24 hours for each work day.')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Work hours each week' })).toHaveFocus();
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Work hours each week' }), {
+      target: { value: '0.5' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Start calculating' }));
+    expect(screen.getByText('Use between 1 and 168 hours each week.')).toBeInTheDocument();
+  });
+
+  it('keeps unsaved edits and returns focus after declining a reset', () => {
+    localStorage.setItem(
+      'affordi.settings.v1',
+      JSON.stringify({
+        version: 1,
+        settings: {
+          netIncome: 3000,
+          payFrequency: 'monthly',
+          weeklyHours: 40,
+          workingDaysPerWeek: 5,
+          currency: 'USD',
+          language: 'en',
+          theme: 'system',
+        },
+      }),
+    );
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    fireEvent.change(screen.getByLabelText('Take home income'), { target: { value: '4500' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Reset saved settings' }));
+    expect(screen.queryByRole('textbox', { name: 'Take home income' })).not.toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByLabelText('Take home income')).toHaveValue('4500');
+    expect(screen.getByRole('button', { name: 'Reset saved settings' })).toHaveFocus();
+  });
+
+  it('compares hourly pay with a week and announces results after typing pauses', async () => {
+    vi.useFakeTimers();
+    try {
+      localStorage.setItem(
+        'affordi.settings.v1',
+        JSON.stringify({
+          version: 1,
+          settings: {
+            netIncome: 20,
+            payFrequency: 'hourly',
+            weeklyHours: 40,
+            workingDaysPerWeek: 5,
+            currency: 'USD',
+            language: 'en',
+            theme: 'system',
+          },
+        }),
+      );
+      const { container } = render(<App />);
+      const liveRegion = container.querySelector('[aria-live="polite"]');
+      fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
+        target: { value: '200' },
+      });
+
+      expect(screen.getByText('10 hours of work')).toBeInTheDocument();
+      expect(screen.getByText('25.0% of your weekly take home pay')).toBeInTheDocument();
+      expect(liveRegion).toHaveTextContent('');
+      await act(() => vi.advanceTimersByTimeAsync(1_000));
+      expect(liveRegion).toHaveTextContent(
+        '$200.00 is 10 hours of work. ≈ 1 day and 2 hours. 25.0% of your weekly take home pay',
+      );
+
+      fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
+        target: { value: 'abc' },
+      });
+      await act(() => vi.advanceTimersByTimeAsync(1_000));
+      expect(liveRegion).toHaveTextContent('Enter a price of 0 or more.');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

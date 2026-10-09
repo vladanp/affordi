@@ -1,15 +1,20 @@
-import { useRef, useState, type ChangeEvent, type FormEvent, type RefObject } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type RefObject } from 'react';
+import { Hourglass, LockKeyhole, Settings2 } from 'lucide-react';
 
+import { Brand } from './Brand';
 import {
-  calculateHoursPerWorkday,
   calculateIncomePercentage,
   calculateWorkHours,
+  incomeComparisonPeriod,
 } from '../domain/calculations';
-import { formatPrimaryDuration, formatWorkDuration } from '../domain/duration';
+import { formatPrimaryDuration, formatSecondaryDuration } from '../domain/duration';
 import { createTranslator } from '../domain/i18n';
 import { parseDecimalInput } from '../domain/input';
 import { formatCurrency, getCurrencySymbol } from '../domain/locale';
 import type { AffordiSettings } from '../domain/storage';
+
+/** Screen readers hear the result once typing pauses instead of on every keystroke. */
+const ANNOUNCEMENT_DELAY_MS = 700;
 
 interface CalculatorProps {
   settings: AffordiSettings;
@@ -25,27 +30,63 @@ function formatIncomePercentage(percentage: number, locale: string): string {
   return percentage.toLocaleString(locale, options);
 }
 
+interface PriceResult {
+  label: string;
+  primary: string;
+  secondary: string | null;
+  share: string;
+  shareWidth: string;
+}
+
+/** Builds every piece of result copy for a valid price, or null when there is no result. */
+function describeResult(price: number | null, settings: AffordiSettings): PriceResult | null {
+  if (price === null) return null;
+  const workHours = calculateWorkHours(price, settings);
+  const percentage = calculateIncomePercentage(price, settings);
+  const primary =
+    workHours === null ? null : formatPrimaryDuration(workHours, settings, settings.language);
+  if (workHours === null || percentage === null || primary === null) return null;
+
+  const copy = createTranslator(settings.language);
+  return {
+    label: copy.t('calculator.resultIs', {
+      price: formatCurrency(price, settings.currency, settings.language),
+    }),
+    primary,
+    secondary: formatSecondaryDuration(workHours, settings, settings.language),
+    share: copy.t('calculator.payContext', {
+      percentage: formatIncomePercentage(percentage, settings.language),
+      period: copy.payPeriod(incomeComparisonPeriod(settings.payFrequency)),
+    }),
+    shareWidth: `${Math.min(percentage, 100)}%`,
+  };
+}
+
+/** The sentence screen readers hear once the result settles. */
+function describeAnnouncement(result: PriceResult): string {
+  const approximate = result.secondary === null ? [] : [`≈ ${result.secondary}`];
+  return [`${result.label} ${result.primary}`, ...approximate, result.share].join('. ');
+}
+
+function useDelayedValue(value: string, delay: number): string {
+  const [delayed, setDelayed] = useState(value);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDelayed(value), delay);
+    return () => window.clearTimeout(timer);
+  }, [value, delay]);
+  return delayed;
+}
+
 export function Calculator({ settings, onOpenSettings, settingsButtonRef }: CalculatorProps) {
   const [itemPrice, setItemPrice] = useState('');
   const priceInputRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const copy = createTranslator(settings.language);
-  const parsedPrice = parseDecimalInput(itemPrice, settings.language);
-  const workHours = parsedPrice === null ? null : calculateWorkHours(parsedPrice, settings);
-  const duration =
-    workHours === null ? null : formatPrimaryDuration(workHours, settings, settings.language);
-  const hoursPerWorkday = calculateHoursPerWorkday(settings);
-  const secondaryDuration =
-    workHours === null || hoursPerWorkday === null || workHours < hoursPerWorkday
-      ? null
-      : formatWorkDuration(workHours, settings, settings.language);
-  const percentage = parsedPrice === null ? null : calculateIncomePercentage(parsedPrice, settings);
-  const hasInput = itemPrice.trim() !== '';
-  const priceError = hasInput && (parsedPrice === null || workHours === null);
-
-  function handlePriceChange(event: ChangeEvent<HTMLInputElement>) {
-    setItemPrice(event.target.value);
-  }
+  const result = describeResult(parseDecimalInput(itemPrice, settings.language), settings);
+  const priceError = itemPrice.trim() !== '' && result === null;
+  let announcement = result === null ? '' : describeAnnouncement(result);
+  if (priceError) announcement = copy.t('calculator.priceError');
+  const spokenResult = useDelayedValue(announcement, ANNOUNCEMENT_DELAY_MS);
 
   function handlePriceSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -58,22 +99,23 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
   }
 
   return (
-    <section aria-labelledby="calculator-title" className="calculator-card">
-      <div className="calculator-topline">
-        <p className="eyebrow">Affordi</p>
+    <section aria-labelledby="calculator-title" className="calculator">
+      <header className="topbar">
+        <Brand />
         <button
-          className="text-button"
+          className="pill-button"
           onClick={onOpenSettings}
           ref={settingsButtonRef}
           type="button"
         >
-          {copy.t('calculator.settings')}
+          <Settings2 aria-hidden="true" size={18} strokeWidth={2} />
+          <span>{copy.t('calculator.settings')}</span>
         </button>
-      </div>
+      </header>
       <h1 id="calculator-title">{copy.t('calculator.title')}</h1>
 
       <form className="price-field" onSubmit={handlePriceSubmit}>
-        <label className="visually-quiet" htmlFor="item-price">
+        <label className="price-label" htmlFor="item-price">
           {copy.t('calculator.priceLabel')}
         </label>
         <span className="price-input-wrap">
@@ -81,7 +123,6 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
             {getCurrencySymbol(settings.currency, settings.language)}
           </span>
           <input
-            aria-label={copy.t('calculator.priceLabel')}
             aria-describedby={
               priceError ? 'price-currency-description price-error' : 'price-currency-description'
             }
@@ -90,9 +131,10 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
             enterKeyHint="done"
             id="item-price"
             inputMode="decimal"
-            onChange={handlePriceChange}
+            onChange={(event) => setItemPrice(event.target.value)}
             placeholder="750"
             ref={priceInputRef}
+            spellCheck={false}
             type="text"
             value={itemPrice}
           />
@@ -112,29 +154,34 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
         </small>
       </form>
 
-      {duration !== null && percentage !== null && parsedPrice !== null ? (
-        <div aria-live="polite" className="result-panel" id="calculator-result" ref={resultRef}>
-          <p className="result-label">
-            {copy.t('calculator.resultIs', {
-              price: formatCurrency(parsedPrice, settings.currency, settings.language),
-            })}
-          </p>
-          <p className="result-secondary">
-            {secondaryDuration !== null && <span>≈ {secondaryDuration}</span>}
-            <span className="result-percentage">
-              {copy.t('calculator.payContext', {
-                percentage: formatIncomePercentage(percentage, settings.language),
-                period: copy.payPeriod(settings.payFrequency),
-              })}
-            </span>
-          </p>
-          <p className="result-primary">{duration}</p>
+      {result === null ? (
+        <div className="result-empty" id="calculator-result" ref={resultRef}>
+          <Hourglass aria-hidden="true" size={22} strokeWidth={1.75} />
+          <p>{copy.t('calculator.emptyResult')}</p>
         </div>
       ) : (
-        <div aria-live="polite" className="empty-result" id="calculator-result" ref={resultRef}>
-          <span>{copy.t('calculator.emptyResult')}</span>
+        <div className="result-card" id="calculator-result" ref={resultRef}>
+          <p className="result-label">{result.label}</p>
+          <p className="result-primary">{result.primary}</p>
+          <div className="result-context">
+            {result.secondary !== null && <p className="result-approx">≈ {result.secondary}</p>}
+            <div className="result-share">
+              <p>{result.share}</p>
+              <span aria-hidden="true" className="share-meter">
+                <span style={{ inlineSize: result.shareWidth }} />
+              </span>
+            </div>
+          </div>
         </div>
       )}
+      <p aria-atomic="true" aria-live="polite" className="visually-hidden">
+        {spokenResult}
+      </p>
+
+      <p className="local-only-footer">
+        <LockKeyhole aria-hidden="true" size={14} strokeWidth={2} />
+        <span>{copy.t('privacy.localOnly')}</span>
+      </p>
     </section>
   );
 }

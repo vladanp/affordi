@@ -20,18 +20,17 @@ test.describe('localization and theme preferences', () => {
     await page.getByRole('combobox', { name: 'Zahlungsrhythmus' }).selectOption('monthly');
     await page.getByRole('textbox', { name: 'Arbeitsstunden pro Woche' }).fill('40');
     await page.getByRole('textbox', { name: 'Arbeitstage pro Woche' }).fill('5');
-    await page.getByRole('combobox', { name: 'Währung' }).selectOption('EUR');
+    await page.getByRole('radio', { name: 'EUR' }).check();
     await page.getByRole('button', { name: 'Berechnung starten' }).click();
 
     await expect(page.getByRole('heading', { name: 'Was kostet es an Zeit?' })).toBeVisible();
     await page.getByRole('button', { name: 'Einstellungen' }).click();
 
-    const language = page.getByRole('combobox', { name: /Sprache|Language/ });
-    const theme = page.getByRole('combobox', { name: /Darstellung|Thema|Theme/ });
+    const language = page.getByRole('combobox', { name: 'Sprache' });
     await expect(language).toBeVisible();
-    await expect(theme).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Darstellung' })).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-    await theme.selectOption('dark');
+    await page.getByRole('radio', { name: 'Dunkel' }).check();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await language.selectOption('fr');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
@@ -41,13 +40,13 @@ test.describe('localization and theme preferences', () => {
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-    await expect(page.getByRole('heading', { name: /Combien cela coûte-t-il/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Quel est son coût en temps/ })).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
     await page.reload();
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-    await expect(page.getByRole('heading', { name: /Combien cela coûte-t-il/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Quel est son coût en temps/ })).toBeVisible();
   });
 });

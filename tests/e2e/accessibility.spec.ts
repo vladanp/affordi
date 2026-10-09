@@ -36,6 +36,10 @@ test.describe('Affordi accessibility', () => {
     await page.keyboard.press('Tab');
     await expect(page.getByRole('combobox', { name: 'Pay frequency' })).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('combobox', { name: 'Currency' })).toBeFocused();
+    await expect(page.getByRole('radio', { name: 'USD' })).toBeFocused();
+    await page.keyboard.press('ArrowLeft');
+    await expect(page.getByRole('radio', { name: 'EUR' })).toBeChecked();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('textbox', { name: 'Work hours each week' })).toBeFocused();
   });
 });

@@ -77,28 +77,33 @@ export function currentLocale(): string {
   return typeof navigator !== 'undefined' && navigator.language ? navigator.language : 'en-US';
 }
 
-export function getCurrencySymbol(currency: CurrencyCode, locale?: string): string {
-  const resolvedLocale = locale ?? currentLocale();
+const currencyFormats = new Map<string, Intl.NumberFormat | null>();
 
-  try {
-    const symbol = new Intl.NumberFormat(resolvedLocale, { style: 'currency', currency })
-      .formatToParts(0)
-      .find((part) => part.type === 'currency')?.value;
-    return symbol ?? currency;
-  } catch {
-    return currency;
+function currencyFormat(currency: CurrencyCode, locale: string): Intl.NumberFormat | null {
+  const key = `${locale}|${currency}`;
+  let format = currencyFormats.get(key);
+  if (format === undefined) {
+    try {
+      format = new Intl.NumberFormat(locale, { style: 'currency', currency });
+    } catch {
+      format = null;
+    }
+    currencyFormats.set(key, format);
   }
+  return format;
 }
 
-export function formatCurrency(value: number, currency: CurrencyCode, locale?: string): string {
-  const resolvedLocale = locale ?? currentLocale();
+export function getCurrencySymbol(currency: CurrencyCode, locale = currentLocale()): string {
+  const symbol = currencyFormat(currency, locale)
+    ?.formatToParts(0)
+    .find((part) => part.type === 'currency')?.value;
+  return symbol ?? currency;
+}
 
-  try {
-    return new Intl.NumberFormat(resolvedLocale, {
-      style: 'currency',
-      currency,
-    }).format(value);
-  } catch {
-    return `${currency} ${value.toFixed(2)}`;
-  }
+export function formatCurrency(
+  value: number,
+  currency: CurrencyCode,
+  locale = currentLocale(),
+): string {
+  return currencyFormat(currency, locale)?.format(value) ?? `${currency} ${value.toFixed(2)}`;
 }

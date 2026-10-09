@@ -7,7 +7,7 @@ export async function completeSetup(page: Page) {
   await page.getByRole('combobox', { name: 'Pay frequency' }).selectOption('monthly');
   await page.getByRole('textbox', { name: 'Work hours each week' }).fill('40');
   await page.getByRole('textbox', { name: 'Work days each week' }).fill('5');
-  await page.getByRole('combobox', { name: 'Currency' }).selectOption('EUR');
+  await page.getByRole('radio', { name: 'EUR' }).check();
   await page.getByRole('button', { name: 'Start calculating' }).click();
   await expect(page.getByRole('heading', { name: 'How much does it cost?' })).toBeVisible();
 }

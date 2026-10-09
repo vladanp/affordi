@@ -1,18 +1,119 @@
-:root {
-  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
+@font-face {
+  font-family: Geist;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../assets/fonts/geist-latin-ext-wght-normal.woff2') format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
 }
 
-* {
+@font-face {
+  font-family: Geist;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../assets/fonts/geist-latin-wght-normal.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Light values first so browsers without light-dark() still get a complete theme. */
+:root {
+  color-scheme: light;
+  --color-page: #f4f2ee;
+  --color-surface: #fff;
+  --color-field: #f8f7f4;
+  --color-sunken: #eeebe5;
+  --color-raised: #fff;
+  --color-ink: #141412;
+  --color-ink-soft: #3a3934;
+  --color-muted: #67645c;
+  --color-line: #e3dfd7;
+  --color-line-strong: #c9c4ba;
+  --color-accent: #11643f;
+  --color-focus: #11643f;
+  --color-primary: #141412;
+  --color-on-primary: #fff;
+  --color-highlight: #d4f26a;
+  --color-on-highlight: #142407;
+  --color-on-highlight-muted: #3d5216;
+  --color-mark: #141412;
+  --color-on-mark: #d4f26a;
+  --color-danger: #b42318;
+  --color-danger-action: #b42318;
+  --color-on-danger: #fff;
+  --color-scrim: rgb(14 15 13 / 45%);
+  --color-shadow: rgb(20 20 18 / 7%);
+  --shadow-card: 0 1px 2px var(--color-shadow), 0 0.75rem 2rem var(--color-shadow);
+  --shadow-raised: 0 1px 2px var(--color-shadow), 0 1rem 3rem var(--color-shadow);
+  --radius-field: 0.875rem;
+  --radius-card: 1.75rem;
+  --space-page: clamp(1.25rem, 5vw, 3rem);
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  font-family: Geist, system-ui, sans-serif;
+  font-synthesis: none;
+  font-optical-sizing: auto;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@supports (color: light-dark(#fff, #000)) {
+  :root {
+    color-scheme: light dark;
+    --color-page: light-dark(#f4f2ee, #0e0f0d);
+    --color-surface: light-dark(#fff, #181916);
+    --color-field: light-dark(#f8f7f4, #1e1f1b);
+    --color-sunken: light-dark(#eeebe5, #23241f);
+    --color-raised: light-dark(#fff, #3a3b35);
+    --color-ink: light-dark(#141412, #f3f2ee);
+    --color-ink-soft: light-dark(#3a3934, #d6d4cd);
+    --color-muted: light-dark(#67645c, #a3a199);
+    --color-line: light-dark(#e3dfd7, #2c2d29);
+    --color-line-strong: light-dark(#c9c4ba, #4a4b45);
+    --color-accent: light-dark(#11643f, #9bddb4);
+    --color-focus: light-dark(#11643f, #c8ee6a);
+    --color-primary: light-dark(#141412, #f3f2ee);
+    --color-on-primary: light-dark(#fff, #0e0f0d);
+    --color-mark: light-dark(#141412, #d4f26a);
+    --color-on-mark: light-dark(#d4f26a, #142407);
+    --color-danger: light-dark(#b42318, #ff9b8c);
+    --color-danger-action: light-dark(#b42318, #c2381f);
+    --color-scrim: light-dark(rgb(14 15 13 / 45%), rgb(0 0 0 / 65%));
+    --color-shadow: light-dark(rgb(20 20 18 / 7%), rgb(0 0 0 / 45%));
+  }
+
+  :root[data-theme='light'] {
+    color-scheme: light;
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+  }
+}
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 html {
   min-width: 20rem;
   min-height: 100%;
   background: var(--color-page);
+  color: var(--color-ink);
   scrollbar-gutter: stable;
 }
 
@@ -28,6 +129,7 @@ button,
 input,
 select {
   font: inherit;
+  color: inherit;
 }
 
 button,
@@ -37,11 +139,17 @@ select {
 
 button {
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 :focus-visible {
   outline: 0.1875rem solid var(--color-focus);
   outline-offset: 0.1875rem;
+}
+
+::selection {
+  background: var(--color-highlight);
+  color: var(--color-on-highlight);
 }
 
 .visually-hidden {
@@ -51,13 +159,13 @@ button {
   padding: 0;
   margin: -1px;
   overflow: hidden;
-  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
 }
 
 .app-shell {
-  width: min(100%, 52rem);
+  width: min(100%, 72rem);
   min-height: 100vh;
   min-height: 100dvh;
   margin-inline: auto;
@@ -67,51 +175,52 @@ button {
     max(var(--space-page), env(safe-area-inset-left));
 }
 
-.setup-shell {
-  display: grid;
-  align-content: start;
-  padding-block-start: max(2rem, env(safe-area-inset-top));
-  gap: clamp(1.5rem, 5vw, 3rem);
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
-.setup-intro {
-  max-width: 42rem;
+.brand-mark {
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
 }
 
-.eyebrow {
-  margin: 0 0 0.75rem;
-  color: var(--color-accent);
-  font-size: 0.75rem;
-  font-weight: 750;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+.brand-mark circle {
+  fill: var(--color-mark);
+}
+
+.brand-mark path {
+  fill: none;
+  stroke: var(--color-on-mark);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
 }
 
 h1 {
-  max-width: 15ch;
   margin: 0;
-  font-size: clamp(2.5rem, 10vw, 5.25rem);
-  line-height: 0.97;
-  letter-spacing: -0.06em;
+  font-weight: 650;
+  letter-spacing: -0.045em;
+  line-height: 1;
   text-wrap: balance;
 }
 
 h2 {
   margin: 0;
   font-size: 1.25rem;
+  font-weight: 650;
   letter-spacing: -0.025em;
-}
-
-.form-heading p {
-  max-width: 34rem;
-  margin: 1.25rem 0 0;
-  color: var(--color-muted);
-  font-size: 1.05rem;
-  line-height: 1.55;
+  line-height: 1.25;
 }
 
 .storage-notice {
   margin: 1rem 0 0;
   color: var(--color-muted);
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
 }

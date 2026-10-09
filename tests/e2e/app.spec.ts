@@ -25,27 +25,31 @@ test.describe('Affordi calculator', () => {
 
     await price.fill('750');
 
-    await expect(page.getByText('43 hours of work')).toBeVisible();
-    await expect(page.getByText('25.0% of your monthly take home pay')).toBeVisible();
+    await expect(page.locator('.result-primary')).toHaveText('43 hours of work');
+    await expect(page.locator('.result-approx')).toHaveText('≈ 5 days and 3 hours');
+    await expect(page.locator('.result-share p')).toHaveText('25.0% of your monthly take home pay');
     await price.fill('-1');
-    await expect(page.getByText('Enter a price of 0 or more.')).toBeVisible();
+    await expect(page.locator('#price-error')).toBeVisible();
+    await expect(price).toHaveAttribute('aria-invalid', 'true');
     await price.fill('36.5');
-    await expect(page.getByText('2 hours and 7 minutes of work')).toBeVisible();
+    await expect(page.locator('.result-primary')).toHaveText('2 hours and 7 minutes of work');
     await price.fill('36,5');
-    await expect(page.getByText('2 hours and 7 minutes of work')).toBeVisible();
+    await expect(page.locator('.result-primary')).toHaveText('2 hours and 7 minutes of work');
   });
 
   test('keeps income private until the user reveals it', async ({ page }) => {
     const income = page.getByLabel('Take home income');
 
     await income.fill('3000.50');
-    await expect(income).toHaveAttribute('type', 'password');
+    await expect(income).toHaveAttribute('data-masked', 'true');
+    await expect(income).toHaveCSS('-webkit-text-security', 'disc');
     await expect(page.getByText('Saved only on this device.')).toBeVisible();
     await page.getByRole('button', { name: 'Show income' }).click();
-    await expect(income).toHaveAttribute('type', 'text');
+    await expect(income).toHaveAttribute('data-masked', 'false');
+    await expect(income).toHaveCSS('-webkit-text-security', 'none');
     await expect(income).toHaveValue('3000.50');
     await page.getByRole('button', { name: 'Hide income' }).click();
-    await expect(income).toHaveAttribute('type', 'password');
+    await expect(income).toHaveAttribute('data-masked', 'true');
   });
 
   test('aligns the primary setup controls in Chromium', async ({ browserName, page }) => {
@@ -54,7 +58,7 @@ test.describe('Affordi calculator', () => {
     await page.setViewportSize({ width: 900, height: 900 });
     await page.reload();
 
-    const income = await page.getByLabel('Take home income').boundingBox();
+    const income = await page.locator('.input-with-prefix').boundingBox();
     const frequency = await page.getByLabel('Pay frequency').boundingBox();
     const note = await page.getByText('Saved only on this device.').boundingBox();
 
@@ -86,7 +90,7 @@ test.describe('Affordi calculator', () => {
     await page.reload();
     await page.getByRole('button', { name: 'Settings' }).click();
     await expect(page.getByLabel('Take home income')).toHaveValue('4000');
-    await expect(page.getByText('Saved only on this device.')).toBeVisible();
+    await expect(page.getByRole('dialog').getByText('Saved only on this device.')).toBeVisible();
 
     await page.getByRole('button', { name: 'Reset saved settings' }).click();
     await expect(page.getByRole('heading', { name: 'Reset settings?' })).toBeVisible();
@@ -118,7 +122,7 @@ test.describe('Affordi calculator', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload();
 
-    await expect(page.getByLabel('Currency')).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Currency' })).toBeVisible();
     await expect(page.getByLabel('Work hours each week')).toBeVisible();
     await expect(page.getByLabel('Work days each week')).toBeVisible();
     await expect(page.locator('details')).toHaveCount(0);
@@ -132,10 +136,12 @@ test.describe('Affordi calculator', () => {
     const price = page.getByRole('textbox', { name: 'Enter a price' });
 
     await price.fill('1300');
-    const hoursPosition = await page.locator('.result-secondary').boundingBox();
+    await expect(page.locator('.result-primary')).toHaveText('75 hours of work');
+    const hoursPosition = await page.locator('.result-share').boundingBox();
     await price.fill('1400');
     await expect(page.locator('.result-primary')).toHaveText('2 weeks');
-    const weeksPosition = await page.locator('.result-secondary').boundingBox();
+    await expect(page.locator('.result-approx')).toHaveText('≈ 81 hours');
+    const weeksPosition = await page.locator('.result-share').boundingBox();
 
     if (hoursPosition === null || weeksPosition === null) {
       throw new Error('Result context must have a stable layout box.');
@@ -143,7 +149,7 @@ test.describe('Affordi calculator', () => {
     expect(Math.abs(hoursPosition.y - weeksPosition.y)).toBeLessThan(2);
   });
 
-  test('keeps Serbian result context fixed as the price gains a digit', async ({ page }) => {
+  test('keeps Serbian result context fixed as the headline grows', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await completeSetup(page);
     await page.getByRole('button', { name: 'Settings' }).click();
@@ -156,13 +162,13 @@ test.describe('Affordi calculator', () => {
       .locator('.result-primary')
       .evaluate((element) => getComputedStyle(element).getPropertyValue('font-size'));
     const firstHeadline = await page.locator('.result-primary').boundingBox();
-    const firstPosition = await page.locator('.result-secondary').boundingBox();
+    const firstPosition = await page.locator('.result-share').boundingBox();
     await price.fill('360');
     const secondFontSize = await page
       .locator('.result-primary')
       .evaluate((element) => getComputedStyle(element).getPropertyValue('font-size'));
     const secondHeadline = await page.locator('.result-primary').boundingBox();
-    const secondPosition = await page.locator('.result-secondary').boundingBox();
+    const secondPosition = await page.locator('.result-share').boundingBox();
 
     if (
       firstHeadline === null ||
@@ -172,8 +178,8 @@ test.describe('Affordi calculator', () => {
     ) {
       throw new Error('Result context must have a stable layout box.');
     }
-    expect(firstPosition.y + firstPosition.height).toBeLessThanOrEqual(firstHeadline.y);
-    expect(secondPosition.y + secondPosition.height).toBeLessThanOrEqual(secondHeadline.y);
+    expect(firstHeadline.y + firstHeadline.height).toBeLessThanOrEqual(firstPosition.y);
+    expect(secondHeadline.y + secondHeadline.height).toBeLessThanOrEqual(secondPosition.y);
     expect(Math.abs(firstPosition.y - secondPosition.y)).toBeLessThan(2);
     expect(Math.abs(firstHeadline.y - secondHeadline.y)).toBeLessThan(2);
     expect(firstFontSize).toBe(secondFontSize);

@@ -27,4 +27,10 @@ describe('locale and currency', () => {
     expect(getCurrencySymbol('EUR', 'de-DE')).toBe('€');
     expect(currencyOptions).toEqual(['EUR', 'USD', 'RSD']);
   });
+
+  it('falls back to the currency code when a locale cannot format currency', () => {
+    expect(getCurrencySymbol('RSD', 'not a locale')).toBe('RSD');
+    expect(formatCurrency(12.5, 'EUR', 'not a locale')).toBe('EUR 12.50');
+    expect(formatCurrency(12.5, 'EUR', 'not a locale')).toBe('EUR 12.50');
+  });
 });

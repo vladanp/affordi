@@ -11,6 +11,8 @@ export interface IncomeSettings {
 
 const WEEKS_PER_YEAR = 52;
 const MONTHS_PER_YEAR = 12;
+export const MAX_WEEKLY_HOURS = 168;
+export const MAX_HOURS_PER_WORKDAY = 24;
 
 function isFinitePositive(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0;
@@ -18,6 +20,11 @@ function isFinitePositive(value: unknown): value is number {
 
 export function isPayFrequency(value: unknown): value is PayFrequency {
   return typeof value === 'string' && payFrequencies.some((frequency) => frequency === value);
+}
+
+/** A whole number of working days in one week. */
+export function isWorkingDayCount(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 7;
 }
 
 export function isValidIncomeSettings(settings: unknown): settings is IncomeSettings {
@@ -36,11 +43,8 @@ export function isValidIncomeSettings(settings: unknown): settings is IncomeSett
     isFinitePositive(settings.netIncome) &&
     isPayFrequency(settings.payFrequency) &&
     isFinitePositive(settings.weeklyHours) &&
-    settings.weeklyHours <= 168 &&
-    typeof settings.workingDaysPerWeek === 'number' &&
-    Number.isInteger(settings.workingDaysPerWeek) &&
-    settings.workingDaysPerWeek >= 1 &&
-    settings.workingDaysPerWeek <= 7
+    settings.weeklyHours <= MAX_WEEKLY_HOURS &&
+    isWorkingDayCount(settings.workingDaysPerWeek)
   );
 }
 
@@ -89,7 +93,15 @@ export function calculateWorkHours(itemPrice: number, settings: IncomeSettings):
   return Number.isFinite(workHours) ? workHours : null;
 }
 
-/** Percentage of one configured pay period represented by the item price. */
+/**
+ * The pay period used for the share of income context. A single hour of pay is
+ * too small to be a useful comparison, so hourly pay is compared with a week.
+ */
+export function incomeComparisonPeriod(payFrequency: PayFrequency): PayFrequency {
+  return payFrequency === 'hourly' ? 'weekly' : payFrequency;
+}
+
+/** Percentage of one comparison pay period represented by the item price. */
 export function calculateIncomePercentage(
   itemPrice: number,
   settings: IncomeSettings,
@@ -98,7 +110,11 @@ export function calculateIncomePercentage(
     return null;
   }
 
-  const percentage = (itemPrice / settings.netIncome) * 100;
+  const periodIncome =
+    settings.payFrequency === 'hourly'
+      ? settings.netIncome * settings.weeklyHours
+      : settings.netIncome;
+  const percentage = (itemPrice / periodIncome) * 100;
   return Number.isFinite(percentage) ? percentage : null;
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { Brand } from './components/Brand';
 import { Calculator } from './components/Calculator';
 import { IncomeForm } from './components/IncomeForm';
 import { SettingsDialog } from './components/SettingsDialog';
@@ -37,7 +38,6 @@ export function App() {
   }
 
   function closeSettings() {
-    applyTheme(settings?.theme ?? 'system');
     setPreviewLanguage(null);
     setPreviewTheme(null);
     restoreSettingsFocusRef.current = true;
@@ -46,10 +46,7 @@ export function App() {
 
   function saveAndCloseSettings(nextSettings: AffordiSettings) {
     persist(nextSettings);
-    setPreviewLanguage(null);
-    setPreviewTheme(null);
-    restoreSettingsFocusRef.current = true;
-    setShowSettings(false);
+    closeSettings();
   }
 
   function reset(): boolean {
@@ -58,7 +55,6 @@ export function App() {
       return false;
     }
 
-    applyTheme('system');
     setPreviewLanguage(null);
     setPreviewTheme(null);
     setSettings(null);
@@ -67,48 +63,49 @@ export function App() {
     return true;
   }
 
-  if (settings === null) {
-    return (
-      <main className="app-shell setup-shell">
-        <div className="setup-intro">
-          <p className="eyebrow">Affordi</p>
-          <h1>{copy.t('app.tagline')}</h1>
-        </div>
-        <IncomeForm onSubmit={persist} />
-        {storageNotice && (
-          <p className="storage-notice" role="status">
-            {copy.t('storage.visitOnly')}
-          </p>
-        )}
-        <UpdatePrompt language={language} />
-      </main>
-    );
-  }
-
   return (
-    <main className="app-shell calculator-shell">
-      <Calculator
-        onOpenSettings={() => setShowSettings(true)}
-        settings={settings}
-        settingsButtonRef={settingsButtonRef}
-      />
-      {storageNotice && (
-        <p className="storage-notice" role="status">
-          {copy.t('storage.couldNotSave')}
-        </p>
-      )}
-      {showSettings && (
-        <SettingsDialog
-          onClose={closeSettings}
-          language={language}
-          onLanguagePreview={setPreviewLanguage}
-          onReset={reset}
-          onSave={saveAndCloseSettings}
-          onThemePreview={setPreviewTheme}
-          settings={settings}
-        />
+    <>
+      {settings === null ? (
+        <main className="app-shell setup-shell">
+          <div className="setup-intro">
+            <Brand />
+            <h1>{copy.t('app.tagline')}</h1>
+          </div>
+          <div className="setup-panel">
+            <IncomeForm onSubmit={persist} />
+            {storageNotice && (
+              <p className="storage-notice" role="status">
+                {copy.t('storage.visitOnly')}
+              </p>
+            )}
+          </div>
+        </main>
+      ) : (
+        <main className="app-shell calculator-shell">
+          <Calculator
+            onOpenSettings={() => setShowSettings(true)}
+            settings={settings}
+            settingsButtonRef={settingsButtonRef}
+          />
+          {storageNotice && (
+            <p className="storage-notice" role="status">
+              {copy.t('storage.couldNotSave')}
+            </p>
+          )}
+          {showSettings && (
+            <SettingsDialog
+              onClose={closeSettings}
+              language={language}
+              onLanguagePreview={setPreviewLanguage}
+              onReset={reset}
+              onSave={saveAndCloseSettings}
+              onThemePreview={setPreviewTheme}
+              settings={settings}
+            />
+          )}
+        </main>
       )}
       <UpdatePrompt language={language} />
-    </main>
+    </>
   );
 }

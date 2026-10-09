@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { IncomeSettings } from './calculations';
-import { formatPrimaryDuration, formatWorkDuration } from './duration';
+import { formatPrimaryDuration, formatSecondaryDuration, formatWorkDuration } from './duration';
 
 const settings: IncomeSettings = {
   netIncome: 3_000,
@@ -76,5 +76,23 @@ describe('formatPrimaryDuration', () => {
     expect(
       formatPrimaryDuration(80, { ...settings, weeklyHours: 32, workingDaysPerWeek: 4 }, 'en'),
     ).toBe('2 weeks and 2 days');
+  });
+});
+
+describe('formatSecondaryDuration', () => {
+  it.each([
+    [0.3, null],
+    [7.9, null],
+    [43.333_333, '5 days and 3 hours'],
+    [80, '80 hours'],
+    [136.4, '136 hours'],
+  ] as const)('adds context without repeating the headline for %s hours', (hours, expected) => {
+    expect(formatSecondaryDuration(hours, settings, 'en')).toBe(expected);
+  });
+
+  it('omits context for invalid or capped durations', () => {
+    expect(formatSecondaryDuration(Number.NaN, settings, 'en')).toBeNull();
+    expect(formatSecondaryDuration(12, { ...settings, weeklyHours: 0 }, 'en')).toBeNull();
+    expect(formatSecondaryDuration(40_000_000_000, settings, 'en')).toBeNull();
   });
 });
