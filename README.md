@@ -8,7 +8,7 @@ Affordi has no account, backend, analytics, advertising, or tracking. Income set
 
 - React 19, TypeScript, and Vite
 - Native CSS, split by responsibility, with `light-dark()` color tokens and container queries
-- Geist variable font, self hosted from `src/assets/fonts` under the SIL Open Font License
+- The platform system font, so no font file delays the first paint
 - Lucide React for the small icon set
 - `vite-plugin-pwa` with a generated Workbox service worker
 - Vitest and React Testing Library
@@ -81,7 +81,7 @@ After all `main` checks pass, semantic-release creates the appropriate tag and G
 
 ## PWA
 
-The generated Workbox service worker precaches the complete application shell, including the font files. Settings and calculations remain available offline. While the app is open and online it checks for a new version every hour, and updates are installed through an in app prompt so an active calculation is never reloaded unexpectedly.
+The generated Workbox service worker precaches the complete application shell and registers once the page has loaded. Settings and calculations remain available offline. While the app is open and online it checks for a new version every hour, and updates are installed through an in app prompt so an active calculation is never reloaded unexpectedly.
 
 For a local installation check:
 

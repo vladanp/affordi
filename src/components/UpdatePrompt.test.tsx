@@ -1,8 +1,17 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { UpdatePromptView } from './UpdatePrompt';
+import { UpdatePrompt, UpdatePromptView } from './UpdatePrompt';
 import { scheduleUpdateChecks, UPDATE_CHECK_INTERVAL_MS } from './updateChecks';
+
+const useRegisterSW = vi.hoisted(() =>
+  vi.fn(() => ({
+    needRefresh: [true, vi.fn()],
+    offlineReady: [false, vi.fn()],
+    updateServiceWorker: vi.fn(async () => undefined),
+  })),
+);
+vi.mock('virtual:pwa-register/react', () => ({ useRegisterSW }));
 
 describe('UpdatePromptView', () => {
   afterEach(() => cleanup());
@@ -48,6 +57,23 @@ describe('UpdatePromptView', () => {
       visibility.mockRestore();
       vi.clearAllTimers();
       vi.useRealTimers();
+    }
+  });
+
+  it('registers the service worker only after the page has loaded', () => {
+    const readyState = vi.spyOn(document, 'readyState', 'get').mockReturnValue('loading');
+    try {
+      render(<UpdatePrompt language="en" />);
+      expect(useRegisterSW).not.toHaveBeenCalled();
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+
+      act(() => {
+        window.dispatchEvent(new Event('load'));
+      });
+      expect(useRegisterSW).toHaveBeenCalledOnce();
+      expect(screen.getByRole('status')).toHaveTextContent('A new version of Affordi is ready.');
+    } finally {
+      readyState.mockRestore();
     }
   });
 });

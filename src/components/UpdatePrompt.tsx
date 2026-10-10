@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 import { scheduleUpdateChecks } from './updateChecks';
@@ -35,7 +36,7 @@ export function UpdatePromptView({
   );
 }
 
-export function UpdatePrompt({ language }: { language: Locale }) {
+function RegisteredUpdatePrompt({ language }: { language: Locale }) {
   const registration = useRegisterSW({ onRegisteredSW: scheduleUpdateChecks });
   const [needRefresh, setNeedRefresh] = registration.needRefresh;
 
@@ -47,4 +48,22 @@ export function UpdatePrompt({ language }: { language: Locale }) {
       onUpdate={() => void registration.updateServiceWorker(true)}
     />
   );
+}
+
+function useWindowLoaded(): boolean {
+  const [loaded, setLoaded] = useState(() => document.readyState === 'complete');
+  useEffect(() => {
+    const markLoaded = () => setLoaded(true);
+    window.addEventListener('load', markLoaded, { once: true });
+    return () => window.removeEventListener('load', markLoaded);
+  }, []);
+  return loaded;
+}
+
+/**
+ * Registers the service worker after the page finishes loading, so the
+ * Workbox chunk never competes with the first render.
+ */
+export function UpdatePrompt({ language }: { language: Locale }) {
+  return useWindowLoaded() ? <RegisteredUpdatePrompt language={language} /> : null;
 }
