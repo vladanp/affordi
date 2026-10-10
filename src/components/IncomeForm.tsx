@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
 import {
@@ -175,6 +175,101 @@ function SegmentedField({ error, label, name, onChange, options, value }: Segmen
   );
 }
 
+interface IncomeFieldProps {
+  copy: Translator;
+  currency: string;
+  error: string | undefined;
+  initiallyVisible: boolean;
+  onChange: (value: string) => void;
+  value: string;
+}
+
+/**
+ * The income input with a visibility toggle. Each change of visibility mounts a
+ * fresh input, because WebKit keeps a focused field in secure text mode after
+ * `-webkit-text-security` is removed, which left the digits hidden on iPhone.
+ */
+function IncomeField({
+  copy,
+  currency,
+  error,
+  initiallyVisible,
+  onChange,
+  value,
+}: IncomeFieldProps) {
+  const [visible, setVisible] = useState(initiallyVisible);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const restoreFocusRef = useRef(false);
+
+  // Keeps typing in place when the toggle replaces a focused input.
+  function attachInput(input: HTMLInputElement | null) {
+    inputRef.current = input;
+    if (input === null || !restoreFocusRef.current) return;
+    restoreFocusRef.current = false;
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
+
+  function toggleVisibility() {
+    const input = inputRef.current;
+    restoreFocusRef.current = input !== null && input === input.ownerDocument.activeElement;
+    setVisible((current) => !current);
+  }
+
+  return (
+    <div className="field">
+      <label className="field-label" htmlFor="netIncome">
+        {copy.t('form.incomeLabel')}
+      </label>
+      <span className="input-with-prefix">
+        <span aria-hidden="true" className="input-prefix">
+          {isCurrencyCode(currency) ? getCurrencySymbol(currency, copy.locale) : currency}
+        </span>
+        <input
+          aria-describedby={
+            error
+              ? 'income-currency-description income-local-note income-error'
+              : 'income-currency-description income-local-note'
+          }
+          aria-invalid={error !== undefined}
+          autoCapitalize="off"
+          autoComplete="off"
+          autoCorrect="off"
+          data-masked={!visible}
+          enterKeyHint="done"
+          id="netIncome"
+          inputMode="decimal"
+          key={visible ? 'visible' : 'masked'}
+          name="netIncome"
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="3000"
+          ref={attachInput}
+          spellCheck={false}
+          type="text"
+          value={value}
+        />
+        <button
+          aria-label={copy.t(visible ? 'privacy.hideIncome' : 'privacy.showIncome')}
+          aria-pressed={visible}
+          className="income-visibility-button"
+          onClick={toggleVisibility}
+          type="button"
+        >
+          {visible ? (
+            <EyeOff aria-hidden="true" size={20} strokeWidth={1.75} />
+          ) : (
+            <Eye aria-hidden="true" size={20} strokeWidth={1.75} />
+          )}
+        </button>
+      </span>
+      <small className="visually-hidden" id="income-currency-description">
+        {copy.t('form.incomeDescription', { currency })}
+      </small>
+      <FieldError error={error} id="income-error" />
+    </div>
+  );
+}
+
 function valuesFromSettings(settings: AffordiSettings): FormValues {
   return {
     netIncome: String(settings.netIncome),
@@ -262,7 +357,6 @@ export function IncomeForm(props: IncomeFormProps) {
     return { ...valuesFromSettings(defaults), netIncome: '' };
   });
   const [errors, setErrors] = useState<FormErrors>({});
-  const [incomeVisible, setIncomeVisible] = useState(false);
   const copy = createTranslator(values.language);
 
   function update(name: keyof FormValues, value: string) {
@@ -304,56 +398,14 @@ export function IncomeForm(props: IncomeFormProps) {
         </div>
       )}
 
-      <div className="field">
-        <label className="field-label" htmlFor="netIncome">
-          {copy.t('form.incomeLabel')}
-        </label>
-        <span className="input-with-prefix">
-          <span aria-hidden="true" className="input-prefix">
-            {isCurrencyCode(values.currency)
-              ? getCurrencySymbol(values.currency, copy.locale)
-              : values.currency}
-          </span>
-          <input
-            aria-describedby={
-              errors.netIncome
-                ? 'income-currency-description income-local-note income-error'
-                : 'income-currency-description income-local-note'
-            }
-            aria-invalid={errors.netIncome !== undefined}
-            autoCapitalize="off"
-            autoComplete="off"
-            autoCorrect="off"
-            data-masked={!incomeVisible}
-            enterKeyHint="done"
-            id="netIncome"
-            inputMode="decimal"
-            name="netIncome"
-            onChange={(event) => update('netIncome', event.target.value)}
-            placeholder="3000"
-            spellCheck={false}
-            type="text"
-            value={values.netIncome}
-          />
-          <button
-            aria-label={copy.t(incomeVisible ? 'privacy.hideIncome' : 'privacy.showIncome')}
-            aria-pressed={incomeVisible}
-            className="income-visibility-button"
-            onClick={() => setIncomeVisible((visible) => !visible)}
-            type="button"
-          >
-            {incomeVisible ? (
-              <EyeOff aria-hidden="true" size={20} strokeWidth={1.75} />
-            ) : (
-              <Eye aria-hidden="true" size={20} strokeWidth={1.75} />
-            )}
-          </button>
-        </span>
-        <small className="visually-hidden" id="income-currency-description">
-          {copy.t('form.incomeDescription', { currency: values.currency })}
-        </small>
-        <FieldError error={errors.netIncome} id="income-error" />
-      </div>
+      <IncomeField
+        copy={copy}
+        currency={values.currency}
+        error={errors.netIncome}
+        initiallyVisible={!editMode}
+        onChange={(value) => update('netIncome', value)}
+        value={values.netIncome}
+      />
 
       <SelectField
         error={errors.payFrequency}

@@ -17,15 +17,23 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Start calculating' })).toBeInTheDocument();
     const income = screen.getByLabelText('Take home income');
     expect(income).toHaveAttribute('type', 'text');
-    expect(income).toHaveAttribute('data-masked', 'true');
+    expect(income).toHaveAttribute('data-masked', 'false');
     expect(income).toHaveValue('');
     expect(screen.getByText('Saved only on this device.')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Show income' }));
-    expect(income).toHaveAttribute('data-masked', 'false');
     expect(screen.getByRole('button', { name: 'Hide income' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
+    fireEvent.change(income, { target: { value: '3000' } });
+    income.focus();
+    fireEvent.click(screen.getByRole('button', { name: 'Hide income' }));
+    const maskedIncome = screen.getByLabelText('Take home income');
+    expect(maskedIncome).not.toBe(income);
+    expect(maskedIncome).toHaveAttribute('data-masked', 'true');
+    expect(maskedIncome).toHaveValue('3000');
+    expect(maskedIncome).toHaveFocus();
+    fireEvent.click(screen.getByRole('button', { name: 'Show income' }));
+    expect(screen.getByLabelText('Take home income')).toHaveAttribute('data-masked', 'false');
   });
 
   it('validates setup and calculates immediately with comma decimals', () => {
@@ -311,6 +319,7 @@ describe('App', () => {
     );
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    expect(screen.getByLabelText('Take home income')).toHaveAttribute('data-masked', 'true');
     fireEvent.change(screen.getByLabelText('Take home income'), { target: { value: '4500' } });
     fireEvent.click(screen.getByRole('button', { name: 'Reset saved settings' }));
     expect(screen.queryByRole('textbox', { name: 'Take home income' })).not.toBeInTheDocument();
