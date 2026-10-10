@@ -11,6 +11,12 @@ export interface IncomeSettings {
 
 const WEEKS_PER_YEAR = 52;
 const MONTHS_PER_YEAR = 12;
+const PAY_PERIODS_PER_YEAR: Record<Exclude<PayFrequency, 'hourly'>, number> = {
+  weekly: WEEKS_PER_YEAR,
+  biweekly: WEEKS_PER_YEAR / 2,
+  monthly: MONTHS_PER_YEAR,
+  yearly: 1,
+};
 export const MAX_WEEKLY_HOURS = 168;
 export const MAX_HOURS_PER_WORKDAY = 24;
 
@@ -101,21 +107,62 @@ export function incomeComparisonPeriod(payFrequency: PayFrequency): PayFrequency
   return payFrequency === 'hourly' ? 'weekly' : payFrequency;
 }
 
-/** Percentage of one comparison pay period represented by the item price. */
-export function calculateIncomePercentage(
-  itemPrice: number,
+function periodsPerYear(period: PayFrequency, weeklyHours: number): number {
+  return period === 'hourly' ? WEEKS_PER_YEAR * weeklyHours : PAY_PERIODS_PER_YEAR[period];
+}
+
+/** Net income earned over one period of any length, or null for invalid input. */
+export function calculatePeriodIncome(
   settings: IncomeSettings,
+  period: PayFrequency,
 ): number | null {
-  if (!Number.isFinite(itemPrice) || itemPrice < 0 || !isValidIncomeSettings(settings)) {
+  if (!isValidIncomeSettings(settings)) {
     return null;
   }
 
-  const periodIncome =
-    settings.payFrequency === 'hourly'
-      ? settings.netIncome * settings.weeklyHours
-      : settings.netIncome;
+  const { netIncome, payFrequency, weeklyHours } = settings;
+  if (period === payFrequency) {
+    return netIncome;
+  }
+  if (payFrequency === 'hourly' && period === 'weekly') {
+    return netIncome * weeklyHours;
+  }
+
+  const income =
+    (netIncome * periodsPerYear(payFrequency, weeklyHours)) / periodsPerYear(period, weeklyHours);
+  return isFinitePositive(income) ? income : null;
+}
+
+/**
+ * Percentage of one period of income represented by the item price. The period
+ * defaults to the comparison pay period; recurring prices pass their own period.
+ */
+export function calculateIncomePercentage(
+  itemPrice: number,
+  settings: IncomeSettings,
+  period: PayFrequency = incomeComparisonPeriod(settings.payFrequency),
+): number | null {
+  if (!Number.isFinite(itemPrice) || itemPrice < 0) {
+    return null;
+  }
+
+  const periodIncome = calculatePeriodIncome(settings, period);
+  if (periodIncome === null) {
+    return null;
+  }
+
   const percentage = (itemPrice / periodIncome) * 100;
   return Number.isFinite(percentage) ? percentage : null;
+}
+
+/** Months of saving needed for a price, or null when there is nothing to save for. */
+export function calculateSavingMonths(itemPrice: number, monthlySavings: number): number | null {
+  if (!isFinitePositive(itemPrice) || !isFinitePositive(monthlySavings)) {
+    return null;
+  }
+
+  const months = itemPrice / monthlySavings;
+  return isFinitePositive(months) ? months : null;
 }
 
 export function calculateHoursPerWorkday(settings: IncomeSettings): number | null {

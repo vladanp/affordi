@@ -4,6 +4,8 @@ import {
   calculateHourlyRate,
   calculateHoursPerWorkday,
   calculateIncomePercentage,
+  calculatePeriodIncome,
+  calculateSavingMonths,
   calculateWorkHours,
   incomeComparisonPeriod,
   isPayFrequency,
@@ -140,5 +142,59 @@ describe('income context and settings helpers', () => {
   it('validates a complete settings value', () => {
     expect(isValidIncomeSettings(monthlySettings)).toBe(true);
     expect(isValidIncomeSettings({ ...monthlySettings, workingDaysPerWeek: 0 })).toBe(false);
+  });
+});
+
+describe('calculatePeriodIncome', () => {
+  it.each([
+    ['monthly', 3_000, 'monthly', 3_000],
+    ['monthly', 3_000, 'yearly', 36_000],
+    ['yearly', 36_000, 'monthly', 3_000],
+    ['weekly', 1_000, 'monthly', 4_333.333_333_333_333],
+    ['biweekly', 3_000, 'yearly', 78_000],
+    ['hourly', 25, 'weekly', 1_000],
+    ['hourly', 25, 'monthly', 4_333.333_333_333_333],
+  ] as const)(
+    'converts %s pay of %s to one %s period',
+    (payFrequency, netIncome, period, expected) => {
+      expect(
+        calculatePeriodIncome({ ...monthlySettings, netIncome, payFrequency }, period),
+      ).toBeCloseTo(expected, 8);
+    },
+  );
+
+  it('returns null for invalid settings', () => {
+    expect(calculatePeriodIncome({ ...monthlySettings, netIncome: 0 }, 'yearly')).toBeNull();
+  });
+});
+
+describe('recurring income share', () => {
+  it('compares recurring prices with income over the same period', () => {
+    expect(calculateIncomePercentage(30, monthlySettings, 'monthly')).toBeCloseTo(1, 10);
+    expect(calculateIncomePercentage(360, monthlySettings, 'yearly')).toBeCloseTo(1, 10);
+    expect(
+      calculateIncomePercentage(
+        30,
+        { ...monthlySettings, netIncome: 1_000, payFrequency: 'weekly' },
+        'monthly',
+      ),
+    ).toBeCloseTo(0.692_307_692_3, 8);
+  });
+});
+
+describe('calculateSavingMonths', () => {
+  it('divides the price by monthly savings', () => {
+    expect(calculateSavingMonths(900, 300)).toBe(3);
+    expect(calculateSavingMonths(50, 200)).toBe(0.25);
+  });
+
+  it.each([
+    [0, 300],
+    [900, 0],
+    [-1, 300],
+    [900, Number.NaN],
+    [Number.MAX_VALUE, Number.MIN_VALUE],
+  ])('returns null for price %s and savings %s', (price, savings) => {
+    expect(calculateSavingMonths(price, savings)).toBeNull();
   });
 });

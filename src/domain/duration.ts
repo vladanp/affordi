@@ -6,7 +6,16 @@ const MINUTES_PER_HOUR = 60;
 const WEEK_THRESHOLD = 2;
 const MAX_DISPLAYED_WEEKS = 999_999;
 
+interface DurationContext {
+  copy: Translator;
+  hoursPerWorkday: number;
+}
+
 function formatSubdayDuration(workHours: number, copy: Translator): string {
+  if (workHours === 0) {
+    return copy.unit(0, 'minute');
+  }
+
   const totalMinutes = workHours * MINUTES_PER_HOUR;
   if (totalMinutes < 1) {
     return copy.lessThanMinute();
@@ -22,11 +31,7 @@ function formatSubdayDuration(workHours: number, copy: Translator): string {
   ]);
 }
 
-function formatWorkdayDuration(
-  workHours: number,
-  hoursPerWorkday: number,
-  copy: Translator,
-): string {
+function formatWorkdayDuration(workHours: number, { copy, hoursPerWorkday }: DurationContext) {
   let workdays = Math.floor(workHours / hoursPerWorkday);
   let hours = Math.round(workHours - workdays * hoursPerWorkday);
 
@@ -39,6 +44,10 @@ function formatWorkdayDuration(
     ...(workdays > 0 ? [copy.unit(workdays, 'workday')] : []),
     ...(hours > 0 ? [copy.unit(hours, 'hour')] : []),
   ]);
+}
+
+function formatWholeHours(workHours: number, { copy }: DurationContext): string {
+  return copy.unit(Math.max(1, Math.round(workHours)), 'hour');
 }
 
 function formatWeekDuration(
@@ -62,6 +71,37 @@ function formatWeekDuration(
 }
 
 /**
+ * Shared shape of the duration formatters: hours and minutes under one workday,
+ * the given format under two weeks, and weeks and days from two weeks onward.
+ */
+function formatDuration(
+  workHours: number,
+  settings: IncomeSettings,
+  language: Locale,
+  formatUnderTwoWeeks: (workHours: number, context: DurationContext) => string,
+): string | null {
+  if (!Number.isFinite(workHours) || workHours < 0) {
+    return null;
+  }
+
+  const hoursPerWorkday = calculateHoursPerWorkday(settings);
+  if (hoursPerWorkday === null) {
+    return null;
+  }
+  const copy = createTranslator(language);
+
+  if (workHours < hoursPerWorkday) {
+    return formatSubdayDuration(workHours, copy);
+  }
+
+  if (workHours < settings.weeklyHours * WEEK_THRESHOLD) {
+    return formatUnderTwoWeeks(workHours, { copy, hoursPerWorkday });
+  }
+
+  return formatWeekDuration(workHours, hoursPerWorkday, settings.workingDaysPerWeek, copy);
+}
+
+/**
  * Formats working time with at most two useful units.
  *
  * Under one day it uses hours and minutes, under two weeks it uses days and
@@ -72,30 +112,16 @@ export function formatWorkDuration(
   settings: IncomeSettings,
   language: Locale,
 ): string | null {
-  if (!Number.isFinite(workHours) || workHours < 0) {
-    return null;
-  }
+  return formatDuration(workHours, settings, language, formatWorkdayDuration);
+}
 
-  const hoursPerWorkday = calculateHoursPerWorkday(settings);
-  if (hoursPerWorkday === null) {
-    return null;
-  }
-  const copy = createTranslator(language);
-
-  if (workHours === 0) {
-    return copy.unit(0, 'minute');
-  }
-
-  if (workHours < hoursPerWorkday) {
-    return formatSubdayDuration(workHours, copy);
-  }
-
-  const hoursPerWeek = settings.weeklyHours;
-  if (workHours < hoursPerWeek * WEEK_THRESHOLD) {
-    return formatWorkdayDuration(workHours, hoursPerWorkday, copy);
-  }
-
-  return formatWeekDuration(workHours, hoursPerWorkday, settings.workingDaysPerWeek, copy);
+/** A duration in the headline units: like `formatWorkDuration`, but whole hours under two weeks. */
+export function formatTotalDuration(
+  workHours: number,
+  settings: IncomeSettings,
+  language: Locale,
+): string | null {
+  return formatDuration(workHours, settings, language, formatWholeHours);
 }
 
 /** The headline duration: hours are the most useful unit for everyday purchases. */
@@ -104,27 +130,11 @@ export function formatPrimaryDuration(
   settings: IncomeSettings,
   language: Locale,
 ): string | null {
-  if (!Number.isFinite(workHours) || workHours < 0) {
-    return null;
+  const total = formatTotalDuration(workHours, settings, language);
+  if (total === null || workHours >= settings.weeklyHours * WEEK_THRESHOLD) {
+    return total;
   }
-
-  const hoursPerWorkday = calculateHoursPerWorkday(settings);
-  if (hoursPerWorkday === null) {
-    return null;
-  }
-  const copy = createTranslator(language);
-
-  if (workHours < hoursPerWorkday) {
-    if (workHours === 0) return copy.ofWork(copy.unit(0, 'minute'));
-    return copy.ofWork(formatSubdayDuration(workHours, copy));
-  }
-
-  if (workHours < settings.weeklyHours * WEEK_THRESHOLD) {
-    const roundedHours = Math.max(1, Math.round(workHours));
-    return copy.ofWork(copy.unit(roundedHours, 'hour'));
-  }
-
-  return formatWorkDuration(workHours, settings, language);
+  return createTranslator(language).ofWork(total);
 }
 
 /**
@@ -149,4 +159,50 @@ export function formatSecondaryDuration(
   const roundedHours = Math.round(workHours);
   if (roundedHours / settings.weeklyHours > MAX_DISPLAYED_WEEKS) return null;
   return createTranslator(language).unit(roundedHours, 'hour');
+}
+
+const WEEKS_PER_MONTH = 52 / 12;
+const MONTHS_PER_YEAR = 12;
+/** Months read better than weeks or years for saving goals up to two years. */
+const MONTHS_ONLY_LIMIT = 24;
+const MAX_SAVING_YEARS = 100;
+/** Ignores floating point noise, so 900 saved at 300 a month is 3 months, not 4. */
+const ROUNDING_TOLERANCE = 1e-9;
+
+function roundUp(value: number): number {
+  return Math.ceil(value - ROUNDING_TOLERANCE);
+}
+
+/**
+ * How long saving for a price takes. Saving accrues at the end of each period,
+ * so partial periods round up: weeks under one month, then months, then years.
+ */
+export function formatSavingDuration(months: number, language: Locale): string | null {
+  if (!Number.isFinite(months) || months <= 0) {
+    return null;
+  }
+
+  const copy = createTranslator(language);
+  const weeks = months * WEEKS_PER_MONTH;
+  if (weeks < 1) {
+    return copy.t('saving.underWeek');
+  }
+  if (months < 1) {
+    return copy.unit(Math.min(roundUp(weeks), 4), 'week');
+  }
+
+  const wholeMonths = roundUp(months);
+  if (wholeMonths < MONTHS_ONLY_LIMIT) {
+    return copy.unit(wholeMonths, 'month');
+  }
+
+  const years = Math.floor(wholeMonths / MONTHS_PER_YEAR);
+  if (years >= MAX_SAVING_YEARS) {
+    return copy.t('saving.overYears', { count: MAX_SAVING_YEARS });
+  }
+  const remainingMonths = wholeMonths % MONTHS_PER_YEAR;
+  return copy.duration([
+    { value: years, unit: 'year' },
+    ...(remainingMonths > 0 ? [{ value: remainingMonths, unit: 'month' } as const] : []),
+  ]);
 }

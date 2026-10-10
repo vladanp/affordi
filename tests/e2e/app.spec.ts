@@ -42,6 +42,30 @@ test.describe('Affordi calculator', () => {
     await expect(page.locator('.result-primary')).toHaveText('2 hours and 7 minutes of work');
   });
 
+  test('shows recurring prices and the time to save for single purchases', async ({ page }) => {
+    await completeSetup(page);
+    await page.getByRole('button', { name: 'Settings' }).click();
+    await page.getByRole('textbox', { name: 'Monthly savings (optional)' }).fill('300');
+    await page.getByRole('button', { name: 'Save settings' }).click();
+    await expect(page.getByRole('dialog')).toBeHidden();
+
+    const price = page.getByRole('textbox', { name: 'Enter a price' });
+    await price.fill('900');
+    await expect(page.locator('.result-note')).toHaveText('Time to save for it: 3 months');
+
+    await page.getByRole('radio', { name: 'Monthly' }).check();
+    await price.fill('12.99');
+    await expect(page.locator('.result-label')).toHaveText('€12.99 a month is');
+    await expect(page.locator('.result-primary')).toHaveText('45 minutes of work');
+    await expect(page.locator('.result-note')).toHaveText('Over a year: 9 hours');
+    await expect(page.locator('.result-share p')).toHaveText('<1% of your monthly take home pay');
+
+    await page.getByRole('radio', { name: 'Yearly' }).check();
+    await expect(page.locator('.result-label')).toHaveText('€12.99 a year is');
+    await expect(page.locator('.result-note')).toHaveText('Each month: 4 minutes');
+    await expect(page.locator('.result-share p')).toHaveText('<1% of your yearly take home pay');
+  });
+
   test('shows income during setup and masks it on request', async ({ page }) => {
     const income = page.getByLabel('Take home income');
 
@@ -85,7 +109,10 @@ test.describe('Affordi calculator', () => {
     await page.setViewportSize({ width: 900, height: 900 });
     await page.reload();
 
-    const income = await page.locator('.input-with-prefix').boundingBox();
+    const income = await page
+      .locator('.input-with-prefix')
+      .filter({ has: page.getByLabel('Take home income') })
+      .boundingBox();
     const frequency = await page.getByLabel('Pay frequency').boundingBox();
     const note = await page.getByText('Saved only on this device.').boundingBox();
 

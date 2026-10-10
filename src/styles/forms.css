@@ -208,6 +208,12 @@
   outline-offset: 0.125rem;
 }
 
+.field-hint {
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
 .field-error {
   color: var(--color-danger);
   font-size: 0.8125rem;

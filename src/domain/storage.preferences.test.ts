@@ -13,6 +13,7 @@ const settings: AffordiSettings = {
   payFrequency: 'monthly',
   weeklyHours: 40,
   workingDaysPerWeek: 5,
+  monthlySavings: 250,
   currency: 'EUR',
   language: 'fr',
   theme: 'dark',
