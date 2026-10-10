@@ -345,28 +345,42 @@ describe('App', () => {
       }),
     );
     render(<App />);
-    expect(screen.getByRole('group', { name: 'How often you pay' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Once' })).toBeChecked();
+    const repeat = screen.getByRole('combobox', { name: 'How often you pay' });
+    expect(repeat).toHaveValue('once');
     fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
       target: { value: '300' },
     });
     expect(screen.getByText('$300.00 is')).toBeInTheDocument();
     expect(screen.queryByText(/Over a year/)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Monthly' }));
+    fireEvent.change(repeat, { target: { value: 'monthly' } });
     expect(screen.getByText('$300.00 a month is')).toBeInTheDocument();
     expect(screen.getByText('17 hours of work')).toBeInTheDocument();
     expect(screen.getByText('Over a year: 5 weeks and 1 day')).toBeInTheDocument();
     expect(screen.getByText('10% of your monthly take home pay')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Yearly' }));
+    fireEvent.change(repeat, { target: { value: 'yearly' } });
     expect(screen.getByText('$300.00 a year is')).toBeInTheDocument();
     expect(screen.getByText('Each month: 1 hour and 27 minutes')).toBeInTheDocument();
     expect(screen.getByText('1% of your yearly take home pay')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Once' }));
-    expect(screen.getByText('$300.00 is')).toBeInTheDocument();
-    expect(screen.queryByText(/Each month/)).not.toBeInTheDocument();
+    fireEvent.change(repeat, { target: { value: 'weekly' } });
+    expect(screen.getByText('$300.00 a week is')).toBeInTheDocument();
+    expect(screen.getByText('Over a year: 22 weeks and 3 days')).toBeInTheDocument();
+    expect(screen.getByText('43% of your weekly take home pay')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
+      target: { value: '4.50' },
+    });
+    fireEvent.change(repeat, { target: { value: 'workday' } });
+    expect(screen.getByText('$4.50 every workday is')).toBeInTheDocument();
+    expect(screen.getByText('16 minutes of work')).toBeInTheDocument();
+    expect(screen.getByText('Over a year: 68 hours')).toBeInTheDocument();
+    expect(screen.getByText('3% of your monthly take home pay')).toBeInTheDocument();
+
+    fireEvent.change(repeat, { target: { value: 'once' } });
+    expect(screen.getByText('$4.50 is')).toBeInTheDocument();
+    expect(screen.queryByText(/Over a year/)).not.toBeInTheDocument();
   });
 
   it('shows how long saving takes and validates monthly savings in settings', () => {
@@ -389,9 +403,10 @@ describe('App', () => {
       target: { value: '900' },
     });
     expect(screen.getByText('Time to save for it: 3 months')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('radio', { name: 'Monthly' }));
+    const repeat = screen.getByRole('combobox', { name: 'How often you pay' });
+    fireEvent.change(repeat, { target: { value: 'monthly' } });
     expect(screen.queryByText(/Time to save/)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('radio', { name: 'Once' }));
+    fireEvent.change(repeat, { target: { value: 'once' } });
 
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     const savings = screen.getByRole('textbox', { name: 'Monthly savings (optional)' });
@@ -418,6 +433,118 @@ describe('App', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
     expect(screen.queryByText(/Time to save/)).not.toBeInTheDocument();
+  });
+
+  it('saves items, totals recurring costs, and keeps focus while removing', () => {
+    localStorage.setItem(
+      'affordi.settings.v1',
+      JSON.stringify({
+        version: 1,
+        settings: {
+          netIncome: 3000,
+          payFrequency: 'monthly',
+          weeklyHours: 40,
+          workingDaysPerWeek: 5,
+          currency: 'USD',
+        },
+      }),
+    );
+    const first = render(<App />);
+    expect(screen.queryByRole('heading', { name: 'Saved items' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+    const price = screen.getByRole('textbox', { name: 'Enter a price' });
+    fireEvent.change(price, { target: { value: '12.99' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'How often you pay' }), {
+      target: { value: 'monthly' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Item name (optional)' }), {
+      target: { value: '  Netflix  ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(screen.getByRole('status')).toHaveTextContent('Item saved.');
+    expect(screen.getByRole('textbox', { name: 'Item name (optional)' })).toHaveValue('');
+    expect(screen.getByRole('heading', { name: 'Saved items' })).toBeInTheDocument();
+    expect(screen.getByText('Netflix')).toBeInTheDocument();
+    expect(screen.getByText('$12.99 a month · 45 minutes of work')).toBeInTheDocument();
+    expect(screen.getByText('Recurring costs over a year')).toBeInTheDocument();
+    expect(screen.getByText('9 hours of work')).toBeInTheDocument();
+    expect(screen.getByText('<1% of your yearly take home pay')).toBeInTheDocument();
+
+    fireEvent.change(price, { target: { value: '900' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'How often you pay' }), {
+      target: { value: 'once' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    const items = screen.getAllByRole('listitem');
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent('$900.00');
+    expect(items[0]).toHaveTextContent('52 hours of work');
+    expect(screen.getByText('9 hours of work')).toBeInTheDocument();
+    const stored = JSON.parse(localStorage.getItem('affordi.checks.v1') ?? '{}');
+    expect(stored.version).toBe(1);
+    expect(stored.checks).toMatchObject([
+      { name: '', price: 900, repeat: 'once', currency: 'USD' },
+      { name: 'Netflix', price: 12.99, repeat: 'monthly', currency: 'USD' },
+    ]);
+
+    first.unmount();
+    render(<App />);
+    expect(screen.getAllByRole('listitem')).toHaveLength(2);
+    fireEvent.click(screen.getByRole('button', { name: 'Remove $900.00' }));
+    expect(screen.getByRole('button', { name: 'Remove Netflix' })).toHaveFocus();
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Netflix' }));
+    expect(screen.getByRole('heading', { name: 'How much does it cost?' })).toHaveFocus();
+    expect(screen.queryByRole('heading', { name: 'Saved items' })).not.toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('affordi.checks.v1') ?? '{}').checks).toEqual([]);
+  });
+
+  it('leaves items in another currency out of the total and clears items on reset', () => {
+    localStorage.setItem(
+      'affordi.settings.v1',
+      JSON.stringify({
+        version: 1,
+        settings: {
+          netIncome: 3000,
+          payFrequency: 'monthly',
+          weeklyHours: 40,
+          workingDaysPerWeek: 5,
+          currency: 'EUR',
+          language: 'en',
+          theme: 'system',
+        },
+      }),
+    );
+    localStorage.setItem(
+      'affordi.checks.v1',
+      JSON.stringify({
+        version: 1,
+        checks: [
+          {
+            id: 'a',
+            name: 'Gym',
+            price: 40,
+            repeat: 'monthly',
+            currency: 'USD',
+            savedAt: 1,
+          },
+          { id: 'b', name: 'broken', price: -1, repeat: 'monthly', currency: 'EUR', savedAt: 2 },
+        ],
+      }),
+    );
+    render(<App />);
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+    expect(screen.getByText('$40.00 a month · Saved in USD')).toBeInTheDocument();
+    expect(screen.queryByText('Recurring costs over a year')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset saved settings' }));
+    expect(
+      screen.getByText('This removes your income details and saved items from this device.'),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+    expect(localStorage.getItem('affordi.checks.v1')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Start calculating' })).toBeInTheDocument();
   });
 
   it('rejects impossible work schedules during setup', () => {

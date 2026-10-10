@@ -53,17 +53,49 @@ test.describe('Affordi calculator', () => {
     await price.fill('900');
     await expect(page.locator('.result-note')).toHaveText('Time to save for it: 3 months');
 
-    await page.getByRole('radio', { name: 'Monthly' }).check();
+    const repeat = page.getByRole('combobox', { name: 'How often you pay' });
+    await repeat.selectOption('monthly');
     await price.fill('12.99');
     await expect(page.locator('.result-label')).toHaveText('€12.99 a month is');
     await expect(page.locator('.result-primary')).toHaveText('45 minutes of work');
     await expect(page.locator('.result-note')).toHaveText('Over a year: 9 hours');
     await expect(page.locator('.result-share p')).toHaveText('<1% of your monthly take home pay');
 
-    await page.getByRole('radio', { name: 'Yearly' }).check();
+    await repeat.selectOption('yearly');
     await expect(page.locator('.result-label')).toHaveText('€12.99 a year is');
     await expect(page.locator('.result-note')).toHaveText('Each month: 4 minutes');
     await expect(page.locator('.result-share p')).toHaveText('<1% of your yearly take home pay');
+  });
+
+  test('saves items on the device and totals recurring costs', async ({ page }) => {
+    await completeSetup(page);
+    const price = page.getByRole('textbox', { name: 'Enter a price' });
+    const repeat = page.getByRole('combobox', { name: 'How often you pay' });
+    const name = page.getByRole('textbox', { name: 'Item name (optional)' });
+
+    await price.fill('4.50');
+    await repeat.selectOption('workday');
+    await expect(page.locator('.result-label')).toHaveText('€4.50 every workday is');
+    await expect(page.locator('.result-note')).toHaveText('Over a year: 68 hours');
+    await name.fill('Coffee');
+    await name.press('Enter');
+    await expect(name).toHaveValue('');
+
+    await price.fill('12.99');
+    await repeat.selectOption('monthly');
+    await name.fill('Streaming');
+    await page.getByRole('button', { name: 'Save' }).click();
+
+    const items = page.getByRole('listitem');
+    await expect(items).toHaveCount(2);
+    await expect(items.first()).toContainText('Streaming');
+    await expect(page.locator('.saved-total-value')).toHaveText('77 hours of work');
+
+    await page.reload();
+    await expect(page.getByRole('listitem')).toHaveCount(2);
+    await page.getByRole('button', { name: 'Remove Streaming' }).click();
+    await expect(page.getByRole('button', { name: 'Remove Coffee' })).toBeFocused();
+    await expect(page.locator('.saved-total-value')).toHaveText('68 hours of work');
   });
 
   test('shows income during setup and masks it on request', async ({ page }) => {

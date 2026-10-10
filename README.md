@@ -1,8 +1,8 @@
 # Affordi
 
-Affordi answers one focused question: **How long do I need to work to afford this?** Enter a price to translate its cost into working time, days, and a secondary share of take home pay. Mark a price as monthly or yearly to see what a subscription costs over time, and add optional monthly savings to see how long saving for a purchase takes.
+Affordi answers one focused question: **How long do I need to work to afford this?** Enter a price to translate its cost into working time, days, and a secondary share of take home pay. Mark a price as paid every workday, weekly, monthly, or yearly to see what a habit or subscription costs over time, add optional monthly savings to see how long saving for a purchase takes, and save items to see the yearly work time of every recurring cost together.
 
-Affordi has no account, backend, analytics, advertising, or tracking. Income settings stay in `localStorage` on the device and the installed app works offline.
+Affordi has no account, backend, analytics, advertising, or tracking. Income settings and saved items stay in `localStorage` on the device and the installed app works offline.
 
 ## Stack
 
