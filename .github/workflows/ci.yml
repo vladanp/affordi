@@ -76,20 +76,6 @@ jobs:
           path: dist
       - name: Run browser tests
         run: pnpm run test:e2e:dist
-      # Temporary: regenerate screenshot baselines on the runner and print them for review.
-      - name: Print regenerated screenshot baselines
-        if: always()
-        env:
-          AFFORDI_USE_PREBUILT: 'true'
-        run: |
-          rm -f tests/e2e/visual.spec.ts-snapshots/*-linux.png
-          pnpm exec playwright test tests/e2e/visual.spec.ts --project=chromium --update-snapshots=all --reporter=line || true
-          for file in tests/e2e/visual.spec.ts-snapshots/*-linux.png; do
-            echo "BEGIN-BASELINE ${file##*/}"
-            base64 -w 0 "$file"
-            echo
-            echo "END-BASELINE"
-          done
       - name: Upload Playwright diagnostics and UI screenshots
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
