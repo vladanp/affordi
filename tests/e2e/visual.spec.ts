@@ -39,7 +39,7 @@ test.describe('UI screenshot audit', () => {
 
     const price = page.getByRole('textbox', { name: 'Enter a price' });
     await price.fill('1');
-    await expect(page.getByText('<0.1% of your monthly take home pay')).toBeVisible();
+    await expect(page.locator('.result-share p')).toHaveText('<0.1% of your monthly take home pay');
     await expect(page.getByRole('button', { name: 'Done' })).toBeVisible();
     await attachScreenshot(page, testInfo, 'phone-calculator-entry');
 

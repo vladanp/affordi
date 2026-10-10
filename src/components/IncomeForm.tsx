@@ -1,17 +1,24 @@
 import { useState, type FormEvent } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
-import { isPayFrequency, payFrequencies } from '../domain/calculations';
+import {
+  isPayFrequency,
+  isWorkingDayCount,
+  MAX_HOURS_PER_WORKDAY,
+  MAX_WEEKLY_HOURS,
+  payFrequencies,
+} from '../domain/calculations';
 import {
   createTranslator,
   isLocale,
   supportedLocales,
   type Locale,
+  type TranslationKey,
   type Translator,
 } from '../domain/i18n';
 import { parseDecimalInput } from '../domain/input';
 import { currencyOptions, getCurrencySymbol, isCurrencyCode } from '../domain/locale';
-import { defaultSettings, type AffordiSettings } from '../domain/storage';
+import { defaultSettings, isValidAffordiSettings, type AffordiSettings } from '../domain/storage';
 import { isThemePreference, themePreferences, type ThemePreference } from '../domain/theme';
 
 interface IncomeFormBaseProps {
@@ -23,6 +30,7 @@ interface SetupIncomeFormProps extends IncomeFormBaseProps {
 }
 
 interface EditIncomeFormProps extends IncomeFormBaseProps {
+  hidden?: boolean;
   initialValues: AffordiSettings;
   mode: 'edit';
   onCancel: () => void;
@@ -45,6 +53,11 @@ interface FormValues {
 type FormErrors = Partial<Record<keyof FormValues, string>>;
 type UpdateField = (name: keyof FormValues, value: string) => void;
 
+interface FieldOption {
+  label: string;
+  value: string;
+}
+
 interface TextFieldProps {
   error: string | undefined;
   inputMode: 'decimal' | 'numeric';
@@ -54,47 +67,59 @@ interface TextFieldProps {
   value: string;
 }
 
+function FieldError({ error, id }: { error: string | undefined; id: string }) {
+  if (error === undefined) return null;
+  return (
+    <small className="field-error" id={id}>
+      {error}
+    </small>
+  );
+}
+
 function TextField({ error, inputMode, label, name, onChange, value }: TextFieldProps) {
   const errorId = `${name}-error`;
   return (
-    <label className="field">
-      <span>{label}</span>
+    <div className="field">
+      <label className="field-label" htmlFor={name}>
+        {label}
+      </label>
       <input
         aria-describedby={error ? errorId : undefined}
         aria-invalid={error !== undefined}
+        autoComplete="off"
+        id={name}
         inputMode={inputMode}
         name={name}
         onChange={(event) => onChange(name, event.target.value)}
         type="text"
         value={value}
       />
-      {error && (
-        <small className="field-error" id={errorId}>
-          {error}
-        </small>
-      )}
-    </label>
+      <FieldError error={error} id={errorId} />
+    </div>
   );
 }
 
 interface SelectFieldProps {
   error: string | undefined;
   label: string;
-  name: 'payFrequency' | 'currency' | 'language' | 'theme';
+  name: 'payFrequency' | 'language';
   onChange: UpdateField;
-  options: readonly { label: string; value: string }[];
+  options: readonly FieldOption[];
   value: string;
 }
 
 function SelectField({ error, label, name, onChange, options, value }: SelectFieldProps) {
   const errorId = `${name}-error`;
   return (
-    <label className="field">
-      <span>{label}</span>
+    <div className="field">
+      <label className="field-label" htmlFor={name}>
+        {label}
+      </label>
       <span className="select-wrap">
         <select
           aria-describedby={error ? errorId : undefined}
           aria-invalid={error !== undefined}
+          id={name}
           name={name}
           onChange={(event) => onChange(name, event.target.value)}
           value={value}
@@ -107,12 +132,46 @@ function SelectField({ error, label, name, onChange, options, value }: SelectFie
         </select>
         <span aria-hidden="true" className="select-chevron" />
       </span>
-      {error && (
-        <small className="field-error" id={errorId}>
-          {error}
-        </small>
-      )}
-    </label>
+      <FieldError error={error} id={errorId} />
+    </div>
+  );
+}
+
+interface SegmentedFieldProps {
+  error: string | undefined;
+  label: string;
+  name: 'currency' | 'theme';
+  onChange: UpdateField;
+  options: readonly FieldOption[];
+  value: string;
+}
+
+/** A radio group styled as a segmented control for short lists of choices. */
+function SegmentedField({ error, label, name, onChange, options, value }: SegmentedFieldProps) {
+  const errorId = `${name}-error`;
+  return (
+    <fieldset
+      aria-describedby={error ? errorId : undefined}
+      className="field segmented-field"
+      data-field={name}
+    >
+      <legend className="field-label">{label}</legend>
+      <span className="segmented">
+        {options.map((option) => (
+          <label className="segment" key={option.value}>
+            <input
+              checked={value === option.value}
+              name={name}
+              onChange={() => onChange(name, option.value)}
+              type="radio"
+              value={option.value}
+            />
+            <span>{option.label}</span>
+          </label>
+        ))}
+      </span>
+      <FieldError error={error} id={errorId} />
+    </fieldset>
   );
 }
 
@@ -128,61 +187,71 @@ function valuesFromSettings(settings: AffordiSettings): FormValues {
   };
 }
 
+const choiceFields = [
+  { name: 'payFrequency', isValid: isPayFrequency, message: 'validation.payFrequency' },
+  { name: 'currency', isValid: isCurrencyCode, message: 'validation.currency' },
+  { name: 'language', isValid: isLocale, message: 'validation.language' },
+  { name: 'theme', isValid: isThemePreference, message: 'validation.theme' },
+] as const satisfies readonly {
+  name: keyof FormValues;
+  isValid: (value: unknown) => boolean;
+  message: TranslationKey;
+}[];
+
+/** Field names in the order they appear, so focus lands on the first visible problem. */
+const fieldOrder = [
+  'netIncome',
+  'payFrequency',
+  'currency',
+  'weeklyHours',
+  'workingDaysPerWeek',
+  'language',
+  'theme',
+] as const satisfies readonly (keyof FormValues)[];
+
+function scheduleErrors(
+  weeklyHours: number | null,
+  workingDays: number | null,
+  copy: Translator,
+): FormErrors {
+  const errors: FormErrors = {};
+  if (!isWorkingDayCount(workingDays)) {
+    errors.workingDaysPerWeek = copy.t('validation.workingDays');
+  }
+
+  if (weeklyHours === null || weeklyHours < 1 || weeklyHours > MAX_WEEKLY_HOURS) {
+    errors.weeklyHours = copy.t('validation.weeklyHours');
+  } else if (isWorkingDayCount(workingDays) && weeklyHours > workingDays * MAX_HOURS_PER_WORKDAY) {
+    errors.weeklyHours = copy.t('validation.hoursPerDay');
+  }
+  return errors;
+}
+
 function validate(
   values: FormValues,
   copy: Translator,
 ): { settings?: AffordiSettings; errors: FormErrors } {
-  const errors: FormErrors = {};
   const netIncome = parseDecimalInput(values.netIncome, copy.locale);
   const weeklyHours = parseDecimalInput(values.weeklyHours, copy.locale);
-  const workingDays = parseDecimalInput(values.workingDaysPerWeek, copy.locale);
-  const payFrequency = isPayFrequency(values.payFrequency) ? values.payFrequency : null;
-  const currency = isCurrencyCode(values.currency) ? values.currency : null;
-  const language = isLocale(values.language) ? values.language : null;
-  const theme = isThemePreference(values.theme) ? values.theme : null;
+  const workingDaysPerWeek = parseDecimalInput(values.workingDaysPerWeek, copy.locale);
+  const errors = scheduleErrors(weeklyHours, workingDaysPerWeek, copy);
 
   if (netIncome === null || netIncome <= 0) errors.netIncome = copy.t('validation.income');
-  if (payFrequency === null) errors.payFrequency = copy.t('validation.payFrequency');
-  if (weeklyHours === null || weeklyHours <= 0 || weeklyHours > 168) {
-    errors.weeklyHours = copy.t('validation.weeklyHours');
-  }
-  if (
-    workingDays === null ||
-    !Number.isInteger(workingDays) ||
-    workingDays < 1 ||
-    workingDays > 7
-  ) {
-    errors.workingDaysPerWeek = copy.t('validation.workingDays');
-  }
-  if (currency === null) errors.currency = copy.t('validation.currency');
-  if (language === null) errors.language = copy.t('validation.language');
-  if (theme === null) errors.theme = copy.t('validation.theme');
-
-  if (
-    Object.keys(errors).length > 0 ||
-    netIncome === null ||
-    weeklyHours === null ||
-    workingDays === null ||
-    payFrequency === null ||
-    currency === null ||
-    language === null ||
-    theme === null
-  ) {
-    return { errors };
+  for (const field of choiceFields) {
+    if (!field.isValid(values[field.name])) errors[field.name] = copy.t(field.message);
   }
 
-  return {
-    errors,
-    settings: {
-      netIncome,
-      payFrequency,
-      weeklyHours,
-      workingDaysPerWeek: workingDays,
-      currency,
-      language,
-      theme,
-    },
+  const candidate = {
+    netIncome,
+    payFrequency: values.payFrequency,
+    weeklyHours,
+    workingDaysPerWeek,
+    currency: values.currency,
+    language: values.language,
+    theme: values.theme,
   };
+  if (Object.keys(errors).length > 0 || !isValidAffordiSettings(candidate)) return { errors };
+  return { errors, settings: candidate };
 }
 
 export function IncomeForm(props: IncomeFormProps) {
@@ -195,9 +264,112 @@ export function IncomeForm(props: IncomeFormProps) {
   const [errors, setErrors] = useState<FormErrors>({});
   const [incomeVisible, setIncomeVisible] = useState(false);
   const copy = createTranslator(values.language);
-  const workSettingsFields = (
-    <>
+
+  function update(name: keyof FormValues, value: string) {
+    if (props.mode === 'edit' && name === 'theme' && isThemePreference(value)) {
+      props.onThemePreview(value);
+    }
+    if (props.mode === 'edit' && name === 'language' && isLocale(value)) {
+      props.onLanguagePreview(value);
+    }
+    setValues((current) => ({ ...current, [name]: value }));
+    setErrors((current) => ({ ...current, [name]: undefined }));
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const result = validate(values, copy);
+    setErrors(result.errors);
+    if (result.settings !== undefined) {
+      props.onSubmit(result.settings);
+      return;
+    }
+
+    const firstInvalidName = fieldOrder.find((name) => result.errors[name] !== undefined);
+    const firstInvalidControl = event.currentTarget.elements.namedItem(firstInvalidName ?? '');
+    if (firstInvalidControl instanceof HTMLElement) firstInvalidControl.focus();
+  }
+
+  return (
+    <form
+      className={`income-form${editMode ? '' : ' setup-card'}`}
+      hidden={props.mode === 'edit' && props.hidden === true}
+      noValidate
+      onSubmit={handleSubmit}
+    >
+      {!editMode && (
+        <div className="form-heading">
+          <h2>{copy.t('form.heading')}</h2>
+          <p>{copy.t('form.setupNote')}</p>
+        </div>
+      )}
+
+      <div className="field">
+        <label className="field-label" htmlFor="netIncome">
+          {copy.t('form.incomeLabel')}
+        </label>
+        <span className="input-with-prefix">
+          <span aria-hidden="true" className="input-prefix">
+            {isCurrencyCode(values.currency)
+              ? getCurrencySymbol(values.currency, copy.locale)
+              : values.currency}
+          </span>
+          <input
+            aria-describedby={
+              errors.netIncome
+                ? 'income-currency-description income-local-note income-error'
+                : 'income-currency-description income-local-note'
+            }
+            aria-invalid={errors.netIncome !== undefined}
+            autoCapitalize="off"
+            autoComplete="off"
+            autoCorrect="off"
+            data-masked={!incomeVisible}
+            enterKeyHint="done"
+            id="netIncome"
+            inputMode="decimal"
+            name="netIncome"
+            onChange={(event) => update('netIncome', event.target.value)}
+            placeholder="3000"
+            spellCheck={false}
+            type="text"
+            value={values.netIncome}
+          />
+          <button
+            aria-label={copy.t(incomeVisible ? 'privacy.hideIncome' : 'privacy.showIncome')}
+            aria-pressed={incomeVisible}
+            className="income-visibility-button"
+            onClick={() => setIncomeVisible((visible) => !visible)}
+            type="button"
+          >
+            {incomeVisible ? (
+              <EyeOff aria-hidden="true" size={20} strokeWidth={1.75} />
+            ) : (
+              <Eye aria-hidden="true" size={20} strokeWidth={1.75} />
+            )}
+          </button>
+        </span>
+        <small className="visually-hidden" id="income-currency-description">
+          {copy.t('form.incomeDescription', { currency: values.currency })}
+        </small>
+        <FieldError error={errors.netIncome} id="income-error" />
+      </div>
+
       <SelectField
+        error={errors.payFrequency}
+        label={copy.t('form.payFrequencyLabel')}
+        name="payFrequency"
+        onChange={update}
+        options={payFrequencies.map((frequency) => ({
+          label: copy.payFrequency(frequency),
+          value: frequency,
+        }))}
+        value={values.payFrequency}
+      />
+      <p className="local-only-note form-wide" id="income-local-note">
+        {copy.t('privacy.localOnly')}
+      </p>
+      <SegmentedField
         error={errors.currency}
         label={copy.t('form.currencyLabel')}
         name="currency"
@@ -221,107 +393,6 @@ export function IncomeForm(props: IncomeFormProps) {
         onChange={update}
         value={values.workingDaysPerWeek}
       />
-    </>
-  );
-
-  function update(name: keyof FormValues, value: string) {
-    if (props.mode === 'edit' && name === 'theme' && isThemePreference(value)) {
-      props.onThemePreview(value);
-    }
-    if (props.mode === 'edit' && name === 'language' && isLocale(value)) {
-      props.onLanguagePreview(value);
-    }
-    setValues((current) => ({ ...current, [name]: value }));
-    setErrors((current) => ({ ...current, [name]: undefined }));
-  }
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const result = validate(values, copy);
-    setErrors(result.errors);
-    if (result.settings !== undefined) {
-      props.onSubmit(result.settings);
-      return;
-    }
-
-    const firstInvalidName = Object.keys(result.errors)[0];
-    const firstInvalidControl = event.currentTarget.elements.namedItem(firstInvalidName ?? '');
-    if (firstInvalidControl instanceof HTMLElement) firstInvalidControl.focus();
-  }
-
-  return (
-    <form className="income-form" onSubmit={handleSubmit} noValidate>
-      {!editMode && (
-        <div className="form-heading">
-          <h2>{copy.t('form.heading')}</h2>
-          <p>{copy.t('form.setupNote')}</p>
-        </div>
-      )}
-
-      <div className="field">
-        <label htmlFor="netIncome">{copy.t('form.incomeLabel')}</label>
-        <span className="input-with-prefix">
-          <span aria-hidden="true">
-            {isCurrencyCode(values.currency)
-              ? getCurrencySymbol(values.currency, copy.locale)
-              : values.currency}
-          </span>
-          <input
-            aria-describedby={
-              errors.netIncome
-                ? 'income-currency-description income-local-note income-error'
-                : 'income-currency-description income-local-note'
-            }
-            aria-invalid={errors.netIncome !== undefined}
-            autoComplete="off"
-            enterKeyHint="done"
-            id="netIncome"
-            inputMode="decimal"
-            name="netIncome"
-            onChange={(event) => update('netIncome', event.target.value)}
-            placeholder="3000"
-            type={incomeVisible ? 'text' : 'password'}
-            value={values.netIncome}
-          />
-          <button
-            aria-label={copy.t(incomeVisible ? 'privacy.hideIncome' : 'privacy.showIncome')}
-            aria-pressed={incomeVisible}
-            className="income-visibility-button"
-            onClick={() => setIncomeVisible((visible) => !visible)}
-            type="button"
-          >
-            {incomeVisible ? (
-              <EyeOff aria-hidden="true" size={20} strokeWidth={1.75} />
-            ) : (
-              <Eye aria-hidden="true" size={20} strokeWidth={1.75} />
-            )}
-          </button>
-        </span>
-        <small className="visually-hidden" id="income-currency-description">
-          {copy.t('form.incomeDescription', { currency: values.currency })}
-        </small>
-        {errors.netIncome && (
-          <small className="field-error" id="income-error">
-            {errors.netIncome}
-          </small>
-        )}
-      </div>
-
-      <SelectField
-        error={errors.payFrequency}
-        label={copy.t('form.payFrequencyLabel')}
-        name="payFrequency"
-        onChange={update}
-        options={payFrequencies.map((frequency) => ({
-          label: copy.payFrequency(frequency),
-          value: frequency,
-        }))}
-        value={values.payFrequency}
-      />
-      <p className="local-only-note form-privacy-note" id="income-local-note">
-        {copy.t('privacy.localOnly')}
-      </p>
-      {workSettingsFields}
       {editMode && (
         <>
           <SelectField
@@ -335,7 +406,7 @@ export function IncomeForm(props: IncomeFormProps) {
             }))}
             value={values.language}
           />
-          <SelectField
+          <SegmentedField
             error={errors.theme}
             label={copy.t('form.themeLabel')}
             name="theme"
@@ -346,7 +417,7 @@ export function IncomeForm(props: IncomeFormProps) {
         </>
       )}
 
-      <div className="form-actions">
+      <div className="form-actions form-wide">
         {editMode && (
           <button className="button button-quiet" onClick={props.onCancel} type="button">
             {copy.t('form.cancel')}

@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent, type SyntheticEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type SyntheticEvent } from 'react';
 import { X } from 'lucide-react';
 
 import { IncomeForm } from './IncomeForm';
@@ -16,6 +16,12 @@ interface SettingsDialogProps {
   onThemePreview: (theme: ThemePreference) => void;
 }
 
+function openAsModal(node: HTMLDialogElement | null) {
+  if (node === null || node.open) return;
+  if (typeof node.showModal === 'function') node.showModal();
+  else node.setAttribute('open', '');
+}
+
 export function SettingsDialog({
   language,
   settings,
@@ -27,13 +33,26 @@ export function SettingsDialog({
 }: SettingsDialogProps) {
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [resetError, setResetError] = useState(false);
+  const resetButtonRef = useRef<HTMLButtonElement>(null);
+  const restoreResetFocusRef = useRef(false);
   const copy = createTranslator(language);
+
+  useEffect(() => {
+    if (resetConfirmOpen || !restoreResetFocusRef.current) return;
+    restoreResetFocusRef.current = false;
+    resetButtonRef.current?.focus();
+  }, [resetConfirmOpen]);
+
+  function keepSettings() {
+    restoreResetFocusRef.current = true;
+    setResetConfirmOpen(false);
+    setResetError(false);
+  }
 
   function handleCancel(event: SyntheticEvent<HTMLDialogElement>) {
     if (resetConfirmOpen) {
       event.preventDefault();
-      setResetConfirmOpen(false);
-      setResetError(false);
+      keepSettings();
       return;
     }
     onClose();
@@ -55,20 +74,13 @@ export function SettingsDialog({
       className="settings-dialog"
       onCancel={handleCancel}
       onKeyDown={handleKeyDown}
-      ref={(node) => {
-        if (node !== null && !node.open) {
-          if (typeof node.showModal === 'function') node.showModal();
-          else node.setAttribute('open', '');
-        }
-      }}
+      ref={openAsModal}
     >
       <div className="dialog-inner">
         <div className="dialog-header">
-          {resetConfirmOpen ? (
-            <p className="eyebrow">Affordi</p>
-          ) : (
-            <h2 id="settings-title">{copy.t('settings.title')}</h2>
-          )}
+          <h2 id="settings-title">
+            {copy.t(resetConfirmOpen ? 'settings.resetTitle' : 'settings.title')}
+          </h2>
           <button
             aria-label={copy.t('settings.close')}
             className="icon-button"
@@ -78,9 +90,8 @@ export function SettingsDialog({
             <X aria-hidden="true" size={20} strokeWidth={1.75} />
           </button>
         </div>
-        {resetConfirmOpen ? (
+        {resetConfirmOpen && (
           <div className="reset-view">
-            <h2 id="settings-title">{copy.t('settings.resetTitle')}</h2>
             <p className="reset-copy">{copy.t('settings.resetDescription')}</p>
             {resetError && (
               <p className="field-error" role="status">
@@ -91,41 +102,38 @@ export function SettingsDialog({
               <button
                 autoFocus
                 className="button button-quiet"
-                onClick={() => {
-                  setResetConfirmOpen(false);
-                  setResetError(false);
-                }}
+                onClick={keepSettings}
                 type="button"
               >
                 {copy.t('settings.keep')}
               </button>
-              <button className="button reset-confirm-button" onClick={handleReset} type="button">
+              <button className="button button-danger" onClick={handleReset} type="button">
                 {copy.t('settings.reset')}
               </button>
             </div>
           </div>
-        ) : (
-          <>
-            <IncomeForm
-              initialValues={settings}
-              mode="edit"
-              onCancel={onClose}
-              onLanguagePreview={onLanguagePreview}
-              onSubmit={onSave}
-              onThemePreview={onThemePreview}
-            />
-            <button
-              className="reset-button"
-              onClick={() => {
-                setResetError(false);
-                setResetConfirmOpen(true);
-              }}
-              type="button"
-            >
-              {copy.t('settings.resetSaved')}
-            </button>
-          </>
         )}
+        <IncomeForm
+          hidden={resetConfirmOpen}
+          initialValues={settings}
+          mode="edit"
+          onCancel={onClose}
+          onLanguagePreview={onLanguagePreview}
+          onSubmit={onSave}
+          onThemePreview={onThemePreview}
+        />
+        <button
+          className="reset-button"
+          hidden={resetConfirmOpen}
+          onClick={() => {
+            setResetError(false);
+            setResetConfirmOpen(true);
+          }}
+          ref={resetButtonRef}
+          type="button"
+        >
+          {copy.t('settings.resetSaved')}
+        </button>
       </div>
     </dialog>
   );

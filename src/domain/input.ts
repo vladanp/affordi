@@ -1,15 +1,28 @@
 import { currentLocale } from './locale';
 
-function separatorsForLocale(locale: string): { decimal: string; group: string } {
+interface Separators {
+  decimal: string;
+  group: string;
+}
+
+const separatorsByLocale = new Map<string, Separators>();
+
+function separatorsForLocale(locale: string): Separators {
+  const cached = separatorsByLocale.get(locale);
+  if (cached !== undefined) return cached;
+
+  let separators: Separators;
   try {
     const parts = new Intl.NumberFormat(locale).formatToParts(12_345.6);
-    return {
+    separators = {
       decimal: parts.find((part) => part.type === 'decimal')?.value ?? '.',
       group: parts.find((part) => part.type === 'group')?.value ?? ',',
     };
   } catch {
-    return { decimal: '.', group: ',' };
+    separators = { decimal: '.', group: ',' };
   }
+  separatorsByLocale.set(locale, separators);
+  return separators;
 }
 
 function containsOnlyDigits(value: string): boolean {

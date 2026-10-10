@@ -9,7 +9,7 @@ test('installed app shell keeps calculator usable offline', async ({ page }) => 
 
   await completeSetup(page);
   await page.getByRole('textbox', { name: 'Enter a price' }).fill('750');
-  await expect(page.getByText('43 hours of work')).toBeVisible();
+  await expect(page.locator('.result-primary')).toHaveText('43 hours of work');
 
   await page.evaluate(async () => {
     if ('serviceWorker' in navigator) await navigator.serviceWorker.ready;
@@ -19,7 +19,7 @@ test('installed app shell keeps calculator usable offline', async ({ page }) => 
     await page.reload();
     await expect(page.getByRole('heading', { name: 'How much does it cost?' })).toBeVisible();
     await page.getByRole('textbox', { name: 'Enter a price' }).fill('750');
-    await expect(page.getByText('43 hours of work')).toBeVisible();
+    await expect(page.locator('.result-primary')).toHaveText('43 hours of work');
   } finally {
     await page.context().setOffline(false);
   }

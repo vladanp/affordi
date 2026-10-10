@@ -24,6 +24,7 @@ async function listFiles(directory) {
 const deployedFiles = (await listFiles(distDirectory))
   .filter((path) => path !== '_headers')
   .toSorted();
+const notFoundPage = '404.html';
 const expectedFiles = new Map(
   await Promise.all(
     deployedFiles.map(async (path) => [path, await readFile(join(distDirectory, path))]),
@@ -63,6 +64,18 @@ async function requireExactFile(path, expected) {
   }
 }
 
+async function requireNotFound() {
+  const response = await deploymentRequest(`/missing-${Date.now()}`);
+  if (response.status !== 404) {
+    throw new Error(`unknown paths return HTTP ${response.status} instead of 404`);
+  }
+
+  const actual = Buffer.from(await response.arrayBuffer());
+  if (!actual.equals(expectedFiles.get(notFoundPage))) {
+    throw new Error('unknown paths do not return the validated 404 page');
+  }
+}
+
 function requireSecurityHeaders(response) {
   requireHeaderParts(response, 'cache-control', ['no-cache', 'no-store', 'must-revalidate']);
   requireExactHeader(response, 'x-content-type-options', 'nosniff');
@@ -94,11 +107,12 @@ async function verifyOnce() {
   }
 
   requireSecurityHeaders(response);
-  await Promise.all(
-    deployedFiles
-      .filter((path) => path !== 'index.html')
+  await Promise.all([
+    requireNotFound(),
+    ...deployedFiles
+      .filter((path) => path !== 'index.html' && path !== notFoundPage)
       .map((path) => requireExactFile(path, expectedFiles.get(path))),
-  );
+  ]);
 }
 
 async function verifyDeployment(attempt) {

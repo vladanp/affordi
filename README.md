@@ -7,7 +7,8 @@ Affordi has no account, backend, analytics, advertising, or tracking. Income set
 ## Stack
 
 - React 19, TypeScript, and Vite
-- Native CSS, split by responsibility
+- Native CSS, split by responsibility, with `light-dark()` color tokens and container queries
+- The platform system font, so no font file delays the first paint
 - Lucide React for the small icon set
 - `vite-plugin-pwa` with a generated Workbox service worker
 - Vitest and React Testing Library
@@ -44,15 +45,15 @@ pnpm lint            # Oxlint with type aware React checks
 pnpm lint:fix        # Apply safe lint fixes
 pnpm run doctor        # React correctness, security, and architecture audit
 pnpm run doctor:design # Focused React UI design audit
-pnpm fallow:check      # Deterministic dead-code CI gate
-pnpm fallow:audit      # Changed-code structural review
+pnpm fallow:check      # Deterministic dead code CI gate
+pnpm fallow:audit      # Structural review of changed code
 pnpm lint:actions      # GitHub Actions validation
 pnpm format          # Write Oxfmt formatting
 pnpm format:check    # Verify formatting
 pnpm typecheck       # Strict TypeScript
 pnpm verify          # Main local quality gates
 pnpm run ci          # All local CI gates, including browsers and Lighthouse
-pnpm lighthouse      # 100-point Lighthouse assertions
+pnpm lighthouse      # Lighthouse assertions for perfect scores
 ```
 
 With pnpm 12, bare `pnpm ci` is the package manager's frozen install alias. Use `pnpm run ci` for Affordi's quality script.
@@ -64,13 +65,15 @@ With pnpm 12, bare `pnpm ci` is the package manager's frozen install alias. Use 
 - Versioned settings are validated from `unknown` at the storage boundary; malformed or older data recovers safely.
 - English, German, French, Italian, and Serbian are built in without a runtime i18n dependency.
 - Light, dark, and system appearance preferences use CSS custom properties.
+- Hourly pay is compared with a full working week, because a share of one hour of pay is not a useful reference.
+- Screen readers hear the result once typing pauses, instead of after every keystroke.
 - There is no router, state library, request library, schema library, or backend.
 
 ## Quality and automation
 
-The precommit hook runs formatting, source and workflow linting, TypeScript, and unit tests. The prepush hook runs the main verification suite. `pnpm run ci` adds dependency audit, all three browser engines, accessibility, PWA flows, screenshot comparisons, and Lighthouse when a release-sensitive change needs the complete local pipeline.
+The precommit hook runs formatting, source and workflow linting, TypeScript, and unit tests. The prepush hook runs the main verification suite. `pnpm run ci` adds dependency audit, all three browser engines, accessibility, PWA flows, screenshot comparisons, and Lighthouse when a change that affects releases needs the complete local pipeline.
 
-Pull requests and pushes to `main` run the same gates in GitHub Actions. Required checks protect `main`, actions are pinned to immutable commits, actionlint validates workflow syntax, Fallow gates dead code and audits changed-code risk, and CodeQL scans the repository. Every browser run compares phone-sized screenshots to reviewed baselines and uploads the Playwright report as audit evidence. Renovate proposes weekly dependency and action updates without automatic merging.
+Pull requests and pushes to `main` run the same gates in GitHub Actions. Required checks protect `main`, actions are pinned to immutable commits, actionlint validates workflow syntax, Fallow gates dead code and audits risk in changed code, and CodeQL scans the repository. Every browser run compares phone screenshots to reviewed baselines and uploads the Playwright report as audit evidence. Renovate proposes weekly dependency and action updates without automatic merging.
 
 Lighthouse must score 100 for performance, accessibility, best practices, SEO, and agentic browsing across three runs. The built app also validates its `llms.txt` agent summary before deployment.
 
@@ -78,7 +81,7 @@ After all `main` checks pass, semantic-release creates the appropriate tag and G
 
 ## PWA
 
-The generated Workbox service worker precaches the complete application shell. Settings and calculations remain available offline. Updates are installed through an in app prompt so an active calculation is never reloaded unexpectedly.
+The generated Workbox service worker precaches the complete application shell and registers once the page has loaded. Settings and calculations remain available offline. While the app is open and online it checks for a new version every hour, and updates are installed through an in app prompt so an active calculation is never reloaded unexpectedly.
 
 For a local installation check:
 

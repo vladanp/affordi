@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
+import { scheduleUpdateChecks } from './updateChecks';
 import { createTranslator, type Locale } from '../domain/i18n';
 
 interface UpdatePromptViewProps {
@@ -19,28 +21,23 @@ export function UpdatePromptView({
   const copy = createTranslator(language);
 
   return (
-    <aside className="update-prompt">
+    <aside aria-labelledby="update-title" className="update-prompt">
       <div aria-live="polite" role="status">
-        <strong>{copy.t('update.newReady')}</strong>
+        <strong id="update-title">{copy.t('update.newReady')}</strong>
         <p>{copy.t('update.latest')}</p>
       </div>
       <button className="button button-primary" onClick={onUpdate} type="button">
         {copy.t('update.update')}
       </button>
-      <button
-        aria-label={copy.t('update.dismiss')}
-        className="text-button"
-        onClick={onDismiss}
-        type="button"
-      >
+      <button className="text-button" onClick={onDismiss} type="button">
         {copy.t('update.dismiss')}
       </button>
     </aside>
   );
 }
 
-export function UpdatePrompt({ language }: { language: Locale }) {
-  const registration = useRegisterSW();
+function RegisteredUpdatePrompt({ language }: { language: Locale }) {
+  const registration = useRegisterSW({ onRegisteredSW: scheduleUpdateChecks });
   const [needRefresh, setNeedRefresh] = registration.needRefresh;
 
   return (
@@ -51,4 +48,22 @@ export function UpdatePrompt({ language }: { language: Locale }) {
       onUpdate={() => void registration.updateServiceWorker(true)}
     />
   );
+}
+
+function useWindowLoaded(): boolean {
+  const [loaded, setLoaded] = useState(() => document.readyState === 'complete');
+  useEffect(() => {
+    const markLoaded = () => setLoaded(true);
+    window.addEventListener('load', markLoaded, { once: true });
+    return () => window.removeEventListener('load', markLoaded);
+  }, []);
+  return loaded;
+}
+
+/**
+ * Registers the service worker after the page finishes loading, so the
+ * Workbox chunk never competes with the first render.
+ */
+export function UpdatePrompt({ language }: { language: Locale }) {
+  return useWindowLoaded() ? <RegisteredUpdatePrompt language={language} /> : null;
 }

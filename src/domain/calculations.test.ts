@@ -5,6 +5,7 @@ import {
   calculateHoursPerWorkday,
   calculateIncomePercentage,
   calculateWorkHours,
+  incomeComparisonPeriod,
   isPayFrequency,
   isValidIncomeSettings,
   type IncomeSettings,
@@ -106,6 +107,13 @@ describe('income context and settings helpers', () => {
   it('calculates a price as a percentage of the configured pay period', () => {
     expect(calculateIncomePercentage(750, monthlySettings)).toBe(25);
     expect(calculateIncomePercentage(0, monthlySettings)).toBe(0);
+  });
+
+  it('compares hourly pay with a full working week', () => {
+    const hourly = { ...monthlySettings, netIncome: 20, payFrequency: 'hourly' } as const;
+    expect(incomeComparisonPeriod('hourly')).toBe('weekly');
+    expect(incomeComparisonPeriod('biweekly')).toBe('biweekly');
+    expect(calculateIncomePercentage(200, hourly)).toBe(25);
   });
 
   it('rejects invalid inputs instead of returning NaN or Infinity', () => {

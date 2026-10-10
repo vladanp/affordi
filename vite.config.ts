@@ -80,6 +80,8 @@ function inlineEntryAssets(): Plugin {
 }
 
 export default defineConfig({
+  // Affordi has a single page, so unknown paths return a real 404 instead of the app shell.
+  appType: 'mpa',
   plugins: [
     react(),
     VitePWA({
@@ -94,8 +96,8 @@ export default defineConfig({
         start_url: '/',
         scope: '/',
         display: 'standalone',
-        theme_color: '#f4f1eb',
-        background_color: '#f4f1eb',
+        theme_color: '#f4f2ee',
+        background_color: '#f4f2ee',
         icons: [
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -110,6 +112,7 @@ export default defineConfig({
       workbox: {
         cleanupOutdatedCaches: true,
         navigateFallback: '/index.html',
+        navigateFallbackAllowlist: [/^\/$/],
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
       },
     }),

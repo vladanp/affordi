@@ -124,6 +124,29 @@ export function formatPrimaryDuration(
     return copy.ofWork(copy.unit(roundedHours, 'hour'));
   }
 
-  const secondary = formatWorkDuration(workHours, settings, language);
-  return secondary;
+  return formatWorkDuration(workHours, settings, language);
+}
+
+/**
+ * Supporting context that never repeats the headline unit: days and hours
+ * beside an hour headline, and total hours beside a week headline. Durations
+ * under one workday need no extra context.
+ */
+export function formatSecondaryDuration(
+  workHours: number,
+  settings: IncomeSettings,
+  language: Locale,
+): string | null {
+  const hoursPerWorkday = calculateHoursPerWorkday(settings);
+  if (!Number.isFinite(workHours) || hoursPerWorkday === null || workHours < hoursPerWorkday) {
+    return null;
+  }
+
+  if (workHours < settings.weeklyHours * WEEK_THRESHOLD) {
+    return formatWorkDuration(workHours, settings, language);
+  }
+
+  const roundedHours = Math.round(workHours);
+  if (roundedHours / settings.weeklyHours > MAX_DISPLAYED_WEEKS) return null;
+  return createTranslator(language).unit(roundedHours, 'hour');
 }

@@ -1,133 +1,235 @@
 .calculator-shell {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
-  padding-block-start: max(2rem, env(safe-area-inset-top));
+  padding-block-start: max(1.25rem, env(safe-area-inset-top));
 }
 
-.calculator-card {
+.calculator {
   width: min(100%, 40rem);
   margin-inline: auto;
 }
 
-.calculator-card h1 {
-  max-width: none;
-  font-size: clamp(2rem, 6vw, 3.25rem);
-  letter-spacing: -0.055em;
-}
-
-.calculator-topline {
+.topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 2.25rem;
+  gap: 1rem;
+  margin-bottom: clamp(1.75rem, 6vw, 3rem);
 }
 
-.calculator-topline .eyebrow {
-  margin: 0;
+.pill-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: var(--color-surface);
+  padding: 0.5rem 1rem 0.5rem 0.85rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  box-shadow: 0 1px 2px var(--color-shadow);
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
 }
 
-.text-button {
-  border: 0;
-  background: transparent;
-  color: var(--color-accent);
-  padding: 0.55rem 0.25rem;
-  font-size: 0.9rem;
-  font-weight: 750;
+.pill-button:hover {
+  border-color: var(--color-line-strong);
+  background: var(--color-sunken);
 }
 
-.text-button:hover {
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
+.calculator h1 {
+  font-size: clamp(2rem, 7vw, 3rem);
 }
 
 .price-field {
-  max-width: 22rem;
+  display: grid;
+  gap: 0.5rem;
   margin-top: 1.5rem;
 }
 
-.price-field > .visually-quiet {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--color-muted);
+.price-label {
+  color: var(--color-ink-soft);
+  font-size: 0.9375rem;
+  font-weight: 600;
 }
 
-.price-field input {
+.price-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 4.5rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 1.25rem;
+  background: var(--color-surface);
+  padding-inline: 1.25rem 0.5rem;
+  box-shadow: 0 1px 2px var(--color-shadow);
+  transition: border-color 160ms ease;
+}
+
+.price-input-wrap:hover {
+  border-color: var(--color-muted);
+}
+
+.price-input-wrap:has(input:focus-visible) {
+  outline: 0.1875rem solid var(--color-focus);
+  outline-offset: 0.1875rem;
+}
+
+.price-input-wrap:has(input[aria-invalid='true']) {
+  border-color: var(--color-danger);
+}
+
+.currency-symbol {
+  flex: none;
+  color: var(--color-muted);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.price-input-wrap input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
   min-height: 4rem;
-  font-size: 1.6rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 2rem;
+  font-weight: 600;
   letter-spacing: -0.03em;
+  outline: none;
+}
+
+.price-input-wrap input::placeholder {
+  color: var(--color-line-strong);
+  font-weight: 500;
 }
 
 .price-done-button {
-  position: absolute;
-  top: 50%;
-  right: 0.45rem;
   display: none;
-  min-height: 2.75rem;
+  flex: none;
+  min-height: 3rem;
   border: 0;
-  border-radius: 0.6rem;
-  background: var(--color-icon-surface);
-  color: var(--color-accent);
-  padding-inline: 0.8rem;
-  font-size: 0.85rem;
-  font-weight: 750;
-  transform: translateY(-50%);
-}
-
-.price-done-button:hover {
-  color: var(--color-accent-dark);
-}
-
-.result-panel,
-.empty-result {
-  margin-top: 2.25rem;
-  border-top: 1px solid var(--color-line);
-  padding: 1.5rem 0 0;
-  min-block-size: 15rem;
-  scroll-margin-block: 1rem;
-}
-
-.result-label,
-.result-secondary {
-  margin: 0;
-  color: var(--color-muted);
-  line-height: 1.5;
-}
-
-.result-primary {
-  margin: 0.75rem 0 0;
-  color: var(--color-accent-dark);
-  font-size: clamp(3rem, 13vw, 5rem);
-  font-weight: 760;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.06em;
-  line-height: 1.03;
+  border-radius: var(--radius-field);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  padding-inline: 1.1rem;
+  font-size: 0.9375rem;
+  font-weight: 650;
 }
 
 .price-error {
-  min-block-size: 2.1rem;
+  min-block-size: 1.25rem;
 }
 
 .price-error-hidden {
   visibility: hidden;
 }
 
-.result-secondary {
-  min-block-size: 3rem;
-  margin-top: 0.4rem;
-  font-size: 0.9rem;
+.result-card,
+.result-empty {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 18rem;
+  margin-top: 0.75rem;
+  border-radius: var(--radius-card);
+  padding: clamp(1.25rem, 5vw, 1.75rem);
+  scroll-margin-block: 1rem;
 }
 
-.result-secondary span {
-  display: block;
+.result-card {
+  background: var(--color-highlight);
+  color: var(--color-on-highlight);
+  transition: translate 200ms var(--ease-out);
 }
 
-.result-secondary .result-percentage {
-  margin-top: 0.25rem;
+@starting-style {
+  .result-card {
+    translate: 0 0.375rem;
+  }
 }
 
-.empty-result {
+.result-label {
+  margin: 0;
+  color: var(--color-on-highlight-muted);
+  font-size: 1.0625rem;
+  font-weight: 550;
+}
+
+.result-primary {
+  margin: 0.375rem 0 1.5rem;
+  font-size: clamp(2.25rem, 10vw, 4.25rem);
+  font-weight: 650;
+  letter-spacing: -0.05em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+.result-context {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.6rem;
+  margin-top: auto;
+  border-top: 1px solid rgb(20 36 7 / 18%);
+  padding-top: 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
+.result-context p {
+  margin: 0;
+}
+
+.result-approx {
+  font-weight: 600;
+}
+
+.result-share {
+  display: grid;
+  gap: 0.5rem;
+  color: var(--color-on-highlight-muted);
+}
+
+.share-meter {
+  display: block;
+  overflow: hidden;
+  block-size: 0.375rem;
+  border-radius: 999px;
+  background: rgb(20 36 7 / 14%);
+}
+
+.share-meter > span {
+  display: block;
+  block-size: 100%;
+  max-inline-size: 100%;
+  border-radius: inherit;
+  background: var(--color-on-highlight);
+  transition: inline-size 240ms var(--ease-out);
+}
+
+.result-empty {
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  border: 1.5px dashed var(--color-line-strong);
   color: var(--color-muted);
-  font-size: 0.92rem;
+  text-align: center;
+}
+
+.result-empty p {
+  max-width: 22ch;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.local-only-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 1.5rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.8125rem;
 }

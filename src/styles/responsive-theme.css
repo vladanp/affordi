@@ -1,101 +1,52 @@
-:root,
-:root[data-theme='light'] {
-  color: var(--color-ink);
-  background: var(--color-page);
-  color-scheme: light;
-  --color-page: #f4f1eb;
-  --color-ink: #24231f;
-  --color-muted: #706c63;
-  --color-line: #ddd8ce;
-  --color-surface: #fffdfa;
-  --color-accent: #2d5a46;
-  --color-accent-dark: #214536;
-  --color-focus: #175fba;
-  --color-danger: #a33d32;
-  --color-icon-surface: #f0ede6;
-  --color-primary-foreground: #fff;
-  --color-danger-foreground: #fff;
-  --color-danger-action: #a33d32;
-  --space-page: clamp(1.25rem, 5vw, 3rem);
+.setup-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: clamp(1.75rem, 5vw, 3rem);
+  padding-block-start: max(1.25rem, env(safe-area-inset-top));
 }
 
-:root[data-theme='dark'] {
-  color: var(--color-ink);
-  background: var(--color-page);
-  color-scheme: dark;
-  --color-page: #24231f;
-  --color-ink: #f3eee5;
-  --color-muted: #b4aea3;
-  --color-line: #4a4741;
-  --color-surface: #302e29;
-  --color-accent: #9ac8a9;
-  --color-accent-dark: #b8d9c1;
-  --color-focus: #6ea8fe;
-  --color-danger: #ffb0a7;
-  --color-icon-surface: #403d36;
-  --color-primary-foreground: #17251e;
-  --color-danger-foreground: #fff;
-  --color-danger-action: #9d4338;
+.setup-intro {
+  display: grid;
+  gap: clamp(1.25rem, 4vw, 2rem);
+  max-width: 40rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']):not([data-theme='dark']) {
-    color: #f3eee5;
-    background: #24231f;
-    color-scheme: dark;
-    --color-page: #24231f;
-    --color-ink: #f3eee5;
-    --color-muted: #b4aea3;
-    --color-line: #4a4741;
-    --color-surface: #302e29;
-    --color-accent: #9ac8a9;
-    --color-accent-dark: #b8d9c1;
-    --color-focus: #6ea8fe;
-    --color-danger: #ffb0a7;
-    --color-icon-surface: #403d36;
-    --color-primary-foreground: #17251e;
-    --color-danger-foreground: #fff;
-    --color-danger-action: #9d4338;
-  }
+.setup-intro h1 {
+  max-width: 16ch;
+  font-size: clamp(2.5rem, 4vw + 1.25rem, 4.25rem);
 }
 
-@media (min-width: 40rem) and (min-height: 46rem) {
+.setup-panel {
+  container-type: inline-size;
+  width: min(100%, 38rem);
+}
+
+@media (min-width: 60rem) {
   .setup-shell {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 36rem);
     align-content: center;
-    padding-block-start: max(var(--space-page), env(safe-area-inset-top));
+    align-items: center;
+    column-gap: clamp(2rem, 6vw, 5rem);
+  }
+
+  .setup-panel {
+    width: 100%;
   }
 }
 
 @media (max-width: 38rem) {
-  .price-input-wrap input {
-    padding-inline-end: 5.75rem;
-  }
-
   .price-done-button {
     display: block;
-  }
-
-  .result-panel,
-  .empty-result {
-    min-block-size: 19rem;
-  }
-
-  .income-form {
-    grid-template-columns: 1fr;
-  }
-
-  .form-heading,
-  .form-actions,
-  .form-privacy-note {
-    grid-column: auto;
   }
 
   .settings-dialog {
     width: 100%;
     max-width: none;
+    max-block-size: calc(100dvh - env(safe-area-inset-top) - 0.5rem);
     margin: auto 0 0;
-    border-radius: 1.25rem 1.25rem 0 0;
-    max-block-size: calc(100dvh - env(safe-area-inset-top));
+    border-width: 1px 0 0;
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
   }
 
   .dialog-inner {
@@ -112,10 +63,6 @@
 }
 
 @media (hover: none) and (pointer: coarse) {
-  .price-input-wrap input {
-    padding-inline-end: 5.75rem;
-  }
-
   .price-done-button {
     display: block;
   }
@@ -128,11 +75,16 @@
   }
 
   .setup-intro h1 {
-    font-size: 2.5rem;
+    font-size: 2.25rem;
   }
 
   .income-form {
     gap: 0.75rem 1rem;
+  }
+
+  .result-card,
+  .result-empty {
+    min-block-size: 14rem;
   }
 }
 
@@ -144,5 +96,24 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .result-card,
+  .result-empty,
+  .setup-card,
+  .price-input-wrap,
+  .input-with-prefix,
+  .segmented {
+    border: 1px solid CanvasText;
+  }
+
+  .segment input:checked + span {
+    outline: 2px solid Highlight;
+  }
+
+  .share-meter > span {
+    background: CanvasText;
   }
 }

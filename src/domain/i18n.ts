@@ -50,6 +50,7 @@ export const translationKeys = [
   'validation.payFrequency',
   'validation.weeklyHours',
   'validation.workingDays',
+  'validation.hoursPerDay',
   'validation.currency',
   'validation.language',
   'validation.theme',
@@ -110,6 +111,7 @@ const english: Catalog = {
   'validation.payFrequency': 'Choose how often you are paid.',
   'validation.weeklyHours': 'Use between 1 and 168 hours each week.',
   'validation.workingDays': 'Use a whole number from 1 to 7.',
+  'validation.hoursPerDay': 'Use no more than 24 hours for each work day.',
   'validation.currency': 'Choose a currency.',
   'validation.language': 'Choose a language.',
   'validation.theme': 'Choose an appearance.',
@@ -121,7 +123,7 @@ const english: Catalog = {
   'settings.keep': 'Keep settings',
   'settings.reset': 'Reset',
   'settings.resetSaved': 'Reset saved settings',
-  'update.newReady': 'A new Affordi is ready.',
+  'update.newReady': 'A new version of Affordi is ready.',
   'update.latest': 'Update now for the latest version.',
   'update.update': 'Update',
   'update.dismiss': 'Dismiss notification',
@@ -144,11 +146,11 @@ const german: Catalog = {
   'calculator.title': 'Was kostet es an Zeit?',
   'calculator.priceLabel': 'Preis eingeben',
   'calculator.priceDescription': 'Preis in {{currency}}.',
-  'calculator.priceError': 'Gib einen gültigen, nicht negativen Preis mit Zahlen, . oder , ein.',
+  'calculator.priceError': 'Gib einen Preis von 0 oder mehr ein.',
   'calculator.done': 'Fertig',
   'calculator.resultIs': '{{price}} entspricht',
   'calculator.emptyResult': 'Gib einen Preis ein, um die Kosten in Zeit zu sehen.',
-  'calculator.payContext': '{{percentage}} % deines Nettogehalts, {{period}}',
+  'calculator.payContext': '{{percentage}} % deines {{period}} Nettoeinkommens',
   'form.heading': 'Beginne mit deinem Einkommen',
   'form.setupNote': 'Eine kurze Einrichtung.',
   'form.incomeLabel': 'Nettoeinkommen',
@@ -169,6 +171,7 @@ const german: Catalog = {
   'validation.payFrequency': 'Wähle aus, wie oft du bezahlt wirst.',
   'validation.weeklyHours': 'Verwende 1 bis 168 Stunden pro Woche.',
   'validation.workingDays': 'Verwende eine ganze Zahl von 1 bis 7.',
+  'validation.hoursPerDay': 'Verwende höchstens 24 Stunden pro Arbeitstag.',
   'validation.currency': 'Wähle eine Währung.',
   'validation.language': 'Wähle eine Sprache.',
   'validation.theme': 'Wähle eine Darstellung.',
@@ -182,7 +185,7 @@ const german: Catalog = {
   'settings.keep': 'Einstellungen behalten',
   'settings.reset': 'Zurücksetzen',
   'settings.resetSaved': 'Gespeicherte Einstellungen zurücksetzen',
-  'update.newReady': 'Ein neues Affordi ist bereit.',
+  'update.newReady': 'Eine neue Version von Affordi ist bereit.',
   'update.latest': 'Jetzt aktualisieren, um die neueste Version zu nutzen.',
   'update.update': 'Aktualisieren',
   'update.dismiss': 'Benachrichtigung schließen',
@@ -202,10 +205,10 @@ const french: Catalog = {
   'storage.couldNotSave':
     'Les réglages sont disponibles pour cette visite, mais n’ont pas pu être enregistrés.',
   'calculator.settings': 'Réglages',
-  'calculator.title': 'Combien cela coûte-t-il en temps ?',
+  'calculator.title': 'Quel est son coût en temps ?',
   'calculator.priceLabel': 'Saisissez un prix',
   'calculator.priceDescription': 'Prix en {{currency}}.',
-  'calculator.priceError': 'Saisissez un prix valide et non négatif avec des chiffres, . ou ,.',
+  'calculator.priceError': 'Saisissez un prix de 0 ou plus.',
   'calculator.done': 'Terminé',
   'calculator.resultIs': '{{price}} représente',
   'calculator.emptyResult': 'Saisissez un prix pour voir son coût en temps.',
@@ -230,6 +233,7 @@ const french: Catalog = {
   'validation.payFrequency': 'Choisissez la fréquence de votre paiement.',
   'validation.weeklyHours': 'Utilisez entre 1 et 168 heures par semaine.',
   'validation.workingDays': 'Utilisez un nombre entier de 1 à 7.',
+  'validation.hoursPerDay': 'Utilisez au plus 24 heures par jour travaillé.',
   'validation.currency': 'Choisissez une devise.',
   'validation.language': 'Choisissez une langue.',
   'validation.theme': 'Choisissez une apparence.',
@@ -264,7 +268,7 @@ const italian: Catalog = {
   'calculator.title': 'Quanto costa in termini di tempo?',
   'calculator.priceLabel': 'Inserisci un prezzo',
   'calculator.priceDescription': 'Prezzo in {{currency}}.',
-  'calculator.priceError': 'Inserisci un prezzo valido non negativo usando numeri, . o ,.',
+  'calculator.priceError': 'Inserisci un prezzo pari a 0 o superiore.',
   'calculator.done': 'Fine',
   'calculator.resultIs': '{{price}} equivale a',
   'calculator.emptyResult': 'Inserisci un prezzo per vedere il suo costo in tempo.',
@@ -289,6 +293,7 @@ const italian: Catalog = {
   'validation.payFrequency': 'Scegli con quale frequenza vieni pagato.',
   'validation.weeklyHours': 'Usa da 1 a 168 ore ogni settimana.',
   'validation.workingDays': 'Usa un numero intero da 1 a 7.',
+  'validation.hoursPerDay': 'Usa al massimo 24 ore per giorno lavorativo.',
   'validation.currency': 'Scegli una valuta.',
   'validation.language': 'Scegli una lingua.',
   'validation.theme': 'Scegli un aspetto.',
@@ -347,6 +352,7 @@ const serbian: Catalog = {
   'validation.payFrequency': 'Izaberite koliko često primate platu.',
   'validation.weeklyHours': 'Unesite od 1 do 168 sati nedeljno.',
   'validation.workingDays': 'Unesite ceo broj od 1 do 7.',
+  'validation.hoursPerDay': 'Unesite najviše 24 sata po radnom danu.',
   'validation.currency': 'Izaberite valutu.',
   'validation.language': 'Izaberite jezik.',
   'validation.theme': 'Izaberite izgled.',
@@ -413,8 +419,16 @@ function interpolate(template: string, values?: Readonly<Record<string, string |
   });
 }
 
+const numberFormats = new Map<Locale, Intl.NumberFormat>();
+
 function numberFor(locale: Locale, value: number): string {
-  return Number.isFinite(value) ? new Intl.NumberFormat(locale).format(value) : String(value);
+  if (!Number.isFinite(value)) return String(value);
+  let format = numberFormats.get(locale);
+  if (format === undefined) {
+    format = new Intl.NumberFormat(locale);
+    numberFormats.set(locale, format);
+  }
+  return format.format(value);
 }
 
 function serbianUnit(value: number, one: string, few: string, many: string): string {
@@ -424,6 +438,13 @@ function serbianUnit(value: number, one: string, few: string, many: string): str
   if (integer % 10 >= 2 && integer % 10 <= 4 && (lastTwo < 12 || lastTwo > 14)) return few;
   return many;
 }
+
+const serbianUnitForms: Record<DurationUnit, readonly [string, string, string]> = {
+  minute: ['minut', 'minuta', 'minuta'],
+  hour: ['sat', 'sata', 'sati'],
+  workday: ['dan', 'dana', 'dana'],
+  week: ['nedelja', 'nedelje', 'nedelja'],
+};
 
 const unitForms: Record<Exclude<Locale, 'sr'>, Record<DurationUnit, readonly [string, string]>> = {
   en: {
@@ -497,6 +518,45 @@ const payFrequencyForms: Record<Locale, Record<PayFrequency, string>> = {
   },
 };
 
+/** Pay periods as they read inside `calculator.payContext` for each locale. */
+const payPeriodForms: Record<Locale, Record<PayFrequency, string>> = {
+  en: {
+    hourly: 'hourly',
+    weekly: 'weekly',
+    biweekly: 'biweekly',
+    monthly: 'monthly',
+    yearly: 'yearly',
+  },
+  de: {
+    hourly: 'stündlichen',
+    weekly: 'wöchentlichen',
+    biweekly: 'zweiwöchentlichen',
+    monthly: 'monatlichen',
+    yearly: 'jährlichen',
+  },
+  fr: {
+    hourly: 'chaque heure',
+    weekly: 'chaque semaine',
+    biweekly: 'toutes les deux semaines',
+    monthly: 'chaque mois',
+    yearly: 'chaque année',
+  },
+  it: {
+    hourly: 'ogni ora',
+    weekly: 'ogni settimana',
+    biweekly: 'ogni due settimane',
+    monthly: 'ogni mese',
+    yearly: 'ogni anno',
+  },
+  sr: {
+    hourly: 'po satu',
+    weekly: 'nedeljno',
+    biweekly: 'na svake dve nedelje',
+    monthly: 'mesečno',
+    yearly: 'godišnje',
+  },
+};
+
 const languageNames: Record<Locale, string> = {
   en: 'English',
   de: 'Deutsch',
@@ -531,13 +591,7 @@ export function createTranslator(requestedLocale?: string): Translator {
   function unit(value: number, durationUnit: DurationUnit): string {
     const amount = numberFor(locale, value);
     if (locale === 'sr') {
-      const forms: Record<DurationUnit, readonly [string, string, string]> = {
-        minute: ['minut', 'minuta', 'minuta'],
-        hour: ['sat', 'sata', 'sati'],
-        workday: ['dan', 'dana', 'dana'],
-        week: ['nedelja', 'nedelje', 'nedelja'],
-      };
-      const [one, few, many] = forms[durationUnit];
+      const [one, few, many] = serbianUnitForms[durationUnit];
       return `${amount} ${serbianUnit(value, one, few, many)}`;
     }
 
@@ -549,7 +603,7 @@ export function createTranslator(requestedLocale?: string): Translator {
     locale,
     t,
     payFrequency: (frequency) => payFrequencyForms[locale][frequency],
-    payPeriod: (frequency) => payFrequencyForms[locale][frequency].toLocaleLowerCase(locale),
+    payPeriod: (frequency) => payPeriodForms[locale][frequency],
     language: (language) => languageNames[language],
     theme: (theme) => t(`theme.${theme}`),
     unit,
