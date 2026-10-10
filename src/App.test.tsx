@@ -47,7 +47,7 @@ describe('App', () => {
     });
     expect(screen.getByText('43 hours of work')).toBeInTheDocument();
     expect(screen.getByText(/5 days and 3 hours/)).toBeInTheDocument();
-    expect(screen.getByText(/25\.0% of your monthly take home pay/)).toBeInTheDocument();
+    expect(screen.getByText(/25% of your monthly take home pay/)).toBeInTheDocument();
   });
 
   it('edits locale currency and resets only after inline confirmation', () => {
@@ -257,7 +257,33 @@ describe('App', () => {
     expect(screen.getByText(/price of 0 or more/)).toBeInTheDocument();
   });
 
-  it('shows precise small percentages and dismisses the price input on submit', () => {
+  it('rounds the pay share to whole percentages', () => {
+    localStorage.setItem(
+      'affordi.settings.v1',
+      JSON.stringify({
+        version: 1,
+        settings: {
+          netIncome: 3000,
+          payFrequency: 'monthly',
+          weeklyHours: 40,
+          workingDaysPerWeek: 5,
+          currency: 'USD',
+        },
+      }),
+    );
+    render(<App />);
+    const price = screen.getByRole('textbox', { name: 'Enter a price' });
+
+    fireEvent.change(price, { target: { value: '11250' } });
+    expect(screen.getByText('≈ 650 hours')).toBeInTheDocument();
+    expect(screen.getByText('375% of your monthly take home pay')).toBeInTheDocument();
+    fireEvent.change(price, { target: { value: '15' } });
+    expect(screen.getByText('1% of your monthly take home pay')).toBeInTheDocument();
+    fireEvent.change(price, { target: { value: '0' } });
+    expect(screen.getByText('0% of your monthly take home pay')).toBeInTheDocument();
+  });
+
+  it('shows small percentages as under one percent and dismisses the price input on submit', () => {
     localStorage.setItem(
       'affordi.settings.v1',
       JSON.stringify({
@@ -276,7 +302,7 @@ describe('App', () => {
     price.focus();
     fireEvent.change(price, { target: { value: '1' } });
 
-    expect(screen.getByText('<0.1% of your monthly take home pay')).toBeInTheDocument();
+    expect(screen.getByText('<1% of your monthly take home pay')).toBeInTheDocument();
     fireEvent.submit(price.closest('form')!);
     expect(price).not.toHaveFocus();
   });
@@ -355,11 +381,11 @@ describe('App', () => {
       });
 
       expect(screen.getByText('10 hours of work')).toBeInTheDocument();
-      expect(screen.getByText('25.0% of your weekly take home pay')).toBeInTheDocument();
+      expect(screen.getByText('25% of your weekly take home pay')).toBeInTheDocument();
       expect(liveRegion).toHaveTextContent('');
       await act(() => vi.advanceTimersByTimeAsync(1_000));
       expect(liveRegion).toHaveTextContent(
-        '$200.00 is 10 hours of work. ≈ 1 day and 2 hours. 25.0% of your weekly take home pay',
+        '$200.00 is 10 hours of work. ≈ 1 day and 2 hours. 25% of your weekly take home pay',
       );
 
       fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {

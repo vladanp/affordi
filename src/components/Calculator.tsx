@@ -22,10 +22,11 @@ interface CalculatorProps {
   settingsButtonRef: RefObject<HTMLButtonElement | null>;
 }
 
+/** Whole percentages read faster; anything that would round to 0% shows as under 1%. */
 function formatIncomePercentage(percentage: number, locale: string): string {
-  const options = { minimumFractionDigits: 1, maximumFractionDigits: 1 } as const;
-  if (percentage > 0 && percentage < 0.1) {
-    return `<${(0.1).toLocaleString(locale, options)}`;
+  const options = { maximumFractionDigits: 0 } as const;
+  if (percentage > 0 && percentage < 0.5) {
+    return `<${(1).toLocaleString(locale, options)}`;
   }
   return percentage.toLocaleString(locale, options);
 }

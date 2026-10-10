@@ -29,15 +29,15 @@ describe('i18n', () => {
   });
 
   it.each([
-    ['en', 'biweekly', '25.0% of your biweekly take home pay'],
-    ['de', 'monthly', '25,0\u00a0% deines monatlichen Nettoeinkommens'],
-    ['de', 'biweekly', '25,0\u00a0% deines zweiwöchentlichen Nettoeinkommens'],
-    ['fr', 'monthly', '25,0\u00a0% de votre revenu net, chaque mois'],
-    ['it', 'yearly', '25,0% del tuo stipendio netto, ogni anno'],
-    ['sr', 'weekly', '25,0% vaše neto plate, nedeljno'],
+    ['en', 'biweekly', '25% of your biweekly take home pay'],
+    ['de', 'monthly', '25\u00a0% deines monatlichen Nettoeinkommens'],
+    ['de', 'biweekly', '25\u00a0% deines zweiwöchentlichen Nettoeinkommens'],
+    ['fr', 'monthly', '25\u00a0% de votre revenu net, chaque mois'],
+    ['it', 'yearly', '25% del tuo stipendio netto, ogni anno'],
+    ['sr', 'weekly', '25% vaše neto plate, nedeljno'],
   ] as const)('writes grammatical %s pay context for %s pay', (locale, frequency, expected) => {
     const copy = createTranslator(locale);
-    const percentage = (25).toLocaleString(locale, { minimumFractionDigits: 1 });
+    const percentage = (25).toLocaleString(locale);
     expect(copy.t('calculator.payContext', { percentage, period: copy.payPeriod(frequency) })).toBe(
       expected,
     );
