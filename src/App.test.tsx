@@ -17,15 +17,23 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Start calculating' })).toBeInTheDocument();
     const income = screen.getByLabelText('Take home income');
     expect(income).toHaveAttribute('type', 'text');
-    expect(income).toHaveAttribute('data-masked', 'true');
+    expect(income).toHaveAttribute('data-masked', 'false');
     expect(income).toHaveValue('');
     expect(screen.getByText('Saved only on this device.')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Show income' }));
-    expect(income).toHaveAttribute('data-masked', 'false');
     expect(screen.getByRole('button', { name: 'Hide income' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
+    fireEvent.change(income, { target: { value: '3000' } });
+    income.focus();
+    fireEvent.click(screen.getByRole('button', { name: 'Hide income' }));
+    const maskedIncome = screen.getByLabelText('Take home income');
+    expect(maskedIncome).not.toBe(income);
+    expect(maskedIncome).toHaveAttribute('data-masked', 'true');
+    expect(maskedIncome).toHaveValue('3000');
+    expect(maskedIncome).toHaveFocus();
+    fireEvent.click(screen.getByRole('button', { name: 'Show income' }));
+    expect(screen.getByLabelText('Take home income')).toHaveAttribute('data-masked', 'false');
   });
 
   it('validates setup and calculates immediately with comma decimals', () => {
@@ -39,7 +47,7 @@ describe('App', () => {
     });
     expect(screen.getByText('43 hours of work')).toBeInTheDocument();
     expect(screen.getByText(/5 days and 3 hours/)).toBeInTheDocument();
-    expect(screen.getByText(/25\.0% of your monthly take home pay/)).toBeInTheDocument();
+    expect(screen.getByText(/25% of your monthly take home pay/)).toBeInTheDocument();
   });
 
   it('edits locale currency and resets only after inline confirmation', () => {
@@ -249,7 +257,56 @@ describe('App', () => {
     expect(screen.getByText(/price of 0 or more/)).toBeInTheDocument();
   });
 
-  it('shows precise small percentages and dismisses the price input on submit', () => {
+  it('rounds the pay share to whole percentages', () => {
+    localStorage.setItem(
+      'affordi.settings.v1',
+      JSON.stringify({
+        version: 1,
+        settings: {
+          netIncome: 3000,
+          payFrequency: 'monthly',
+          weeklyHours: 40,
+          workingDaysPerWeek: 5,
+          currency: 'USD',
+        },
+      }),
+    );
+    const { container } = render(<App />);
+    const price = screen.getByRole('textbox', { name: 'Enter a price' });
+    const segments = () => container.querySelectorAll('.share-segment');
+    const multiple = () => container.querySelector('.share-multiple');
+
+    fireEvent.change(price, { target: { value: '750' } });
+    expect(segments()).toHaveLength(1);
+    expect(multiple()).toBeNull();
+
+    fireEvent.change(price, { target: { value: '11250' } });
+    expect(screen.getByText('≈ 650 hours')).toBeInTheDocument();
+    expect(screen.getByText('375% of your monthly take home pay')).toBeInTheDocument();
+    expect(multiple()).toHaveTextContent('3.8×');
+    expect(multiple()).toHaveAttribute('aria-hidden', 'true');
+    expect(segments()).toHaveLength(4);
+
+    fireEvent.change(price, { target: { value: '3030' } });
+    expect(screen.getByText('101% of your monthly take home pay')).toBeInTheDocument();
+    expect(segments()).toHaveLength(2);
+    expect(multiple()).toBeNull();
+
+    fireEvent.change(price, { target: { value: '3010' } });
+    expect(screen.getByText('100% of your monthly take home pay')).toBeInTheDocument();
+    expect(segments()).toHaveLength(1);
+
+    fireEvent.change(price, { target: { value: '90000' } });
+    expect(multiple()).toHaveTextContent('30×');
+    expect(segments()).toHaveLength(12);
+
+    fireEvent.change(price, { target: { value: '15' } });
+    expect(screen.getByText('1% of your monthly take home pay')).toBeInTheDocument();
+    fireEvent.change(price, { target: { value: '0' } });
+    expect(screen.getByText('0% of your monthly take home pay')).toBeInTheDocument();
+  });
+
+  it('shows small percentages as under one percent and dismisses the price input on submit', () => {
     localStorage.setItem(
       'affordi.settings.v1',
       JSON.stringify({
@@ -268,7 +325,7 @@ describe('App', () => {
     price.focus();
     fireEvent.change(price, { target: { value: '1' } });
 
-    expect(screen.getByText('<0.1% of your monthly take home pay')).toBeInTheDocument();
+    expect(screen.getByText('<1% of your monthly take home pay')).toBeInTheDocument();
     fireEvent.submit(price.closest('form')!);
     expect(price).not.toHaveFocus();
   });
@@ -311,6 +368,7 @@ describe('App', () => {
     );
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    expect(screen.getByLabelText('Take home income')).toHaveAttribute('data-masked', 'true');
     fireEvent.change(screen.getByLabelText('Take home income'), { target: { value: '4500' } });
     fireEvent.click(screen.getByRole('button', { name: 'Reset saved settings' }));
     expect(screen.queryByRole('textbox', { name: 'Take home income' })).not.toBeInTheDocument();
@@ -346,11 +404,11 @@ describe('App', () => {
       });
 
       expect(screen.getByText('10 hours of work')).toBeInTheDocument();
-      expect(screen.getByText('25.0% of your weekly take home pay')).toBeInTheDocument();
+      expect(screen.getByText('25% of your weekly take home pay')).toBeInTheDocument();
       expect(liveRegion).toHaveTextContent('');
       await act(() => vi.advanceTimersByTimeAsync(1_000));
       expect(liveRegion).toHaveTextContent(
-        '$200.00 is 10 hours of work. ≈ 1 day and 2 hours. 25.0% of your weekly take home pay',
+        '$200.00 is 10 hours of work. ≈ 1 day and 2 hours. 25% of your weekly take home pay',
       );
 
       fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {

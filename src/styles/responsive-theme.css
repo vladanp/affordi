@@ -113,7 +113,13 @@
     outline: 2px solid Highlight;
   }
 
-  .share-meter > span {
+  .share-segment {
+    outline: 1px solid CanvasText;
+  }
+
+  .share-segment > span,
+  .share-multiple {
     background: CanvasText;
+    color: Canvas;
   }
 }

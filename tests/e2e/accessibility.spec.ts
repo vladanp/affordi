@@ -32,7 +32,7 @@ test.describe('Affordi accessibility', () => {
     await page.keyboard.press('Tab');
     await expect(page.getByLabel('Take home income')).toBeFocused();
     await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
-    await expect(page.getByRole('button', { name: 'Show income' })).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Hide income' })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('combobox', { name: 'Pay frequency' })).toBeFocused();
     await page.keyboard.press('Tab');

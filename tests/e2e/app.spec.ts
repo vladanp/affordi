@@ -27,7 +27,12 @@ test.describe('Affordi calculator', () => {
 
     await expect(page.locator('.result-primary')).toHaveText('43 hours of work');
     await expect(page.locator('.result-approx')).toHaveText('≈ 5 days and 3 hours');
-    await expect(page.locator('.result-share p')).toHaveText('25.0% of your monthly take home pay');
+    await expect(page.locator('.result-share p')).toHaveText('25% of your monthly take home pay');
+    await expect(page.locator('.share-segment')).toHaveCount(1);
+    await price.fill('11250');
+    await expect(page.locator('.result-share p')).toHaveText('375% of your monthly take home pay');
+    await expect(page.locator('.share-multiple')).toHaveText('3.8×');
+    await expect(page.locator('.share-segment')).toHaveCount(4);
     await price.fill('-1');
     await expect(page.locator('#price-error')).toBeVisible();
     await expect(price).toHaveAttribute('aria-invalid', 'true');
@@ -37,19 +42,41 @@ test.describe('Affordi calculator', () => {
     await expect(page.locator('.result-primary')).toHaveText('2 hours and 7 minutes of work');
   });
 
-  test('keeps income private until the user reveals it', async ({ page }) => {
+  test('shows income during setup and masks it on request', async ({ page }) => {
     const income = page.getByLabel('Take home income');
 
-    await income.fill('3000.50');
-    await expect(income).toHaveAttribute('data-masked', 'true');
-    await expect(income).toHaveCSS('-webkit-text-security', 'disc');
-    await expect(page.getByText('Saved only on this device.')).toBeVisible();
-    await page.getByRole('button', { name: 'Show income' }).click();
+    await income.pressSequentially('3000.50');
     await expect(income).toHaveAttribute('data-masked', 'false');
     await expect(income).toHaveCSS('-webkit-text-security', 'none');
-    await expect(income).toHaveValue('3000.50');
+    await expect(page.getByText('Saved only on this device.')).toBeVisible();
+    const shown = await income.screenshot();
+
     await page.getByRole('button', { name: 'Hide income' }).click();
     await expect(income).toHaveAttribute('data-masked', 'true');
+    await expect(income).toHaveCSS('-webkit-text-security', 'disc');
+    await expect(income).toHaveValue('3000.50');
+    const masked = await income.screenshot();
+
+    await page.getByRole('button', { name: 'Show income' }).click();
+    await expect(income).toHaveAttribute('data-masked', 'false');
+    const revealed = await income.screenshot();
+
+    // Compare rendered pixels, because WebKit can keep drawing discs after the style changes.
+    expect(masked.equals(shown)).toBe(false);
+    expect(revealed.equals(masked)).toBe(false);
+  });
+
+  test('keeps saved income masked when settings open', async ({ page }) => {
+    await completeSetup(page);
+    await page.getByRole('button', { name: 'Settings' }).click();
+
+    const income = page.getByLabel('Take home income');
+    await expect(income).toHaveAttribute('data-masked', 'true');
+    await expect(income).toHaveCSS('-webkit-text-security', 'disc');
+    await expect(page.getByRole('button', { name: 'Show income' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
   });
 
   test('aligns the primary setup controls in Chromium', async ({ browserName, page }) => {

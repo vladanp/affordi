@@ -128,10 +128,6 @@
   -webkit-text-security: disc;
 }
 
-.input-with-prefix input[data-masked='true']:placeholder-shown {
-  -webkit-text-security: none;
-}
-
 ::placeholder {
   color: var(--color-muted);
   opacity: 1;
