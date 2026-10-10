@@ -192,15 +192,46 @@
   color: var(--color-on-highlight-muted);
 }
 
+.share-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.share-multiple {
+  flex: none;
+  border-radius: 999px;
+  background: var(--color-on-highlight);
+  color: var(--color-highlight);
+  padding: 0.125rem 0.55rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.result-share-over {
+  color: var(--color-on-highlight);
+}
+
+.result-share-over p {
+  font-weight: 600;
+}
+
 .share-meter {
-  display: block;
+  display: flex;
+  gap: 0.1875rem;
+}
+
+.share-segment {
+  flex: 1;
   overflow: hidden;
   block-size: 0.375rem;
   border-radius: 999px;
   background: rgb(20 36 7 / 14%);
 }
 
-.share-meter > span {
+.share-segment > span {
   display: block;
   block-size: 100%;
   max-inline-size: 100%;

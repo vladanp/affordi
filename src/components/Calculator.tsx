@@ -31,12 +31,44 @@ function formatIncomePercentage(percentage: number, locale: string): string {
   return percentage.toLocaleString(locale, options);
 }
 
+/** Each meter segment is one pay period; long bars stop at a readable number of segments. */
+const MAX_SHARE_SEGMENTS = 12;
+
+interface ShareSegment {
+  period: number;
+  fill: number;
+}
+
+function shareSegments(percentage: number): ShareSegment[] {
+  const periods = percentage / 100;
+  // Split only when the rounded percentage shown beside the meter is above 100%.
+  const count =
+    Math.round(percentage) <= 100 ? 1 : Math.min(Math.ceil(periods), MAX_SHARE_SEGMENTS);
+  return Array.from({ length: count }, (_, index) => ({
+    period: index + 1,
+    fill: Math.min(Math.max(periods - index, 0), 1),
+  }));
+}
+
+/** How many pay periods a price spans, shown from 1.1 periods so it never reads as 1.0×. */
+function formatPayMultiple(percentage: number, locale: string): string | null {
+  const periods = percentage / 100;
+  if (Math.round(periods * 10) < 11) return null;
+  const digits = periods < 10 ? 1 : 0;
+  const multiple = periods.toLocaleString(locale, {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+  return `${multiple}×`;
+}
+
 interface PriceResult {
   label: string;
   primary: string;
   secondary: string | null;
   share: string;
-  shareWidth: string;
+  shareMultiple: string | null;
+  shareSegments: ShareSegment[];
 }
 
 /** Builds every piece of result copy for a valid price, or null when there is no result. */
@@ -59,7 +91,8 @@ function describeResult(price: number | null, settings: AffordiSettings): PriceR
       percentage: formatIncomePercentage(percentage, settings.language),
       period: copy.payPeriod(incomeComparisonPeriod(settings.payFrequency)),
     }),
-    shareWidth: `${Math.min(percentage, 100)}%`,
+    shareMultiple: formatPayMultiple(percentage, settings.language),
+    shareSegments: shareSegments(percentage),
   };
 }
 
@@ -166,10 +199,23 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
           <p className="result-primary">{result.primary}</p>
           <div className="result-context">
             {result.secondary !== null && <p className="result-approx">≈ {result.secondary}</p>}
-            <div className="result-share">
-              <p>{result.share}</p>
+            <div
+              className={`result-share${result.shareSegments.length > 1 ? ' result-share-over' : ''}`}
+            >
+              <div className="share-row">
+                <p>{result.share}</p>
+                {result.shareMultiple !== null && (
+                  <span aria-hidden="true" className="share-multiple">
+                    {result.shareMultiple}
+                  </span>
+                )}
+              </div>
               <span aria-hidden="true" className="share-meter">
-                <span style={{ inlineSize: result.shareWidth }} />
+                {result.shareSegments.map((segment) => (
+                  <span className="share-segment" key={segment.period}>
+                    <span style={{ inlineSize: `${segment.fill * 100}%` }} />
+                  </span>
+                ))}
               </span>
             </div>
           </div>

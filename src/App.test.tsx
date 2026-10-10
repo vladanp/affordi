@@ -271,12 +271,35 @@ describe('App', () => {
         },
       }),
     );
-    render(<App />);
+    const { container } = render(<App />);
     const price = screen.getByRole('textbox', { name: 'Enter a price' });
+    const segments = () => container.querySelectorAll('.share-segment');
+    const multiple = () => container.querySelector('.share-multiple');
+
+    fireEvent.change(price, { target: { value: '750' } });
+    expect(segments()).toHaveLength(1);
+    expect(multiple()).toBeNull();
 
     fireEvent.change(price, { target: { value: '11250' } });
     expect(screen.getByText('≈ 650 hours')).toBeInTheDocument();
     expect(screen.getByText('375% of your monthly take home pay')).toBeInTheDocument();
+    expect(multiple()).toHaveTextContent('3.8×');
+    expect(multiple()).toHaveAttribute('aria-hidden', 'true');
+    expect(segments()).toHaveLength(4);
+
+    fireEvent.change(price, { target: { value: '3030' } });
+    expect(screen.getByText('101% of your monthly take home pay')).toBeInTheDocument();
+    expect(segments()).toHaveLength(2);
+    expect(multiple()).toBeNull();
+
+    fireEvent.change(price, { target: { value: '3010' } });
+    expect(screen.getByText('100% of your monthly take home pay')).toBeInTheDocument();
+    expect(segments()).toHaveLength(1);
+
+    fireEvent.change(price, { target: { value: '90000' } });
+    expect(multiple()).toHaveTextContent('30×');
+    expect(segments()).toHaveLength(12);
+
     fireEvent.change(price, { target: { value: '15' } });
     expect(screen.getByText('1% of your monthly take home pay')).toBeInTheDocument();
     fireEvent.change(price, { target: { value: '0' } });

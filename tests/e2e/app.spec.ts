@@ -28,6 +28,11 @@ test.describe('Affordi calculator', () => {
     await expect(page.locator('.result-primary')).toHaveText('43 hours of work');
     await expect(page.locator('.result-approx')).toHaveText('≈ 5 days and 3 hours');
     await expect(page.locator('.result-share p')).toHaveText('25% of your monthly take home pay');
+    await expect(page.locator('.share-segment')).toHaveCount(1);
+    await price.fill('11250');
+    await expect(page.locator('.result-share p')).toHaveText('375% of your monthly take home pay');
+    await expect(page.locator('.share-multiple')).toHaveText('3.8×');
+    await expect(page.locator('.share-segment')).toHaveCount(4);
     await price.fill('-1');
     await expect(page.locator('#price-error')).toBeVisible();
     await expect(price).toHaveAttribute('aria-invalid', 'true');
