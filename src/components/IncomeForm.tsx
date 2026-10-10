@@ -20,6 +20,7 @@ import { parseDecimalInput } from '../domain/input';
 import { currencyOptions, getCurrencySymbol, isCurrencyCode } from '../domain/locale';
 import { defaultSettings, isValidAffordiSettings, type AffordiSettings } from '../domain/storage';
 import { isThemePreference, themePreferences, type ThemePreference } from '../domain/theme';
+import { Segmented, type SegmentOption } from './Segmented';
 
 interface IncomeFormBaseProps {
   onSubmit: (settings: AffordiSettings) => void;
@@ -45,6 +46,7 @@ interface FormValues {
   payFrequency: string;
   weeklyHours: string;
   workingDaysPerWeek: string;
+  monthlySavings: string;
   currency: string;
   language: string;
   theme: string;
@@ -53,10 +55,7 @@ interface FormValues {
 type FormErrors = Partial<Record<keyof FormValues, string>>;
 type UpdateField = (name: keyof FormValues, value: string) => void;
 
-interface FieldOption {
-  label: string;
-  value: string;
-}
+type FieldOption = SegmentOption<string>;
 
 interface TextFieldProps {
   error: string | undefined;
@@ -156,20 +155,12 @@ function SegmentedField({ error, label, name, onChange, options, value }: Segmen
       data-field={name}
     >
       <legend className="field-label">{label}</legend>
-      <span className="segmented">
-        {options.map((option) => (
-          <label className="segment" key={option.value}>
-            <input
-              checked={value === option.value}
-              name={name}
-              onChange={() => onChange(name, option.value)}
-              type="radio"
-              value={option.value}
-            />
-            <span>{option.label}</span>
-          </label>
-        ))}
-      </span>
+      <Segmented
+        name={name}
+        onChange={(option) => onChange(name, option)}
+        options={options}
+        value={value}
+      />
       <FieldError error={error} id={errorId} />
     </fieldset>
   );
@@ -270,12 +261,58 @@ function IncomeField({
   );
 }
 
+interface SavingsFieldProps {
+  copy: Translator;
+  currency: string;
+  error: string | undefined;
+  onChange: UpdateField;
+  value: string;
+}
+
+/** Optional monthly savings, used to show how long saving for a price takes. */
+function SavingsField({ copy, currency, error, onChange, value }: SavingsFieldProps) {
+  const describedBy = 'savings-hint savings-currency-description';
+  return (
+    <div className="field form-wide">
+      <label className="field-label" htmlFor="monthlySavings">
+        {copy.t('form.savingsLabel')}
+      </label>
+      <small className="field-hint" id="savings-hint">
+        {copy.t('form.savingsHint')}
+      </small>
+      <span className="input-with-prefix">
+        <span aria-hidden="true" className="input-prefix">
+          {isCurrencyCode(currency) ? getCurrencySymbol(currency, copy.locale) : currency}
+        </span>
+        <input
+          aria-describedby={error ? `${describedBy} savings-error` : describedBy}
+          aria-invalid={error !== undefined}
+          autoComplete="off"
+          enterKeyHint="done"
+          id="monthlySavings"
+          inputMode="decimal"
+          name="monthlySavings"
+          onChange={(event) => onChange('monthlySavings', event.target.value)}
+          spellCheck={false}
+          type="text"
+          value={value}
+        />
+      </span>
+      <small className="visually-hidden" id="savings-currency-description">
+        {copy.t('form.savingsDescription', { currency })}
+      </small>
+      <FieldError error={error} id="savings-error" />
+    </div>
+  );
+}
+
 function valuesFromSettings(settings: AffordiSettings): FormValues {
   return {
     netIncome: String(settings.netIncome),
     payFrequency: settings.payFrequency,
     weeklyHours: String(settings.weeklyHours),
     workingDaysPerWeek: String(settings.workingDaysPerWeek),
+    monthlySavings: settings.monthlySavings > 0 ? String(settings.monthlySavings) : '',
     currency: settings.currency,
     language: settings.language,
     theme: settings.theme,
@@ -300,6 +337,7 @@ const fieldOrder = [
   'currency',
   'weeklyHours',
   'workingDaysPerWeek',
+  'monthlySavings',
   'language',
   'theme',
 ] as const satisfies readonly (keyof FormValues)[];
@@ -322,6 +360,13 @@ function scheduleErrors(
   return errors;
 }
 
+/** An empty field means no savings; anything else must be an amount of 0 or more. */
+function parseSavings(value: string, locale: string): number | null {
+  if (value.trim() === '') return 0;
+  const amount = parseDecimalInput(value, locale);
+  return amount !== null && amount >= 0 ? amount : null;
+}
+
 function validate(
   values: FormValues,
   copy: Translator,
@@ -329,9 +374,11 @@ function validate(
   const netIncome = parseDecimalInput(values.netIncome, copy.locale);
   const weeklyHours = parseDecimalInput(values.weeklyHours, copy.locale);
   const workingDaysPerWeek = parseDecimalInput(values.workingDaysPerWeek, copy.locale);
+  const monthlySavings = parseSavings(values.monthlySavings, copy.locale);
   const errors = scheduleErrors(weeklyHours, workingDaysPerWeek, copy);
 
   if (netIncome === null || netIncome <= 0) errors.netIncome = copy.t('validation.income');
+  if (monthlySavings === null) errors.monthlySavings = copy.t('validation.savings');
   for (const field of choiceFields) {
     if (!field.isValid(values[field.name])) errors[field.name] = copy.t(field.message);
   }
@@ -341,6 +388,7 @@ function validate(
     payFrequency: values.payFrequency,
     weeklyHours,
     workingDaysPerWeek,
+    monthlySavings,
     currency: values.currency,
     language: values.language,
     theme: values.theme,
@@ -444,6 +492,13 @@ export function IncomeForm(props: IncomeFormProps) {
         name="workingDaysPerWeek"
         onChange={update}
         value={values.workingDaysPerWeek}
+      />
+      <SavingsField
+        copy={copy}
+        currency={values.currency}
+        error={errors.monthlySavings}
+        onChange={update}
+        value={values.monthlySavings}
       />
       {editMode && (
         <>

@@ -13,6 +13,7 @@ const settings: AffordiSettings = {
   payFrequency: 'monthly',
   weeklyHours: 40,
   workingDaysPerWeek: 5,
+  monthlySavings: 0,
   currency: 'USD',
   language: 'en',
   theme: 'system',
@@ -35,6 +36,25 @@ describe('settings persistence', () => {
     JSON.stringify({ version: 1, settings: { ...settings, currency: 'GBP' } }),
   ])('recovers from malformed data: %s', (raw) => {
     localStorage.setItem(SETTINGS_STORAGE_KEY, raw);
+    expect(loadSettings()).toBeNull();
+  });
+
+  it('treats missing or invalid monthly savings as none', () => {
+    const { monthlySavings: _omitted, ...legacy } = settings;
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ version: 1, settings: legacy }));
+    expect(loadSettings()).toEqual({ ...settings, monthlySavings: 0 });
+
+    for (const monthlySavings of [-5, 'lots', Number.POSITIVE_INFINITY, null]) {
+      localStorage.setItem(
+        SETTINGS_STORAGE_KEY,
+        JSON.stringify({ version: 1, settings: { ...settings, monthlySavings } }),
+      );
+      expect(loadSettings()).toEqual({ ...settings, monthlySavings: 0 });
+    }
+  });
+
+  it('refuses to save negative monthly savings', () => {
+    expect(saveSettings({ ...settings, monthlySavings: -1 })).toBe(false);
     expect(loadSettings()).toBeNull();
   });
 

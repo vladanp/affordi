@@ -8,12 +8,19 @@ export const SETTINGS_STORAGE_KEY = 'affordi.settings.v1';
 export interface AffordiSettings extends IncomeSettings {
   currency: CurrencyCode;
   language: Locale;
+  /** Amount saved each month in the selected currency. Zero turns the saving time off. */
+  monthlySavings: number;
   theme: ThemePreference;
 }
 
 interface PersistedSettings {
   version: 1;
   settings: AffordiSettings;
+}
+
+/** Zero or a finite positive amount; zero means no monthly savings were entered. */
+function isMonthlySavings(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
 }
 
 function storage(): Storage | null {
@@ -30,6 +37,7 @@ export function isValidAffordiSettings(value: unknown): value is AffordiSettings
     value === null ||
     !('currency' in value) ||
     !('language' in value) ||
+    !('monthlySavings' in value) ||
     !('theme' in value)
   ) {
     return false;
@@ -38,9 +46,24 @@ export function isValidAffordiSettings(value: unknown): value is AffordiSettings
   return (
     isCurrencyCode(value.currency) &&
     isLocale(value.language) &&
+    isMonthlySavings(value.monthlySavings) &&
     isThemePreference(value.theme) &&
     isValidIncomeSettings(value)
   );
+}
+
+type OptionalSettings = Pick<AffordiSettings, 'language' | 'monthlySavings' | 'theme'>;
+
+/** Fields added after the first release fall back to defaults, so older saves stay usable. */
+function optionalSettings(value: object): OptionalSettings {
+  return {
+    language: 'language' in value && isLocale(value.language) ? value.language : detectLocale(),
+    monthlySavings:
+      'monthlySavings' in value && isMonthlySavings(value.monthlySavings)
+        ? value.monthlySavings
+        : 0,
+    theme: 'theme' in value && isThemePreference(value.theme) ? value.theme : 'system',
+  };
 }
 
 function normalizeSettings(value: unknown): AffordiSettings | null {
@@ -54,17 +77,13 @@ function normalizeSettings(value: unknown): AffordiSettings | null {
     return null;
   }
 
-  const language =
-    'language' in value && isLocale(value.language) ? value.language : detectLocale();
-  const theme = 'theme' in value && isThemePreference(value.theme) ? value.theme : 'system';
   return {
     netIncome: value.netIncome,
     payFrequency: value.payFrequency,
     weeklyHours: value.weeklyHours,
     workingDaysPerWeek: value.workingDaysPerWeek,
     currency: value.currency,
-    language,
-    theme,
+    ...optionalSettings(value),
   };
 }
 
@@ -139,6 +158,7 @@ export function defaultSettings(): AffordiSettings {
     workingDaysPerWeek: 5,
     currency: detectCurrency(),
     language: detectLocale(),
+    monthlySavings: 0,
     theme: 'system',
   };
 }

@@ -264,3 +264,25 @@
   color: var(--color-muted);
   font-size: 0.8125rem;
 }
+
+.price-repeat {
+  min-width: 0;
+  margin: 0.25rem 0 0;
+  border: 0;
+  padding: 0;
+}
+
+.price-repeat .segmented {
+  min-height: 2.75rem;
+}
+
+.result-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+
+.result-note svg {
+  flex: none;
+  margin-block-start: 0.15rem;
+}

@@ -330,6 +330,96 @@ describe('App', () => {
     expect(price).not.toHaveFocus();
   });
 
+  it('shows recurring prices per period with the other period as context', () => {
+    localStorage.setItem(
+      'affordi.settings.v1',
+      JSON.stringify({
+        version: 1,
+        settings: {
+          netIncome: 3000,
+          payFrequency: 'monthly',
+          weeklyHours: 40,
+          workingDaysPerWeek: 5,
+          currency: 'USD',
+        },
+      }),
+    );
+    render(<App />);
+    expect(screen.getByRole('group', { name: 'How often you pay' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Once' })).toBeChecked();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
+      target: { value: '300' },
+    });
+    expect(screen.getByText('$300.00 is')).toBeInTheDocument();
+    expect(screen.queryByText(/Over a year/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Monthly' }));
+    expect(screen.getByText('$300.00 a month is')).toBeInTheDocument();
+    expect(screen.getByText('17 hours of work')).toBeInTheDocument();
+    expect(screen.getByText('Over a year: 5 weeks and 1 day')).toBeInTheDocument();
+    expect(screen.getByText('10% of your monthly take home pay')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Yearly' }));
+    expect(screen.getByText('$300.00 a year is')).toBeInTheDocument();
+    expect(screen.getByText('Each month: 1 hour and 27 minutes')).toBeInTheDocument();
+    expect(screen.getByText('1% of your yearly take home pay')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Once' }));
+    expect(screen.getByText('$300.00 is')).toBeInTheDocument();
+    expect(screen.queryByText(/Each month/)).not.toBeInTheDocument();
+  });
+
+  it('shows how long saving takes and validates monthly savings in settings', () => {
+    localStorage.setItem(
+      'affordi.settings.v1',
+      JSON.stringify({
+        version: 1,
+        settings: {
+          netIncome: 3000,
+          payFrequency: 'monthly',
+          weeklyHours: 40,
+          workingDaysPerWeek: 5,
+          monthlySavings: 300,
+          currency: 'USD',
+        },
+      }),
+    );
+    render(<App />);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
+      target: { value: '900' },
+    });
+    expect(screen.getByText('Time to save for it: 3 months')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: 'Monthly' }));
+    expect(screen.queryByText(/Time to save/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: 'Once' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    const savings = screen.getByRole('textbox', { name: 'Monthly savings (optional)' });
+    expect(savings).toHaveValue('300');
+    expect(savings).toHaveAccessibleDescription(
+      'Shows how long it takes to save for a price. Amount in USD.',
+    );
+    fireEvent.change(savings, { target: { value: '-5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+    expect(screen.getByText('Enter 0 or more, or leave it empty.')).toBeInTheDocument();
+    expect(savings).toHaveAttribute('aria-invalid', 'true');
+    expect(savings).toHaveFocus();
+
+    fireEvent.change(savings, { target: { value: '450' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+    expect(screen.getByText('Time to save for it: 2 months')).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('affordi.settings.v1') ?? '{}').settings).toMatchObject({
+      monthlySavings: 450,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Monthly savings (optional)' }), {
+      target: { value: '' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+    expect(screen.queryByText(/Time to save/)).not.toBeInTheDocument();
+  });
+
   it('rejects impossible work schedules during setup', () => {
     render(<App />);
     fireEvent.change(screen.getByLabelText('Take home income'), { target: { value: '3000' } });

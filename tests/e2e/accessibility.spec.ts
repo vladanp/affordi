@@ -22,6 +22,9 @@ test.describe('Affordi accessibility', () => {
     await completeSetup(page);
     await page.getByRole('textbox', { name: 'Enter a price' }).fill('750');
     await expectAccessible(page);
+    await page.getByRole('radio', { name: 'Monthly' }).check();
+    await expect(page.locator('.result-note')).toBeVisible();
+    await expectAccessible(page);
 
     await page.getByRole('button', { name: 'Settings' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
