@@ -13,6 +13,7 @@ describe('translation catalog completeness', () => {
       count: 999_999,
       hours: 40,
       days: 5,
+      name: 'Netflix',
     } as const;
 
     for (const locale of supportedLocales) {

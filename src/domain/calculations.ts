@@ -2,6 +2,12 @@ export const payFrequencies = ['hourly', 'weekly', 'biweekly', 'monthly', 'yearl
 
 export type PayFrequency = (typeof payFrequencies)[number];
 
+/** How often a price is paid. Recurring prices compare with income over a matching period. */
+export const priceRepeats = ['once', 'workday', 'weekly', 'monthly', 'yearly'] as const;
+
+export type PriceRepeat = (typeof priceRepeats)[number];
+export type RecurringRepeat = Exclude<PriceRepeat, 'once'>;
+
 export interface IncomeSettings {
   netIncome: number;
   payFrequency: PayFrequency;
@@ -26,6 +32,10 @@ function isFinitePositive(value: unknown): value is number {
 
 export function isPayFrequency(value: unknown): value is PayFrequency {
   return typeof value === 'string' && payFrequencies.some((frequency) => frequency === value);
+}
+
+export function isPriceRepeat(value: unknown): value is PriceRepeat {
+  return typeof value === 'string' && priceRepeats.some((repeat) => repeat === value);
 }
 
 /** A whole number of working days in one week. */
@@ -153,6 +163,35 @@ export function calculateIncomePercentage(
 
   const percentage = (itemPrice / periodIncome) * 100;
   return Number.isFinite(percentage) ? percentage : null;
+}
+
+/** How many times a recurring price is paid in one year. */
+export function paymentsPerYear(repeat: RecurringRepeat, workingDaysPerWeek: number): number {
+  return repeat === 'workday' ? workingDaysPerWeek * WEEKS_PER_YEAR : PAY_PERIODS_PER_YEAR[repeat];
+}
+
+interface PriceComparison {
+  amount: number;
+  period: PayFrequency;
+}
+
+/**
+ * The income period a price is compared with, and the price over that period.
+ * Workday costs read best against a month, so they are scaled to one month.
+ */
+export function priceComparison(
+  price: number,
+  repeat: PriceRepeat,
+  settings: IncomeSettings,
+): PriceComparison {
+  if (repeat === 'once') {
+    return { amount: price, period: incomeComparisonPeriod(settings.payFrequency) };
+  }
+  if (repeat === 'workday') {
+    const perYear = paymentsPerYear(repeat, settings.workingDaysPerWeek);
+    return { amount: (price * perYear) / MONTHS_PER_YEAR, period: 'monthly' };
+  }
+  return { amount: price, period: repeat };
 }
 
 /** Months of saving needed for a price, or null when there is nothing to save for. */

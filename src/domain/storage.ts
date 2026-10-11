@@ -1,6 +1,7 @@
 import { isValidIncomeSettings, type IncomeSettings } from './calculations';
 import { detectLocale, isLocale, type Locale } from './i18n';
 import { detectCurrency, isCurrencyCode, type CurrencyCode } from './locale';
+import { readRecord, removeRecord, writeRecord } from './localStore';
 import { isThemePreference, type ThemePreference } from './theme';
 
 export const SETTINGS_STORAGE_KEY = 'affordi.settings.v1';
@@ -13,22 +14,9 @@ export interface AffordiSettings extends IncomeSettings {
   theme: ThemePreference;
 }
 
-interface PersistedSettings {
-  version: 1;
-  settings: AffordiSettings;
-}
-
 /** Zero or a finite positive amount; zero means no monthly savings were entered. */
 function isMonthlySavings(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0;
-}
-
-function storage(): Storage | null {
-  try {
-    return typeof window === 'undefined' ? null : window.localStorage;
-  } catch {
-    return null;
-  }
 }
 
 export function isValidAffordiSettings(value: unknown): value is AffordiSettings {
@@ -89,65 +77,17 @@ function normalizeSettings(value: unknown): AffordiSettings | null {
 
 /** Reads settings defensively. Any malformed value is treated as a first visit. */
 export function loadSettings(): AffordiSettings | null {
-  const currentStorage = storage();
-  if (currentStorage === null) {
-    return null;
-  }
-
-  try {
-    const raw = currentStorage.getItem(SETTINGS_STORAGE_KEY);
-    if (raw === null) {
-      return null;
-    }
-
-    const parsed: unknown = JSON.parse(raw);
-    if (
-      typeof parsed !== 'object' ||
-      parsed === null ||
-      !('version' in parsed) ||
-      parsed.version !== 1 ||
-      !('settings' in parsed)
-    ) {
-      return null;
-    }
-
-    return normalizeSettings(parsed.settings);
-  } catch {
-    return null;
-  }
+  return normalizeSettings(readRecord(SETTINGS_STORAGE_KEY, 'settings'));
 }
 
 export function saveSettings(settings: AffordiSettings): boolean {
-  if (!isValidAffordiSettings(settings)) {
-    return false;
-  }
-
-  const currentStorage = storage();
-  if (currentStorage === null) {
-    return false;
-  }
-
-  const value: PersistedSettings = { version: 1, settings };
-  try {
-    currentStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(value));
-    return true;
-  } catch {
-    return false;
-  }
+  return (
+    isValidAffordiSettings(settings) && writeRecord(SETTINGS_STORAGE_KEY, 'settings', settings)
+  );
 }
 
 export function clearSettings(): boolean {
-  const currentStorage = storage();
-  if (currentStorage === null) {
-    return false;
-  }
-
-  try {
-    currentStorage.removeItem(SETTINGS_STORAGE_KEY);
-    return true;
-  } catch {
-    return false;
-  }
+  return removeRecord(SETTINGS_STORAGE_KEY);
 }
 
 export function defaultSettings(): AffordiSettings {

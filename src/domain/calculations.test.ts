@@ -9,6 +9,9 @@ import {
   calculateWorkHours,
   incomeComparisonPeriod,
   isPayFrequency,
+  isPriceRepeat,
+  paymentsPerYear,
+  priceComparison,
   isValidIncomeSettings,
   type IncomeSettings,
 } from './calculations';
@@ -196,5 +199,39 @@ describe('calculateSavingMonths', () => {
     [Number.MAX_VALUE, Number.MIN_VALUE],
   ])('returns null for price %s and savings %s', (price, savings) => {
     expect(calculateSavingMonths(price, savings)).toBeNull();
+  });
+});
+
+describe('recurring prices', () => {
+  it('counts payments in a year', () => {
+    expect(paymentsPerYear('workday', 5)).toBe(260);
+    expect(paymentsPerYear('workday', 4)).toBe(208);
+    expect(paymentsPerYear('weekly', 5)).toBe(52);
+    expect(paymentsPerYear('monthly', 5)).toBe(12);
+    expect(paymentsPerYear('yearly', 5)).toBe(1);
+  });
+
+  it('recognizes repeat values', () => {
+    expect(isPriceRepeat('workday')).toBe(true);
+    expect(isPriceRepeat('daily')).toBe(false);
+    expect(isPriceRepeat(undefined)).toBe(false);
+  });
+
+  it('compares each repeat with a matching income period', () => {
+    expect(priceComparison(10, 'once', monthlySettings)).toEqual({ amount: 10, period: 'monthly' });
+    expect(
+      priceComparison(10, 'once', { ...monthlySettings, payFrequency: 'hourly', netIncome: 20 }),
+    ).toEqual({ amount: 10, period: 'weekly' });
+    expect(priceComparison(10, 'weekly', monthlySettings)).toEqual({
+      amount: 10,
+      period: 'weekly',
+    });
+    expect(priceComparison(10, 'yearly', monthlySettings)).toEqual({
+      amount: 10,
+      period: 'yearly',
+    });
+    const workday = priceComparison(4.5, 'workday', monthlySettings);
+    expect(workday.period).toBe('monthly');
+    expect(workday.amount).toBeCloseTo(97.5, 10);
   });
 });
