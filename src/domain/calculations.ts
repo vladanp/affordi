@@ -204,6 +204,50 @@ export function calculateSavingMonths(itemPrice: number, monthlySavings: number)
   return isFinitePositive(months) ? months : null;
 }
 
+/** Unpaid time and money that working takes. Zero means not set. */
+export interface WorkCosts {
+  /** Minutes of commuting on each workday, both ways together. */
+  commuteMinutes: number;
+  /** Money spent each month because of work, such as transport or childcare. */
+  monthlyWorkCosts: number;
+}
+
+export const MAX_COMMUTE_MINUTES = 600;
+const MINUTES_PER_HOUR = 60;
+
+/**
+ * Income settings for the time a price really takes: monthly work costs come
+ * off the income and commute time is added to the working hours. Returns the
+ * settings unchanged when neither is set, and null when the costs use up the
+ * whole income or the days grow longer than the week allows.
+ */
+export function trueIncomeSettings(
+  settings: IncomeSettings,
+  costs: WorkCosts,
+): IncomeSettings | null {
+  if (costs.commuteMinutes <= 0 && costs.monthlyWorkCosts <= 0) return settings;
+
+  const yearlyIncome = calculatePeriodIncome(settings, 'yearly');
+  if (yearlyIncome === null) return null;
+  const commuteHours = (costs.commuteMinutes / MINUTES_PER_HOUR) * settings.workingDaysPerWeek;
+  const adjusted: IncomeSettings = {
+    netIncome: yearlyIncome - costs.monthlyWorkCosts * MONTHS_PER_YEAR,
+    payFrequency: 'yearly',
+    weeklyHours: settings.weeklyHours + commuteHours,
+    workingDaysPerWeek: settings.workingDaysPerWeek,
+  };
+  return isValidIncomeSettings(adjusted) ? adjusted : null;
+}
+
+/** How much lower the true hourly wage is than the paid one, in percent, or null. */
+export function trueWageReduction(settings: IncomeSettings, costs: WorkCosts): number | null {
+  const paidRate = calculateHourlyRate(settings);
+  const adjusted = trueIncomeSettings(settings, costs);
+  const trueRate = adjusted === null ? null : calculateHourlyRate(adjusted);
+  if (paidRate === null || trueRate === null) return null;
+  return (1 - trueRate / paidRate) * 100;
+}
+
 export function calculateHoursPerWorkday(settings: IncomeSettings): number | null {
   if (!isValidIncomeSettings(settings)) {
     return null;

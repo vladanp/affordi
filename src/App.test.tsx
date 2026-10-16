@@ -547,6 +547,93 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Start calculating' })).toBeInTheDocument();
   });
 
+  it('uses the true hourly wage after commute and work costs are set', () => {
+    localStorage.setItem(
+      'affordi.settings.v1',
+      JSON.stringify({
+        version: 1,
+        settings: {
+          netIncome: 3000,
+          payFrequency: 'monthly',
+          weeklyHours: 40,
+          workingDaysPerWeek: 5,
+          currency: 'EUR',
+          language: 'en',
+          theme: 'system',
+        },
+      }),
+    );
+    render(<App />);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
+      target: { value: '750' },
+    });
+    expect(screen.getByText('43 hours of work')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    expect(screen.getByRole('group', { name: 'True hourly wage (optional)' })).toBeInTheDocument();
+    const commute = screen.getByRole('textbox', { name: 'Commute each workday (minutes)' });
+    const costs = screen.getByRole('textbox', { name: 'Work costs each month' });
+    expect(commute).toHaveValue('');
+    fireEvent.change(commute, { target: { value: '700' } });
+    fireEvent.change(costs, { target: { value: '3000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+    expect(
+      screen.getByText('Use 0 to 600 minutes, keeping work and commute within 24 hours a day.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Enter 0 or more, below your monthly income.')).toBeInTheDocument();
+    expect(commute).toHaveFocus();
+    expect(costs).toHaveAttribute('aria-invalid', 'true');
+
+    fireEvent.change(commute, { target: { value: '60' } });
+    fireEvent.change(costs, { target: { value: '300' } });
+    expect(screen.getByText('Your true hourly wage is 20% lower.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+
+    expect(screen.getByText('54 hours of work')).toBeInTheDocument();
+    expect(screen.getByText('25% of your monthly take home pay')).toBeInTheDocument();
+    expect(screen.getByText('Includes your commute and work costs.')).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('affordi.settings.v1') ?? '{}').settings).toMatchObject({
+      commuteMinutes: 60,
+      monthlyWorkCosts: 300,
+    });
+  });
+
+  it('splits a single purchase over its uses', () => {
+    localStorage.setItem(
+      'affordi.settings.v1',
+      JSON.stringify({
+        version: 1,
+        settings: {
+          netIncome: 3000,
+          payFrequency: 'monthly',
+          weeklyHours: 40,
+          workingDaysPerWeek: 5,
+          currency: 'EUR',
+        },
+      }),
+    );
+    render(<App />);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
+      target: { value: '1300' },
+    });
+    const uses = screen.getByRole('textbox', { name: 'Uses' });
+    expect(uses).toHaveAccessibleDescription(
+      'Optional. Splits the price over how many times you will use it.',
+    );
+    fireEvent.change(uses, { target: { value: '1' } });
+    expect(screen.queryByText(/Per use/)).not.toBeInTheDocument();
+    fireEvent.change(uses, { target: { value: '1o0' } });
+    expect(uses).toHaveValue('10');
+    fireEvent.change(uses, { target: { value: '100' } });
+    expect(screen.getByText('Per use (100×): 45 minutes')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'How often you pay' }), {
+      target: { value: 'monthly' },
+    });
+    expect(screen.queryByRole('textbox', { name: 'Uses' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Per use/)).not.toBeInTheDocument();
+  });
+
   it('rejects impossible work schedules during setup', () => {
     render(<App />);
     fireEvent.change(screen.getByLabelText('Take home income'), { target: { value: '3000' } });

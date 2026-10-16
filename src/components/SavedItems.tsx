@@ -14,6 +14,7 @@ import {
 import { formatPrimaryDuration } from '../domain/duration';
 import type { Translator } from '../domain/i18n';
 import type { CurrencyCode } from '../domain/locale';
+import { timeSettings } from '../domain/priceResult';
 import { describePrice, formatIncomePercentage } from '../domain/priceText';
 import type { AffordiSettings } from '../domain/storage';
 
@@ -93,9 +94,10 @@ function itemTime(check: SavedCheck, settings: AffordiSettings, copy: Translator
   if (check.currency !== settings.currency) {
     return copy.t('saved.otherCurrency', { currency: check.currency });
   }
-  const workHours = calculateWorkHours(check.price, settings);
+  const time = timeSettings(settings);
+  const workHours = calculateWorkHours(check.price, time);
   const duration =
-    workHours === null ? null : formatPrimaryDuration(workHours, settings, settings.language);
+    workHours === null ? null : formatPrimaryDuration(workHours, time, settings.language);
   return duration ?? '';
 }
 
@@ -137,9 +139,10 @@ function RecurringTotal({
   copy: Translator;
   settings: AffordiSettings;
 }) {
-  const total = recurringYearlyTotal(checks, settings);
+  const time = timeSettings(settings);
+  const total = recurringYearlyTotal(checks, settings, time);
   const duration =
-    total === null ? null : formatPrimaryDuration(total.workHours, settings, settings.language);
+    total === null ? null : formatPrimaryDuration(total.workHours, time, settings.language);
   if (total === null || duration === null) return null;
 
   return (
