@@ -279,14 +279,13 @@
 .price-repeat {
   position: relative;
   display: inline-flex;
-  justify-self: start;
   align-items: center;
   max-inline-size: 100%;
-  margin-top: 0.25rem;
 }
 
 .price-repeat select {
   appearance: none;
+  field-sizing: content;
   max-inline-size: 100%;
   min-height: 2.75rem;
   border: 1px solid var(--color-line-strong);
@@ -448,4 +447,54 @@
 .saved-list .saved-remove:hover {
   background: var(--color-sunken);
   color: var(--color-ink);
+}
+
+.price-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.price-uses {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 999px;
+  background: var(--color-surface);
+  padding-inline: 1rem 0.35rem;
+  box-shadow: 0 1px 2px var(--color-shadow);
+}
+
+.price-uses:has(input:focus-visible) {
+  outline: 0.1875rem solid var(--color-focus);
+  outline-offset: 0.1875rem;
+}
+
+.price-uses label {
+  color: var(--color-muted);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.price-uses input {
+  inline-size: 5.5ch;
+  min-height: 2.25rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-sunken);
+  color: var(--color-ink);
+  padding-inline: 0.6rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+}
+
+.result-footnote {
+  color: var(--color-on-highlight-muted);
+  font-size: 0.8125rem;
 }

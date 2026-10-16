@@ -14,6 +14,8 @@ const settings: AffordiSettings = {
   weeklyHours: 40,
   workingDaysPerWeek: 5,
   monthlySavings: 0,
+  commuteMinutes: 0,
+  monthlyWorkCosts: 0,
   currency: 'USD',
   language: 'en',
   theme: 'system',
@@ -51,6 +53,22 @@ describe('settings persistence', () => {
       );
       expect(loadSettings()).toEqual({ ...settings, monthlySavings: 0 });
     }
+  });
+
+  it('treats missing or out of range commute and work costs as none', () => {
+    const { commuteMinutes: _commute, monthlyWorkCosts: _costs, ...legacy } = settings;
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ version: 1, settings: legacy }));
+    expect(loadSettings()).toMatchObject({ commuteMinutes: 0, monthlyWorkCosts: 0 });
+
+    localStorage.setItem(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        settings: { ...settings, commuteMinutes: 601, monthlyWorkCosts: -3 },
+      }),
+    );
+    expect(loadSettings()).toMatchObject({ commuteMinutes: 0, monthlyWorkCosts: 0 });
+    expect(saveSettings({ ...settings, commuteMinutes: 601 })).toBe(false);
   });
 
   it('refuses to save negative monthly savings', () => {

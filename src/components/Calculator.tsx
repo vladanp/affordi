@@ -1,28 +1,18 @@
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from 'react';
-import { Hourglass, LockKeyhole, PiggyBank, Repeat, Settings2 } from 'lucide-react';
+import { Divide, Hourglass, LockKeyhole, PiggyBank, Repeat, Settings2 } from 'lucide-react';
 
 import { Brand } from './Brand';
 import { SavedItems, SaveItemForm, useSavedChecks } from './SavedItems';
-import {
-  calculateIncomePercentage,
-  calculateSavingMonths,
-  calculateWorkHours,
-  isPriceRepeat,
-  paymentsPerYear,
-  priceComparison,
-  priceRepeats,
-  type PriceRepeat,
-} from '../domain/calculations';
-import {
-  formatPrimaryDuration,
-  formatSavingDuration,
-  formatSecondaryDuration,
-  formatTotalDuration,
-} from '../domain/duration';
+import { isPriceRepeat, priceRepeats, type PriceRepeat } from '../domain/calculations';
 import { createTranslator, type Translator } from '../domain/i18n';
 import { parseDecimalInput } from '../domain/input';
 import { getCurrencySymbol } from '../domain/locale';
-import { describePrice, formatIncomePercentage } from '../domain/priceText';
+import {
+  describeAnnouncement,
+  describeResult,
+  type PriceResult,
+  type ResultNote,
+} from '../domain/priceResult';
 import type { AffordiSettings } from '../domain/storage';
 
 /** Screen readers hear the result once typing pauses instead of on every keystroke. */
@@ -32,130 +22,6 @@ interface CalculatorProps {
   settings: AffordiSettings;
   onOpenSettings: () => void;
   settingsButtonRef: RefObject<HTMLButtonElement | null>;
-}
-
-/** Each meter segment is one pay period; long bars stop at a readable number of segments. */
-const MAX_SHARE_SEGMENTS = 12;
-
-interface ShareSegment {
-  period: number;
-  fill: number;
-}
-
-function shareSegments(percentage: number): ShareSegment[] {
-  const periods = percentage / 100;
-  // Split only when the rounded percentage shown beside the meter is above 100%.
-  const count =
-    Math.round(percentage) <= 100 ? 1 : Math.min(Math.ceil(periods), MAX_SHARE_SEGMENTS);
-  return Array.from({ length: count }, (_, index) => ({
-    period: index + 1,
-    fill: Math.min(Math.max(periods - index, 0), 1),
-  }));
-}
-
-/** How many pay periods a price spans, shown from 1.1 periods so it never reads as 1.0×. */
-function formatPayMultiple(percentage: number, locale: string): string | null {
-  const periods = percentage / 100;
-  if (Math.round(periods * 10) < 11) return null;
-  const digits = periods < 10 ? 1 : 0;
-  const multiple = periods.toLocaleString(locale, {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  });
-  return `${multiple}×`;
-}
-
-const MONTHS_PER_YEAR = 12;
-
-interface ResultNote {
-  kind: 'repeat' | 'saving';
-  text: string;
-}
-
-interface PriceResult {
-  label: string;
-  primary: string;
-  secondary: string | null;
-  note: ResultNote | null;
-  share: string;
-  shareMultiple: string | null;
-  shareSegments: ShareSegment[];
-}
-
-/** A recurring price over one year, or over one month for a yearly price. */
-function describeRepeatNote(
-  workHours: number,
-  repeat: Exclude<PriceRepeat, 'once'>,
-  settings: AffordiSettings,
-  copy: Translator,
-): ResultNote | null {
-  const yearly = repeat === 'yearly';
-  const hours = yearly
-    ? workHours / MONTHS_PER_YEAR
-    : workHours * paymentsPerYear(repeat, settings.workingDaysPerWeek);
-  const duration = formatTotalDuration(hours, settings, settings.language);
-  if (duration === null) return null;
-  return {
-    kind: 'repeat',
-    text: copy.t(yearly ? 'calculator.eachMonth' : 'calculator.overYear', { duration }),
-  };
-}
-
-/**
- * One extra line of context: the other period for a recurring price, or the
- * time to save for a single purchase when monthly savings are set.
- */
-function describeNote(
-  price: number,
-  workHours: number,
-  repeat: PriceRepeat,
-  settings: AffordiSettings,
-  copy: Translator,
-): ResultNote | null {
-  if (repeat !== 'once') return describeRepeatNote(workHours, repeat, settings, copy);
-
-  const months = calculateSavingMonths(price, settings.monthlySavings);
-  const duration = months === null ? null : formatSavingDuration(months, settings.language);
-  if (duration === null) return null;
-  return { kind: 'saving', text: copy.t('calculator.savingTime', { duration }) };
-}
-
-/** Builds every piece of result copy for a valid price, or null when there is no result. */
-function describeResult(
-  price: number | null,
-  repeat: PriceRepeat,
-  settings: AffordiSettings,
-): PriceResult | null {
-  if (price === null) return null;
-  const comparison = priceComparison(price, repeat, settings);
-  const workHours = calculateWorkHours(price, settings);
-  const percentage = calculateIncomePercentage(comparison.amount, settings, comparison.period);
-  const primary =
-    workHours === null ? null : formatPrimaryDuration(workHours, settings, settings.language);
-  if (workHours === null || percentage === null || primary === null) return null;
-
-  const copy = createTranslator(settings.language);
-  return {
-    label: copy.t('calculator.resultIs', {
-      price: describePrice(price, repeat, settings.currency, copy),
-    }),
-    primary,
-    secondary: formatSecondaryDuration(workHours, settings, settings.language),
-    note: describeNote(price, workHours, repeat, settings, copy),
-    share: copy.t('calculator.payContext', {
-      percentage: formatIncomePercentage(percentage, settings.language),
-      period: copy.payPeriod(comparison.period),
-    }),
-    shareMultiple: formatPayMultiple(percentage, settings.language),
-    shareSegments: shareSegments(percentage),
-  };
-}
-
-/** The sentence screen readers hear once the result settles. */
-function describeAnnouncement(result: PriceResult): string {
-  const approximate = result.secondary === null ? [] : [`≈ ${result.secondary}`];
-  const note = result.note === null ? [] : [result.note.text];
-  return [`${result.label} ${result.primary}`, ...approximate, ...note, result.share].join('. ');
 }
 
 interface PriceRepeatFieldProps {
@@ -190,8 +56,40 @@ function PriceRepeatField({ copy, onChange, value }: PriceRepeatFieldProps) {
   );
 }
 
+interface PriceUsesFieldProps {
+  copy: Translator;
+  onChange: (uses: string) => void;
+  value: string;
+}
+
+/** Optional number of uses for a single purchase, kept to whole numbers. */
+function PriceUsesField({ copy, onChange, value }: PriceUsesFieldProps) {
+  return (
+    <span className="price-uses">
+      <label htmlFor="price-uses">{copy.t('calculator.usesLabel')}</label>
+      <input
+        aria-describedby="price-uses-hint"
+        autoComplete="off"
+        enterKeyHint="done"
+        id="price-uses"
+        inputMode="numeric"
+        maxLength={7}
+        onChange={(event) => onChange(event.target.value.replace(/\D/g, ''))}
+        placeholder="1"
+        type="text"
+        value={value}
+      />
+      <small className="visually-hidden" id="price-uses-hint">
+        {copy.t('calculator.usesHint')}
+      </small>
+    </span>
+  );
+}
+
+const noteIcons = { repeat: Repeat, saving: PiggyBank, use: Divide } as const;
+
 function ResultNoteLine({ note }: { note: ResultNote }) {
-  const Icon = note.kind === 'saving' ? PiggyBank : Repeat;
+  const Icon = noteIcons[note.kind];
   return (
     <p className="result-note">
       <Icon aria-hidden="true" size={16} strokeWidth={2} />
@@ -206,7 +104,9 @@ function ResultContext({ result }: { result: PriceResult }) {
   return (
     <div className="result-context">
       {result.secondary !== null && <p className="result-approx">≈ {result.secondary}</p>}
-      {result.note !== null && <ResultNoteLine note={result.note} />}
+      {result.notes.map((note) => (
+        <ResultNoteLine key={note.kind} note={note} />
+      ))}
       <div className={`result-share${over ? ' result-share-over' : ''}`}>
         <div className="share-row">
           <p>{result.share}</p>
@@ -224,6 +124,33 @@ function ResultContext({ result }: { result: PriceResult }) {
           ))}
         </span>
       </div>
+      {result.footnote !== null && <p className="result-footnote">{result.footnote}</p>}
+    </div>
+  );
+}
+
+interface ResultPanelProps {
+  copy: Translator;
+  result: PriceResult | null;
+  resultRef: RefObject<HTMLDivElement | null>;
+}
+
+/** The result card, or a quiet placeholder until a valid price is entered. */
+function ResultPanel({ copy, result, resultRef }: ResultPanelProps) {
+  if (result === null) {
+    return (
+      <div className="result-empty" id="calculator-result" ref={resultRef}>
+        <Hourglass aria-hidden="true" size={22} strokeWidth={1.75} />
+        <p>{copy.t('calculator.emptyResult')}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="result-card" id="calculator-result" ref={resultRef}>
+      <p className="result-label">{result.label}</p>
+      <p className="result-primary">{result.primary}</p>
+      <ResultContext result={result} />
     </div>
   );
 }
@@ -240,13 +167,14 @@ function useDelayedValue(value: string, delay: number): string {
 export function Calculator({ settings, onOpenSettings, settingsButtonRef }: CalculatorProps) {
   const [itemPrice, setItemPrice] = useState('');
   const [repeat, setRepeat] = useState<PriceRepeat>('once');
+  const [uses, setUses] = useState('');
   const priceInputRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const saved = useSavedChecks();
   const copy = createTranslator(settings.language);
   const price = parseDecimalInput(itemPrice, settings.language);
-  const result = describeResult(price, repeat, settings);
+  const result = describeResult(price, repeat, Number(uses), settings);
   const priceError = itemPrice.trim() !== '' && result === null;
   let announcement = result === null ? '' : describeAnnouncement(result);
   if (priceError) announcement = copy.t('calculator.priceError');
@@ -311,7 +239,10 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
         <small className="visually-hidden" id="price-currency-description">
           {copy.t('calculator.priceDescription', { currency: settings.currency })}
         </small>
-        <PriceRepeatField copy={copy} onChange={setRepeat} value={repeat} />
+        <div className="price-options">
+          <PriceRepeatField copy={copy} onChange={setRepeat} value={repeat} />
+          {repeat === 'once' && <PriceUsesField copy={copy} onChange={setUses} value={uses} />}
+        </div>
         <small
           aria-hidden={!priceError}
           className={`field-error price-error${priceError ? '' : ' price-error-hidden'}`}
@@ -321,18 +252,7 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
         </small>
       </form>
 
-      {result === null ? (
-        <div className="result-empty" id="calculator-result" ref={resultRef}>
-          <Hourglass aria-hidden="true" size={22} strokeWidth={1.75} />
-          <p>{copy.t('calculator.emptyResult')}</p>
-        </div>
-      ) : (
-        <div className="result-card" id="calculator-result" ref={resultRef}>
-          <p className="result-label">{result.label}</p>
-          <p className="result-primary">{result.primary}</p>
-          <ResultContext result={result} />
-        </div>
-      )}
+      <ResultPanel copy={copy} result={result} resultRef={resultRef} />
       {result !== null && price !== null && (
         <SaveItemForm
           copy={copy}

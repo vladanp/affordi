@@ -14,6 +14,8 @@ const settings: AffordiSettings = {
   weeklyHours: 40,
   workingDaysPerWeek: 5,
   monthlySavings: 250,
+  commuteMinutes: 35,
+  monthlyWorkCosts: 120,
   currency: 'EUR',
   language: 'fr',
   theme: 'dark',

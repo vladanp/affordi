@@ -100,11 +100,13 @@ interface RecurringTotal {
 /**
  * Work time and share of yearly pay for every recurring item in the current
  * currency, or null when there are none. Items in another currency are left
- * out because prices are never converted.
+ * out because prices are never converted. Work time uses `time`, which can be
+ * the true hourly wage, while the share always uses the paid income.
  */
 export function recurringYearlyTotal(
   checks: readonly SavedCheck[],
   settings: IncomeSettings & { currency: CurrencyCode },
+  time: IncomeSettings = settings,
 ): RecurringTotal | null {
   let yearlyCost = 0;
   let count = 0;
@@ -115,7 +117,7 @@ export function recurringYearlyTotal(
   }
   if (count === 0) return null;
 
-  const workHours = calculateWorkHours(yearlyCost, settings);
+  const workHours = calculateWorkHours(yearlyCost, time);
   const percentage = calculateIncomePercentage(yearlyCost, settings, 'yearly');
   if (workHours === null || percentage === null) return null;
   return { workHours, percentage };

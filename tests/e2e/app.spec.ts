@@ -98,6 +98,26 @@ test.describe('Affordi calculator', () => {
     await expect(page.locator('.saved-total-value')).toHaveText('68 hours of work');
   });
 
+  test('applies the true hourly wage and splits a price over its uses', async ({ page }) => {
+    await completeSetup(page);
+    await page.getByRole('button', { name: 'Settings' }).click();
+    await page.getByRole('textbox', { name: 'Commute each workday (minutes)' }).fill('60');
+    await page.getByRole('textbox', { name: 'Work costs each month' }).fill('300');
+    await expect(page.locator('.true-wage-preview')).toHaveText(
+      'Your true hourly wage is 20% lower.',
+    );
+    await page.getByRole('button', { name: 'Save settings' }).click();
+    await expect(page.getByRole('dialog')).toBeHidden();
+
+    await page.getByRole('textbox', { name: 'Enter a price' }).fill('750');
+    await expect(page.locator('.result-primary')).toHaveText('54 hours of work');
+    await expect(page.locator('.result-footnote')).toHaveText(
+      'Includes your commute and work costs.',
+    );
+    await page.getByRole('textbox', { name: 'Uses' }).fill('10');
+    await expect(page.locator('.result-note')).toHaveText('Per use (10×): 5 hours and 25 minutes');
+  });
+
   test('shows income during setup and masks it on request', async ({ page }) => {
     const income = page.getByLabel('Take home income');
 
