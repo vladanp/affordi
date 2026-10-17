@@ -1,18 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from 'react';
-import { Divide, Hourglass, LockKeyhole, PiggyBank, Repeat, Settings2 } from 'lucide-react';
+import { Hourglass, LockKeyhole, Repeat, Settings2 } from 'lucide-react';
 
 import { Brand } from './Brand';
-import { SavedItems, SaveItemForm, useSavedChecks } from './SavedItems';
 import { isPriceRepeat, priceRepeats, type PriceRepeat } from '../domain/calculations';
 import { createTranslator, type Translator } from '../domain/i18n';
 import { parseDecimalInput } from '../domain/input';
 import { getCurrencySymbol } from '../domain/locale';
-import {
-  describeAnnouncement,
-  describeResult,
-  type PriceResult,
-  type ResultNote,
-} from '../domain/priceResult';
+import { describeAnnouncement, describeResult, type PriceResult } from '../domain/priceResult';
 import type { AffordiSettings } from '../domain/storage';
 
 /** Screen readers hear the result once typing pauses instead of on every keystroke. */
@@ -56,57 +50,18 @@ function PriceRepeatField({ copy, onChange, value }: PriceRepeatFieldProps) {
   );
 }
 
-interface PriceUsesFieldProps {
-  copy: Translator;
-  onChange: (uses: string) => void;
-  value: string;
-}
-
-/** Optional number of uses for a single purchase, kept to whole numbers. */
-function PriceUsesField({ copy, onChange, value }: PriceUsesFieldProps) {
-  return (
-    <span className="price-uses">
-      <label htmlFor="price-uses">{copy.t('calculator.usesLabel')}</label>
-      <input
-        aria-describedby="price-uses-hint"
-        autoComplete="off"
-        enterKeyHint="done"
-        id="price-uses"
-        inputMode="numeric"
-        maxLength={7}
-        onChange={(event) => onChange(event.target.value.replace(/\D/g, ''))}
-        placeholder="1"
-        type="text"
-        value={value}
-      />
-      <small className="visually-hidden" id="price-uses-hint">
-        {copy.t('calculator.usesHint')}
-      </small>
-    </span>
-  );
-}
-
-const noteIcons = { repeat: Repeat, saving: PiggyBank, use: Divide } as const;
-
-function ResultNoteLine({ note }: { note: ResultNote }) {
-  const Icon = noteIcons[note.kind];
-  return (
-    <p className="result-note">
-      <Icon aria-hidden="true" size={16} strokeWidth={2} />
-      <span>{note.text}</span>
-    </p>
-  );
-}
-
 /** Supporting lines under the headline, ending with the share of pay and its meter. */
 function ResultContext({ result }: { result: PriceResult }) {
   const over = result.shareSegments.length > 1;
   return (
     <div className="result-context">
       {result.secondary !== null && <p className="result-approx">≈ {result.secondary}</p>}
-      {result.notes.map((note) => (
-        <ResultNoteLine key={note.kind} note={note} />
-      ))}
+      {result.repeatNote !== null && (
+        <p className="result-note">
+          <Repeat aria-hidden="true" size={16} strokeWidth={2} />
+          <span>{result.repeatNote}</span>
+        </p>
+      )}
       <div className={`result-share${over ? ' result-share-over' : ''}`}>
         <div className="share-row">
           <p>{result.share}</p>
@@ -124,7 +79,6 @@ function ResultContext({ result }: { result: PriceResult }) {
           ))}
         </span>
       </div>
-      {result.footnote !== null && <p className="result-footnote">{result.footnote}</p>}
     </div>
   );
 }
@@ -167,14 +121,11 @@ function useDelayedValue(value: string, delay: number): string {
 export function Calculator({ settings, onOpenSettings, settingsButtonRef }: CalculatorProps) {
   const [itemPrice, setItemPrice] = useState('');
   const [repeat, setRepeat] = useState<PriceRepeat>('once');
-  const [uses, setUses] = useState('');
   const priceInputRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  const saved = useSavedChecks();
   const copy = createTranslator(settings.language);
   const price = parseDecimalInput(itemPrice, settings.language);
-  const result = describeResult(price, repeat, Number(uses), settings);
+  const result = describeResult(price, repeat, settings);
   const priceError = itemPrice.trim() !== '' && result === null;
   let announcement = result === null ? '' : describeAnnouncement(result);
   if (priceError) announcement = copy.t('calculator.priceError');
@@ -204,9 +155,7 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
           <span>{copy.t('calculator.settings')}</span>
         </button>
       </header>
-      <h1 id="calculator-title" ref={headingRef} tabIndex={-1}>
-        {copy.t('calculator.title')}
-      </h1>
+      <h1 id="calculator-title">{copy.t('calculator.title')}</h1>
 
       <form className="price-field" onSubmit={handlePriceSubmit}>
         <label className="price-label" htmlFor="item-price">
@@ -239,10 +188,7 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
         <small className="visually-hidden" id="price-currency-description">
           {copy.t('calculator.priceDescription', { currency: settings.currency })}
         </small>
-        <div className="price-options">
-          <PriceRepeatField copy={copy} onChange={setRepeat} value={repeat} />
-          {repeat === 'once' && <PriceUsesField copy={copy} onChange={setUses} value={uses} />}
-        </div>
+        <PriceRepeatField copy={copy} onChange={setRepeat} value={repeat} />
         <small
           aria-hidden={!priceError}
           className={`field-error price-error${priceError ? '' : ' price-error-hidden'}`}
@@ -253,20 +199,6 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
       </form>
 
       <ResultPanel copy={copy} result={result} resultRef={resultRef} />
-      {result !== null && price !== null && (
-        <SaveItemForm
-          copy={copy}
-          onSave={(name) => saved.add(name, price, repeat, settings.currency)}
-        />
-      )}
-      <SavedItems
-        checks={saved.checks}
-        copy={copy}
-        fallbackFocusRef={headingRef}
-        onRemove={saved.remove}
-        persisted={saved.persisted}
-        settings={settings}
-      />
       <p aria-atomic="true" aria-live="polite" className="visually-hidden">
         {spokenResult}
       </p>

@@ -5,15 +5,12 @@ import {
   calculateHoursPerWorkday,
   calculateIncomePercentage,
   calculatePeriodIncome,
-  calculateSavingMonths,
   calculateWorkHours,
   incomeComparisonPeriod,
   isPayFrequency,
   isPriceRepeat,
   paymentsPerYear,
   priceComparison,
-  trueIncomeSettings,
-  trueWageReduction,
   isValidIncomeSettings,
   type IncomeSettings,
 } from './calculations';
@@ -187,23 +184,6 @@ describe('recurring income share', () => {
   });
 });
 
-describe('calculateSavingMonths', () => {
-  it('divides the price by monthly savings', () => {
-    expect(calculateSavingMonths(900, 300)).toBe(3);
-    expect(calculateSavingMonths(50, 200)).toBe(0.25);
-  });
-
-  it.each([
-    [0, 300],
-    [900, 0],
-    [-1, 300],
-    [900, Number.NaN],
-    [Number.MAX_VALUE, Number.MIN_VALUE],
-  ])('returns null for price %s and savings %s', (price, savings) => {
-    expect(calculateSavingMonths(price, savings)).toBeNull();
-  });
-});
-
 describe('recurring prices', () => {
   it('counts payments in a year', () => {
     expect(paymentsPerYear('workday', 5)).toBe(260);
@@ -235,47 +215,5 @@ describe('recurring prices', () => {
     const workday = priceComparison(4.5, 'workday', monthlySettings);
     expect(workday.period).toBe('monthly');
     expect(workday.amount).toBeCloseTo(97.5, 10);
-  });
-});
-
-describe('true hourly wage', () => {
-  it('returns the paid settings when no commute or work costs are set', () => {
-    expect(trueIncomeSettings(monthlySettings, { commuteMinutes: 0, monthlyWorkCosts: 0 })).toBe(
-      monthlySettings,
-    );
-  });
-
-  it('takes work costs off the income and adds commute time to the hours', () => {
-    const adjusted = trueIncomeSettings(monthlySettings, {
-      commuteMinutes: 60,
-      monthlyWorkCosts: 300,
-    });
-    expect(adjusted).toEqual({
-      netIncome: 32_400,
-      payFrequency: 'yearly',
-      weeklyHours: 45,
-      workingDaysPerWeek: 5,
-    });
-    expect(
-      trueWageReduction(monthlySettings, { commuteMinutes: 60, monthlyWorkCosts: 300 }),
-    ).toBeCloseTo(20, 10);
-    expect(
-      trueWageReduction(monthlySettings, { commuteMinutes: 0, monthlyWorkCosts: 0 }),
-    ).toBeCloseTo(0, 10);
-  });
-
-  it('returns null when costs use up the income or the week overflows', () => {
-    expect(
-      trueIncomeSettings(monthlySettings, { commuteMinutes: 0, monthlyWorkCosts: 3_000 }),
-    ).toBeNull();
-    expect(
-      trueIncomeSettings(
-        { ...monthlySettings, weeklyHours: 160, workingDaysPerWeek: 7 },
-        { commuteMinutes: 120, monthlyWorkCosts: 0 },
-      ),
-    ).toBeNull();
-    expect(
-      trueWageReduction(monthlySettings, { commuteMinutes: 0, monthlyWorkCosts: 5_000 }),
-    ).toBeNull();
   });
 });

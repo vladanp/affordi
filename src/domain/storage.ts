@@ -1,47 +1,17 @@
-import {
-  isValidIncomeSettings,
-  MAX_COMMUTE_MINUTES,
-  type IncomeSettings,
-  type WorkCosts,
-} from './calculations';
+import { isValidIncomeSettings, type IncomeSettings } from './calculations';
 import { detectLocale, isLocale, type Locale } from './i18n';
 import { detectCurrency, isCurrencyCode, type CurrencyCode } from './locale';
 import { readRecord, removeRecord, writeRecord } from './localStore';
 import { isThemePreference, type ThemePreference } from './theme';
 
 export const SETTINGS_STORAGE_KEY = 'affordi.settings.v1';
+/** Saved items from earlier releases. Nothing reads them now, but a reset still erases them. */
+const LEGACY_CHECKS_STORAGE_KEY = 'affordi.checks.v1';
 
-export interface AffordiSettings extends IncomeSettings, WorkCosts {
+export interface AffordiSettings extends IncomeSettings {
   currency: CurrencyCode;
   language: Locale;
-  /** Amount saved each month in the selected currency. Zero turns the saving time off. */
-  monthlySavings: number;
   theme: ThemePreference;
-}
-
-/** Zero or a finite positive amount; zero means the optional value was not entered. */
-function isAmount(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
-}
-
-/** Optional amounts added after the first release, each with its own check. */
-const optionalAmounts = {
-  monthlySavings: isAmount,
-  commuteMinutes: (value: unknown): value is number =>
-    isAmount(value) && value <= MAX_COMMUTE_MINUTES,
-  monthlyWorkCosts: isAmount,
-} as const;
-
-type OptionalAmount = keyof typeof optionalAmounts;
-const optionalAmountKeys = [
-  'monthlySavings',
-  'commuteMinutes',
-  'monthlyWorkCosts',
-] as const satisfies readonly OptionalAmount[];
-
-function readAmount(value: object, key: OptionalAmount): number {
-  const amount: unknown = Reflect.get(value, key);
-  return optionalAmounts[key](amount) ? amount : 0;
 }
 
 export function isValidAffordiSettings(value: unknown): value is AffordiSettings {
@@ -59,22 +29,19 @@ export function isValidAffordiSettings(value: unknown): value is AffordiSettings
     isCurrencyCode(value.currency) &&
     isLocale(value.language) &&
     isThemePreference(value.theme) &&
-    optionalAmountKeys.every(
-      (key) => key in value && optionalAmounts[key](Reflect.get(value, key)),
-    ) &&
     isValidIncomeSettings(value)
   );
 }
 
-type OptionalSettings = Pick<AffordiSettings, 'language' | 'theme' | OptionalAmount>;
+type OptionalSettings = Pick<AffordiSettings, 'language' | 'theme'>;
 
-/** Fields added after the first release fall back to defaults, so older saves stay usable. */
+/**
+ * Fields added after the first release fall back to defaults, so older saves stay
+ * usable. Fields from removed features are dropped and disappear on the next save.
+ */
 function optionalSettings(value: object): OptionalSettings {
   return {
     language: 'language' in value && isLocale(value.language) ? value.language : detectLocale(),
-    monthlySavings: readAmount(value, 'monthlySavings'),
-    commuteMinutes: readAmount(value, 'commuteMinutes'),
-    monthlyWorkCosts: readAmount(value, 'monthlyWorkCosts'),
     theme: 'theme' in value && isThemePreference(value.theme) ? value.theme : 'system',
   };
 }
@@ -112,7 +79,7 @@ export function saveSettings(settings: AffordiSettings): boolean {
 }
 
 export function clearSettings(): boolean {
-  return removeRecord(SETTINGS_STORAGE_KEY);
+  return removeRecord(LEGACY_CHECKS_STORAGE_KEY) && removeRecord(SETTINGS_STORAGE_KEY);
 }
 
 export function defaultSettings(): AffordiSettings {
@@ -123,9 +90,6 @@ export function defaultSettings(): AffordiSettings {
     workingDaysPerWeek: 5,
     currency: detectCurrency(),
     language: detectLocale(),
-    monthlySavings: 0,
-    commuteMinutes: 0,
-    monthlyWorkCosts: 0,
     theme: 'system',
   };
 }
