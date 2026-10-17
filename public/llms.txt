@@ -2,7 +2,7 @@
 
 > Affordi is a private calculator that converts a price into the work time needed to afford it.
 
-People enter their take home pay, work schedule, currency, optional monthly savings, and a price that is paid once, every workday, weekly, monthly, or yearly. Saved items add up recurring costs over a year, a single purchase can be split over its uses, and optional commute time and work costs turn the paid hourly wage into the true one. Calculations, settings, and saved items stay in the browser, and no account is required.
+People enter their take home pay, work schedule, and currency, then a price that is paid once, every workday, weekly, monthly, or yearly. Affordi shows the work time it takes and its share of take home pay. Calculations and settings stay in the browser, and no account is required.
 
 ## Site
 

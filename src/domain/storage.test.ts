@@ -13,9 +13,6 @@ const settings: AffordiSettings = {
   payFrequency: 'monthly',
   weeklyHours: 40,
   workingDaysPerWeek: 5,
-  monthlySavings: 0,
-  commuteMinutes: 0,
-  monthlyWorkCosts: 0,
   currency: 'USD',
   language: 'en',
   theme: 'system',
@@ -41,39 +38,15 @@ describe('settings persistence', () => {
     expect(loadSettings()).toBeNull();
   });
 
-  it('treats missing or invalid monthly savings as none', () => {
-    const { monthlySavings: _omitted, ...legacy } = settings;
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ version: 1, settings: legacy }));
-    expect(loadSettings()).toEqual({ ...settings, monthlySavings: 0 });
-
-    for (const monthlySavings of [-5, 'lots', Number.POSITIVE_INFINITY, null]) {
-      localStorage.setItem(
-        SETTINGS_STORAGE_KEY,
-        JSON.stringify({ version: 1, settings: { ...settings, monthlySavings } }),
-      );
-      expect(loadSettings()).toEqual({ ...settings, monthlySavings: 0 });
-    }
-  });
-
-  it('treats missing or out of range commute and work costs as none', () => {
-    const { commuteMinutes: _commute, monthlyWorkCosts: _costs, ...legacy } = settings;
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ version: 1, settings: legacy }));
-    expect(loadSettings()).toMatchObject({ commuteMinutes: 0, monthlyWorkCosts: 0 });
-
+  it('drops settings from removed features so older saves stay usable', () => {
     localStorage.setItem(
       SETTINGS_STORAGE_KEY,
       JSON.stringify({
         version: 1,
-        settings: { ...settings, commuteMinutes: 601, monthlyWorkCosts: -3 },
+        settings: { ...settings, monthlySavings: 250, commuteMinutes: 30, monthlyWorkCosts: 90 },
       }),
     );
-    expect(loadSettings()).toMatchObject({ commuteMinutes: 0, monthlyWorkCosts: 0 });
-    expect(saveSettings({ ...settings, commuteMinutes: 601 })).toBe(false);
-  });
-
-  it('refuses to save negative monthly savings', () => {
-    expect(saveSettings({ ...settings, monthlySavings: -1 })).toBe(false);
-    expect(loadSettings()).toBeNull();
+    expect(loadSettings()).toEqual(settings);
   });
 
   it('never throws when storage is unavailable', () => {
@@ -89,9 +62,11 @@ describe('settings persistence', () => {
     setItem.mockRestore();
   });
 
-  it('clears saved settings', () => {
+  it('clears saved settings and saved items from earlier releases', () => {
     saveSettings(settings);
+    localStorage.setItem('affordi.checks.v1', JSON.stringify({ version: 1, checks: [] }));
     expect(clearSettings()).toBe(true);
     expect(loadSettings()).toBeNull();
+    expect(localStorage.getItem('affordi.checks.v1')).toBeNull();
   });
 });

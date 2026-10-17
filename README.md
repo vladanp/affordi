@@ -1,8 +1,8 @@
 # Affordi
 
-Affordi answers one focused question: **How long do I need to work to afford this?** Enter a price to translate its cost into working time, days, and a secondary share of take home pay. Mark a price as paid every workday, weekly, monthly, or yearly to see what a habit or subscription costs over time, add optional monthly savings to see how long saving for a purchase takes, save items to see the yearly work time of every recurring cost together, split a purchase over how often you will use it, and add commute time and work costs to see your true hourly wage.
+Affordi answers one focused question: **How long do I need to work to afford this?** Enter a price to translate its cost into working time, days, and a secondary share of take home pay. Mark a price as paid every workday, weekly, monthly, or yearly to see what a habit or subscription costs over time.
 
-Affordi has no account, backend, analytics, advertising, or tracking. Income settings and saved items stay in `localStorage` on the device and the installed app works offline.
+Affordi has no account, backend, analytics, advertising, or tracking. Income settings stay in `localStorage` on the device and the installed app works offline.
 
 ## Stack
 
@@ -89,6 +89,10 @@ For a local installation check:
 pnpm build
 pnpm preview --host 0.0.0.0
 ```
+
+The iOS home screen icon is bundled with a content hash. iOS keeps an icon by its URL, so a new hash makes the next installation fetch the new artwork instead of reusing a cached one. An icon that is already on the home screen does not change; remove it and add Affordi again to see new artwork.
+
+Every form field uses text of at least 16px, because iOS zooms into a focused field with smaller text. A browser test keeps this true.
 
 Automated checks validate the manifest, icons, service worker, cache rules, offline reload, bundle budgets, and critical accessibility flows. Meaningful PWA changes should also be checked on a current iPhone or iPad because browser automation cannot fully reproduce the installed iOS lifecycle.
 

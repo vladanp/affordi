@@ -56,11 +56,16 @@ assert(
   'Manifest lacks maskable icon',
 );
 
+// iOS keeps a home screen icon by its URL, so the touch icon must carry a content hash.
+const appleTouchIcon = html.match(
+  /<link rel="apple-touch-icon" sizes="180x180" href="\/(assets\/apple-touch-icon-[\w-]+\.png)"/,
+)?.[1];
+assert(appleTouchIcon !== undefined, 'The apple touch icon must be a content hashed asset');
 const iconSpecs = [
   ['icons/icon-192.png', 192],
   ['icons/icon-512.png', 512],
   ['icons/icon-maskable-512.png', 512],
-  ['icons/apple-touch-icon-180.png', 180],
+  [appleTouchIcon, 180],
 ];
 const icons = await Promise.all(iconSpecs.map(([file]) => readFile(pathFor(file))));
 
@@ -92,6 +97,10 @@ const precacheUrls = [...serviceWorker.matchAll(/url:"([^"]+)"/g)].map((match) =
 assert(
   precacheUrls.length === new Set(precacheUrls).size,
   'Generated service worker contains duplicate precache entries',
+);
+assert(
+  precacheUrls.includes(appleTouchIcon),
+  'Generated service worker does not precache the apple touch icon',
 );
 assert(
   headers.includes('Content-Security-Policy') && headers.includes('/assets/*'),

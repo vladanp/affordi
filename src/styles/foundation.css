@@ -94,6 +94,8 @@ html {
   background: var(--color-page);
   color: var(--color-ink);
   scrollbar-gutter: stable;
+  /* Pinch zoom stays available; double tap no longer zooms the installed app. */
+  touch-action: manipulation;
 }
 
 body {
@@ -109,6 +111,12 @@ input,
 select {
   font: inherit;
   color: inherit;
+}
+
+/* iOS zooms into any focused field below 16px, so fields never go smaller. */
+input,
+select {
+  font-size: max(1rem, 1em);
 }
 
 button,

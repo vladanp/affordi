@@ -208,36 +208,6 @@
   outline-offset: 0.125rem;
 }
 
-.field-hint {
-  color: var(--color-muted);
-  font-size: 0.8125rem;
-  line-height: 1.4;
-}
-
-.true-wage {
-  gap: 0.75rem;
-}
-
-.true-wage > legend {
-  margin-bottom: 0.4rem;
-}
-
-.true-wage-fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
-  gap: 1rem;
-}
-
-.true-wage-preview {
-  margin: 0;
-  font-size: 0.9375rem;
-  font-weight: 600;
-}
-
-.true-wage-preview:empty {
-  display: none;
-}
-
 .field-error {
   color: var(--color-danger);
   font-size: 0.8125rem;

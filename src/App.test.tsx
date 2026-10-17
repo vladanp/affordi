@@ -383,7 +383,7 @@ describe('App', () => {
     expect(screen.queryByText(/Over a year/)).not.toBeInTheDocument();
   });
 
-  it('shows how long saving takes and validates monthly savings in settings', () => {
+  it('loads older saves from removed features and erases their data on reset', () => {
     localStorage.setItem(
       'affordi.settings.v1',
       JSON.stringify({
@@ -394,121 +394,8 @@ describe('App', () => {
           weeklyHours: 40,
           workingDaysPerWeek: 5,
           monthlySavings: 300,
-          currency: 'USD',
-        },
-      }),
-    );
-    render(<App />);
-    fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
-      target: { value: '900' },
-    });
-    expect(screen.getByText('Time to save for it: 3 months')).toBeInTheDocument();
-    const repeat = screen.getByRole('combobox', { name: 'How often you pay' });
-    fireEvent.change(repeat, { target: { value: 'monthly' } });
-    expect(screen.queryByText(/Time to save/)).not.toBeInTheDocument();
-    fireEvent.change(repeat, { target: { value: 'once' } });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    const savings = screen.getByRole('textbox', { name: 'Monthly savings (optional)' });
-    expect(savings).toHaveValue('300');
-    expect(savings).toHaveAccessibleDescription(
-      'Shows how long it takes to save for a price. Amount in USD.',
-    );
-    fireEvent.change(savings, { target: { value: '-5' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
-    expect(screen.getByText('Enter 0 or more, or leave it empty.')).toBeInTheDocument();
-    expect(savings).toHaveAttribute('aria-invalid', 'true');
-    expect(savings).toHaveFocus();
-
-    fireEvent.change(savings, { target: { value: '450' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
-    expect(screen.getByText('Time to save for it: 2 months')).toBeInTheDocument();
-    expect(JSON.parse(localStorage.getItem('affordi.settings.v1') ?? '{}').settings).toMatchObject({
-      monthlySavings: 450,
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    fireEvent.change(screen.getByRole('textbox', { name: 'Monthly savings (optional)' }), {
-      target: { value: '' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
-    expect(screen.queryByText(/Time to save/)).not.toBeInTheDocument();
-  });
-
-  it('saves items, totals recurring costs, and keeps focus while removing', () => {
-    localStorage.setItem(
-      'affordi.settings.v1',
-      JSON.stringify({
-        version: 1,
-        settings: {
-          netIncome: 3000,
-          payFrequency: 'monthly',
-          weeklyHours: 40,
-          workingDaysPerWeek: 5,
-          currency: 'USD',
-        },
-      }),
-    );
-    const first = render(<App />);
-    expect(screen.queryByRole('heading', { name: 'Saved items' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
-    const price = screen.getByRole('textbox', { name: 'Enter a price' });
-    fireEvent.change(price, { target: { value: '12.99' } });
-    fireEvent.change(screen.getByRole('combobox', { name: 'How often you pay' }), {
-      target: { value: 'monthly' },
-    });
-    fireEvent.change(screen.getByRole('textbox', { name: 'Item name (optional)' }), {
-      target: { value: '  Netflix  ' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    expect(screen.getByRole('status')).toHaveTextContent('Item saved.');
-    expect(screen.getByRole('textbox', { name: 'Item name (optional)' })).toHaveValue('');
-    expect(screen.getByRole('heading', { name: 'Saved items' })).toBeInTheDocument();
-    expect(screen.getByText('Netflix')).toBeInTheDocument();
-    expect(screen.getByText('$12.99 a month · 45 minutes of work')).toBeInTheDocument();
-    expect(screen.getByText('Recurring costs over a year')).toBeInTheDocument();
-    expect(screen.getByText('9 hours of work')).toBeInTheDocument();
-    expect(screen.getByText('<1% of your yearly take home pay')).toBeInTheDocument();
-
-    fireEvent.change(price, { target: { value: '900' } });
-    fireEvent.change(screen.getByRole('combobox', { name: 'How often you pay' }), {
-      target: { value: 'once' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    const items = screen.getAllByRole('listitem');
-    expect(items).toHaveLength(2);
-    expect(items[0]).toHaveTextContent('$900.00');
-    expect(items[0]).toHaveTextContent('52 hours of work');
-    expect(screen.getByText('9 hours of work')).toBeInTheDocument();
-    const stored = JSON.parse(localStorage.getItem('affordi.checks.v1') ?? '{}');
-    expect(stored.version).toBe(1);
-    expect(stored.checks).toMatchObject([
-      { name: '', price: 900, repeat: 'once', currency: 'USD' },
-      { name: 'Netflix', price: 12.99, repeat: 'monthly', currency: 'USD' },
-    ]);
-
-    first.unmount();
-    render(<App />);
-    expect(screen.getAllByRole('listitem')).toHaveLength(2);
-    fireEvent.click(screen.getByRole('button', { name: 'Remove $900.00' }));
-    expect(screen.getByRole('button', { name: 'Remove Netflix' })).toHaveFocus();
-    fireEvent.click(screen.getByRole('button', { name: 'Remove Netflix' }));
-    expect(screen.getByRole('heading', { name: 'How much does it cost?' })).toHaveFocus();
-    expect(screen.queryByRole('heading', { name: 'Saved items' })).not.toBeInTheDocument();
-    expect(JSON.parse(localStorage.getItem('affordi.checks.v1') ?? '{}').checks).toEqual([]);
-  });
-
-  it('leaves items in another currency out of the total and clears items on reset', () => {
-    localStorage.setItem(
-      'affordi.settings.v1',
-      JSON.stringify({
-        version: 1,
-        settings: {
-          netIncome: 3000,
-          payFrequency: 'monthly',
-          weeklyHours: 40,
-          workingDaysPerWeek: 5,
+          commuteMinutes: 60,
+          monthlyWorkCosts: 300,
           currency: 'EUR',
           language: 'en',
           theme: 'system',
@@ -519,48 +406,7 @@ describe('App', () => {
       'affordi.checks.v1',
       JSON.stringify({
         version: 1,
-        checks: [
-          {
-            id: 'a',
-            name: 'Gym',
-            price: 40,
-            repeat: 'monthly',
-            currency: 'USD',
-            savedAt: 1,
-          },
-          { id: 'b', name: 'broken', price: -1, repeat: 'monthly', currency: 'EUR', savedAt: 2 },
-        ],
-      }),
-    );
-    render(<App />);
-    expect(screen.getAllByRole('listitem')).toHaveLength(1);
-    expect(screen.getByText('$40.00 a month · Saved in USD')).toBeInTheDocument();
-    expect(screen.queryByText('Recurring costs over a year')).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Reset saved settings' }));
-    expect(
-      screen.getByText('This removes your income details and saved items from this device.'),
-    ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
-    expect(localStorage.getItem('affordi.checks.v1')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Start calculating' })).toBeInTheDocument();
-  });
-
-  it('uses the true hourly wage after commute and work costs are set', () => {
-    localStorage.setItem(
-      'affordi.settings.v1',
-      JSON.stringify({
-        version: 1,
-        settings: {
-          netIncome: 3000,
-          payFrequency: 'monthly',
-          weeklyHours: 40,
-          workingDaysPerWeek: 5,
-          currency: 'EUR',
-          language: 'en',
-          theme: 'system',
-        },
+        checks: [{ id: 'a', name: 'Gym', price: 40, repeat: 'monthly', currency: 'EUR' }],
       }),
     );
     render(<App />);
@@ -568,70 +414,32 @@ describe('App', () => {
       target: { value: '750' },
     });
     expect(screen.getByText('43 hours of work')).toBeInTheDocument();
+    expect(screen.getAllByRole('textbox')).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Gym')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    expect(screen.getByRole('group', { name: 'True hourly wage (optional)' })).toBeInTheDocument();
-    const commute = screen.getByRole('textbox', { name: 'Commute each workday (minutes)' });
-    const costs = screen.getByRole('textbox', { name: 'Work costs each month' });
-    expect(commute).toHaveValue('');
-    fireEvent.change(commute, { target: { value: '700' } });
-    fireEvent.change(costs, { target: { value: '3000' } });
+    expect(screen.queryByRole('textbox', { name: /savings|commute|costs/i })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+    expect(JSON.parse(localStorage.getItem('affordi.settings.v1') ?? '{}').settings).toEqual({
+      netIncome: 3000,
+      payFrequency: 'monthly',
+      weeklyHours: 40,
+      workingDaysPerWeek: 5,
+      currency: 'EUR',
+      language: 'en',
+      theme: 'system',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset saved settings' }));
     expect(
-      screen.getByText('Use 0 to 600 minutes, keeping work and commute within 24 hours a day.'),
+      screen.getByText('This removes your income details from this device.'),
     ).toBeInTheDocument();
-    expect(screen.getByText('Enter 0 or more, below your monthly income.')).toBeInTheDocument();
-    expect(commute).toHaveFocus();
-    expect(costs).toHaveAttribute('aria-invalid', 'true');
-
-    fireEvent.change(commute, { target: { value: '60' } });
-    fireEvent.change(costs, { target: { value: '300' } });
-    expect(screen.getByText('Your true hourly wage is 20% lower.')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
-
-    expect(screen.getByText('54 hours of work')).toBeInTheDocument();
-    expect(screen.getByText('25% of your monthly take home pay')).toBeInTheDocument();
-    expect(screen.getByText('Includes your commute and work costs.')).toBeInTheDocument();
-    expect(JSON.parse(localStorage.getItem('affordi.settings.v1') ?? '{}').settings).toMatchObject({
-      commuteMinutes: 60,
-      monthlyWorkCosts: 300,
-    });
-  });
-
-  it('splits a single purchase over its uses', () => {
-    localStorage.setItem(
-      'affordi.settings.v1',
-      JSON.stringify({
-        version: 1,
-        settings: {
-          netIncome: 3000,
-          payFrequency: 'monthly',
-          weeklyHours: 40,
-          workingDaysPerWeek: 5,
-          currency: 'EUR',
-        },
-      }),
-    );
-    render(<App />);
-    fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
-      target: { value: '1300' },
-    });
-    const uses = screen.getByRole('textbox', { name: 'Uses' });
-    expect(uses).toHaveAccessibleDescription(
-      'Optional. Splits the price over how many times you will use it.',
-    );
-    fireEvent.change(uses, { target: { value: '1' } });
-    expect(screen.queryByText(/Per use/)).not.toBeInTheDocument();
-    fireEvent.change(uses, { target: { value: '1o0' } });
-    expect(uses).toHaveValue('10');
-    fireEvent.change(uses, { target: { value: '100' } });
-    expect(screen.getByText('Per use (100×): 45 minutes')).toBeInTheDocument();
-
-    fireEvent.change(screen.getByRole('combobox', { name: 'How often you pay' }), {
-      target: { value: 'monthly' },
-    });
-    expect(screen.queryByRole('textbox', { name: 'Uses' })).not.toBeInTheDocument();
-    expect(screen.queryByText(/Per use/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+    expect(localStorage.getItem('affordi.checks.v1')).toBeNull();
+    expect(localStorage.getItem('affordi.settings.v1')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Start calculating' })).toBeInTheDocument();
   });
 
   it('rejects impossible work schedules during setup', () => {

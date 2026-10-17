@@ -5,7 +5,6 @@ import { Calculator } from './components/Calculator';
 import { IncomeForm } from './components/IncomeForm';
 import { SettingsDialog } from './components/SettingsDialog';
 import { UpdatePrompt } from './components/UpdatePrompt';
-import { clearChecks } from './domain/checks';
 import { createTranslator, detectLocale, type Locale } from './domain/i18n';
 import { clearSettings, loadSettings, saveSettings, type AffordiSettings } from './domain/storage';
 import { applyTheme } from './domain/theme';
@@ -51,7 +50,7 @@ export function App() {
   }
 
   function reset(): boolean {
-    if (!clearChecks() || !clearSettings()) {
+    if (!clearSettings()) {
       setStorageNotice(true);
       return false;
     }

@@ -42,18 +42,14 @@ test.describe('Affordi calculator', () => {
     await expect(page.locator('.result-primary')).toHaveText('2 hours and 7 minutes of work');
   });
 
-  test('shows recurring prices and the time to save for single purchases', async ({ page }) => {
+  test('shows recurring prices with the other period as context', async ({ page }) => {
     await completeSetup(page);
-    await page.getByRole('button', { name: 'Settings' }).click();
-    await page.getByRole('textbox', { name: 'Monthly savings (optional)' }).fill('300');
-    await page.getByRole('button', { name: 'Save settings' }).click();
-    await expect(page.getByRole('dialog')).toBeHidden();
-
     const price = page.getByRole('textbox', { name: 'Enter a price' });
-    await price.fill('900');
-    await expect(page.locator('.result-note')).toHaveText('Time to save for it: 3 months');
-
     const repeat = page.getByRole('combobox', { name: 'How often you pay' });
+
+    await price.fill('900');
+    await expect(page.locator('.result-note')).toHaveCount(0);
+
     await repeat.selectOption('monthly');
     await price.fill('12.99');
     await expect(page.locator('.result-label')).toHaveText('€12.99 a month is');
@@ -65,57 +61,30 @@ test.describe('Affordi calculator', () => {
     await expect(page.locator('.result-label')).toHaveText('€12.99 a year is');
     await expect(page.locator('.result-note')).toHaveText('Each month: 4 minutes');
     await expect(page.locator('.result-share p')).toHaveText('<1% of your yearly take home pay');
-  });
-
-  test('saves items on the device and totals recurring costs', async ({ page }) => {
-    await completeSetup(page);
-    const price = page.getByRole('textbox', { name: 'Enter a price' });
-    const repeat = page.getByRole('combobox', { name: 'How often you pay' });
-    const name = page.getByRole('textbox', { name: 'Item name (optional)' });
 
     await price.fill('4.50');
     await repeat.selectOption('workday');
     await expect(page.locator('.result-label')).toHaveText('€4.50 every workday is');
     await expect(page.locator('.result-note')).toHaveText('Over a year: 68 hours');
-    await name.fill('Coffee');
-    await name.press('Enter');
-    await expect(name).toHaveValue('');
-
-    await price.fill('12.99');
-    await repeat.selectOption('monthly');
-    await name.fill('Streaming');
-    await page.getByRole('button', { name: 'Save' }).click();
-
-    const items = page.getByRole('listitem');
-    await expect(items).toHaveCount(2);
-    await expect(items.first()).toContainText('Streaming');
-    await expect(page.locator('.saved-total-value')).toHaveText('77 hours of work');
-
-    await page.reload();
-    await expect(page.getByRole('listitem')).toHaveCount(2);
-    await page.getByRole('button', { name: 'Remove Streaming' }).click();
-    await expect(page.getByRole('button', { name: 'Remove Coffee' })).toBeFocused();
-    await expect(page.locator('.saved-total-value')).toHaveText('68 hours of work');
   });
 
-  test('applies the true hourly wage and splits a price over its uses', async ({ page }) => {
-    await completeSetup(page);
-    await page.getByRole('button', { name: 'Settings' }).click();
-    await page.getByRole('textbox', { name: 'Commute each workday (minutes)' }).fill('60');
-    await page.getByRole('textbox', { name: 'Work costs each month' }).fill('300');
-    await expect(page.locator('.true-wage-preview')).toHaveText(
-      'Your true hourly wage is 20% lower.',
-    );
-    await page.getByRole('button', { name: 'Save settings' }).click();
-    await expect(page.getByRole('dialog')).toBeHidden();
+  test('keeps every field at 16px or more so iOS never zooms in on focus', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const smallFields = () =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('input:not([type="radio"]), select')]
+          .filter((field) => field.getClientRects().length > 0)
+          .filter((field) => Number.parseFloat(getComputedStyle(field).fontSize) < 16)
+          .map((field) => field.id),
+      );
 
-    await page.getByRole('textbox', { name: 'Enter a price' }).fill('750');
-    await expect(page.locator('.result-primary')).toHaveText('54 hours of work');
-    await expect(page.locator('.result-footnote')).toHaveText(
-      'Includes your commute and work costs.',
-    );
-    await page.getByRole('textbox', { name: 'Uses' }).fill('10');
-    await expect(page.locator('.result-note')).toHaveText('Per use (10×): 5 hours and 25 minutes');
+    await page.reload();
+    expect(await smallFields()).toEqual([]);
+    await completeSetup(page);
+    expect(await smallFields()).toEqual([]);
+    await page.getByRole('button', { name: 'Settings' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    expect(await smallFields()).toEqual([]);
   });
 
   test('shows income during setup and masks it on request', async ({ page }) => {
