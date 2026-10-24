@@ -2,13 +2,16 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
 import {
+  calculateEarnedThisMonth,
   calculateEarnedToday,
   calculateEarningRates,
   rateUnits,
   totalPeriods,
+  type EarnedThisMonth,
 } from '../domain/earnings';
 import {
   describeWorkStatus,
+  formatProgress,
   formatRate,
   formatTicker,
   tickerDigits,
@@ -81,6 +84,31 @@ function LiveAmount({ copy, hidden, parts }: LiveAmountProps) {
   );
 }
 
+interface MonthProgressProps {
+  copy: Translator;
+  hidden: boolean;
+  month: EarnedThisMonth;
+  parts: TickerParts;
+}
+
+/** Progress toward this month's pay by work time. The share stays visible when amounts hide. */
+function MonthProgress({ copy, hidden, month, parts }: MonthProgressProps) {
+  return (
+    <div className="earnings-card earnings-month">
+      <p className="earnings-label">{copy.t('earnings.month')}</p>
+      <LiveAmount copy={copy} hidden={hidden} parts={parts} />
+      <span aria-hidden="true" className="month-meter">
+        <span style={{ inlineSize: `${month.share * 100}%` }} />
+      </span>
+      <p className="earnings-note">
+        {copy.t('earnings.monthShare', { percentage: formatProgress(month.share, copy.locale) })}
+        {' · '}
+        {copy.t('earnings.workdays', { done: month.workdaysDone, total: month.workdaysTotal })}
+      </p>
+    </div>
+  );
+}
+
 interface EarningsProps {
   settings: AffordiSettings;
 }
@@ -99,6 +127,7 @@ export function Earnings({ settings }: EarningsProps) {
 
   const { currency, language } = settings;
   const today = calculateEarnedToday(settings, rates, now);
+  const month = calculateEarnedThisMonth(settings, rates, now);
   const digits = tickerDigits(rates.aroundTheClock.second, currency, language);
   const rate = (value: number) =>
     amountsHidden ? <HiddenAmount copy={copy} /> : formatRate(value, currency, language);
@@ -142,6 +171,12 @@ export function Earnings({ settings }: EarningsProps) {
             {describeWorkStatus(today.progress, copy)}
           </p>
         </div>
+        <MonthProgress
+          copy={copy}
+          hidden={amountsHidden}
+          month={month}
+          parts={formatTicker(month.amount, currency, language, digits)}
+        />
       </div>
 
       <h2 className="breakdown-title" id="breakdown-title">

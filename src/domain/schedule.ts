@@ -165,6 +165,41 @@ export function workProgress(schedule: WorkSchedule, now: Date): WorkProgress {
   };
 }
 
+export interface MonthWorkProgress {
+  /** Time worked so far this calendar month. */
+  workedMs: number;
+  /** All work time scheduled this calendar month. */
+  scheduledMs: number;
+  workdaysDone: number;
+  workdaysTotal: number;
+}
+
+/** Work done so far this calendar month against all the work scheduled in it. */
+export function monthWorkProgress(schedule: WorkSchedule, now: Date): MonthWorkProgress {
+  const workDays = new Set<number>(schedule.workDays);
+  const time = now.getTime();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const progress: MonthWorkProgress = {
+    workedMs: 0,
+    scheduledMs: 0,
+    workdaysDone: 0,
+    workdaysTotal: 0,
+  };
+
+  for (let date = 1; date <= daysInMonth; date += 1) {
+    const day = new Date(now.getFullYear(), now.getMonth(), date);
+    if (!workDays.has(day.getDay())) continue;
+
+    const start = sameDayAt(day, schedule.workStart).getTime();
+    const end = sameDayAt(day, schedule.workEnd).getTime();
+    progress.scheduledMs += end - start;
+    progress.workedMs += Math.min(Math.max(time - start, 0), end - start);
+    progress.workdaysTotal += 1;
+    if (time >= end) progress.workdaysDone += 1;
+  }
+  return progress;
+}
+
 /** Whole minutes left, rounded up so the last seconds still read as one minute. */
 export function minutesLeft(remainingMs: number): number {
   return Math.ceil(remainingMs / MS_PER_MINUTE);

@@ -92,6 +92,19 @@ export function formatRate(value: number, currency: string, locale: string): str
   return fixedFormat(currency, locale, digits).format(value);
 }
 
+const progressFormats = new Map<string, Intl.NumberFormat>();
+
+/** A whole percentage rounded down, so it reads 100% only once the work is complete. */
+export function formatProgress(share: number, locale: string): string {
+  let format = progressFormats.get(locale);
+  if (format === undefined) {
+    format = new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 });
+    progressFormats.set(locale, format);
+  }
+  // A small allowance keeps values such as 0.29 * 100 = 28.999… from dropping a point.
+  return format.format(Math.floor(share * 100 + 1e-9) / 100);
+}
+
 /** Where today stands in the workday, such as "Working until 5:00 PM · 2 hours left". */
 export function describeWorkStatus(progress: WorkProgress, copy: Translator): string {
   if (progress.state === 'off') return copy.t('earnings.dayOff');

@@ -2,7 +2,7 @@
 
 Affordi answers one focused question: **How long do I need to work to afford this?** Enter a price to translate its cost into working time, days, and a secondary share of take home pay. Mark a price as paid every workday, weekly, monthly, or yearly to see what a habit or subscription costs over time.
 
-The Earnings page turns the same question around and counts what you earn as it happens. One total grows around the clock from midnight, as if a week of pay were spread over all 168 hours. A second total grows only during your work hours at your real hourly rate, and says when work starts, how much is left, or that today is a day off. Below, a table breaks pay down per second, minute, hour, and day both ways, with the shared weekly, monthly, and yearly totals. Amounts can be hidden with one tap.
+The Earnings page turns the same question around and counts what you earn as it happens. One total grows around the clock from midnight, as if a week of pay were spread over all 168 hours. A second total grows only during your work hours at your real hourly rate, and says when work starts, how much is left, or that today is a day off. A third total shows how much of this month's pay you have worked for: it moves only during work hours, counts the workdays done, and reaches the full month when the month's last workday ends. Below, a table breaks pay down per second, minute, hour, and day both ways, with the shared weekly, monthly, and yearly totals. Amounts can be hidden with one tap.
 
 Settings describe work as a start time, an end time, and the work days of the week. Weekly hours and work days follow from them, so the calculator and the earnings page use one schedule.
 

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   isWorkSchedule,
   minutesLeft,
+  monthWorkProgress,
   msSinceMidnight,
   parseTimeInput,
   scheduleFromWeeklyHours,
@@ -154,6 +155,37 @@ describe('work progress', () => {
     const progress = workProgress(evening, wednesday(23, 30));
     expect(progress).toMatchObject({ state: 'working', remainingMs: 30 * 60_000 });
     expect(progress.end).toEqual(new Date(2026, 9, 22));
+  });
+
+  it('counts this month’s work done against all of it', () => {
+    const hour = 3_600_000;
+    expect(monthWorkProgress(officeHours, wednesday(12))).toEqual({
+      workedMs: (14 * 8 + 3) * hour,
+      scheduledMs: 22 * 8 * hour,
+      workdaysDone: 14,
+      workdaysTotal: 22,
+    });
+    expect(monthWorkProgress(officeHours, new Date(2026, 9, 1, 8))).toMatchObject({
+      workedMs: 0,
+      workdaysDone: 0,
+    });
+    expect(monthWorkProgress(officeHours, new Date(2026, 9, 31, 23))).toMatchObject({
+      workedMs: 22 * 8 * hour,
+      workdaysDone: 22,
+    });
+  });
+
+  it('follows the length of the month and the chosen work days', () => {
+    const weekends: WorkSchedule = { workStart: 600, workEnd: 840, workDays: [0, 6] };
+    expect(monthWorkProgress(officeHours, new Date(2027, 1, 10))).toMatchObject({
+      workdaysTotal: 20,
+    });
+    expect(monthWorkProgress(weekends, new Date(2026, 9, 25, 12))).toEqual({
+      workedMs: (7 * 4 + 2) * 3_600_000,
+      scheduledMs: 9 * 4 * 3_600_000,
+      workdaysDone: 7,
+      workdaysTotal: 9,
+    });
   });
 
   it('rounds the time left up to whole minutes', () => {

@@ -40,14 +40,17 @@ describe('Earnings', () => {
     render(<Earnings settings={settings} />);
 
     expect(screen.getByRole('heading', { name: 'How much do you earn?' })).toBeInTheDocument();
-    expect(liveAmounts()).toEqual(['€49.4505', '€51.9231']);
+    expect(liveAmounts()).toEqual(['€49.4505', '€51.9231', '€1,960.2273']);
     expect(screen.getByText('Around the clock since midnight')).toBeInTheDocument();
     expect(screen.getByText('Working until 5:00 PM · 5 hours left')).toBeInTheDocument();
+    expect(
+      screen.getByText('65% of this month’s take home pay · Workdays: 14 of 22'),
+    ).toBeInTheDocument();
 
     act(() => {
       vi.advanceTimersByTime(60_000);
     });
-    expect(liveAmounts()).toEqual(['€49.5192', '€52.2115']);
+    expect(liveAmounts()).toEqual(['€49.5192', '€52.2115', '€1,960.5114']);
     expect(screen.getByText('Working until 5:00 PM · 4 hours and 59 minutes left')).toBeVisible();
   });
 
@@ -94,13 +97,14 @@ describe('Earnings', () => {
     render(<Earnings settings={settings} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Hide amounts' }));
-    expect(liveAmounts()).toEqual(['••••Hidden', '••••Hidden']);
+    expect(liveAmounts()).toEqual(['••••Hidden', '••••Hidden', '••••Hidden']);
     expect(screen.queryByText(/€/)).not.toBeInTheDocument();
-    expect(screen.getAllByText('Hidden')).toHaveLength(2 + 4 * 2 + 3);
+    expect(screen.getAllByText('Hidden')).toHaveLength(3 + 4 * 2 + 3);
+    expect(screen.getByText(/^65% of this month’s take home pay/)).toBeInTheDocument();
     expect(screen.getByText('Working until 5:00 PM · 5 hours left')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Show amounts' }));
-    expect(liveAmounts()).toEqual(['€49.4505', '€51.9231']);
+    expect(liveAmounts()).toEqual(['€49.4505', '€51.9231', '€1,960.2273']);
   });
 
   it('says when work starts, when it ended, and when there is none', () => {
@@ -114,6 +118,10 @@ describe('Earnings', () => {
     const evening = render(<Earnings settings={settings} />);
     expect(screen.getByText('Finished at 5:00 PM')).toBeInTheDocument();
     expect(liveAmounts()[1]).toBe('€138.4615');
+    expect(liveAmounts()[2]).toBe('€2,045.4545');
+    expect(document.querySelector<HTMLElement>('.month-meter > span')?.style.inlineSize).toMatch(
+      /^68\.18/,
+    );
     evening.unmount();
 
     vi.setSystemTime(new Date(2026, 9, 24, 18));

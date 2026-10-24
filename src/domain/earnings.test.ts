@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { calculateEarnedToday, calculateEarningRates } from './earnings';
+import { calculateEarnedThisMonth, calculateEarnedToday, calculateEarningRates } from './earnings';
 import type { AffordiSettings } from './storage';
 
 const settings: AffordiSettings = {
@@ -72,5 +72,25 @@ describe('earned today', () => {
 
   it('starts again at midnight', () => {
     expect(calculateEarnedToday(settings, rates, wednesday(0)).aroundTheClock).toBe(0);
+  });
+});
+
+describe('earned this month', () => {
+  const rates = calculateEarningRates(settings)!;
+
+  it('moves toward the month’s pay with the work done so far', () => {
+    const noon = calculateEarnedThisMonth(settings, rates, wednesday(12));
+    expect(noon.share).toBeCloseTo(115 / 176, 12);
+    expect(noon.amount).toBeCloseTo((3_000 * 115) / 176, 10);
+    expect(noon).toMatchObject({ workdaysDone: 14, workdaysTotal: 22 });
+  });
+
+  it('holds still outside work and reaches the full month after the last workday', () => {
+    const evening = calculateEarnedThisMonth(settings, rates, wednesday(20));
+    expect(calculateEarnedThisMonth(settings, rates, wednesday(23)).amount).toBe(evening.amount);
+    const monthEnd = calculateEarnedThisMonth(settings, rates, new Date(2026, 9, 31, 12));
+    expect(monthEnd.share).toBe(1);
+    expect(monthEnd.amount).toBe(3_000);
+    expect(calculateEarnedThisMonth(settings, rates, new Date(2026, 9, 1, 8)).amount).toBe(0);
   });
 });

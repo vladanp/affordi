@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { describeWorkStatus, formatRate, formatTicker, tickerDigits } from './earningsText';
+import {
+  describeWorkStatus,
+  formatProgress,
+  formatRate,
+  formatTicker,
+  tickerDigits,
+} from './earningsText';
 import { createTranslator } from './i18n';
 import { workProgress, type WorkSchedule } from './schedule';
 
@@ -52,6 +58,17 @@ describe('live totals', () => {
     expect(formatRate(0.068_68, 'EUR', 'en')).toBe('€0.069');
     expect(formatRate(4.120_879, 'EUR', 'en')).toBe('€4.12');
     expect(formatRate(36_000, 'EUR', 'de')).toBe('36.000,00 €');
+  });
+});
+
+describe('month progress', () => {
+  it('rounds down to whole percentages in each language', () => {
+    expect(formatProgress(115 / 176, 'en')).toBe('65%');
+    expect(formatProgress(115 / 176, 'de')).toBe('65\u00a0%');
+    expect(formatProgress(0.999, 'en')).toBe('99%');
+    expect(formatProgress(1, 'en')).toBe('100%');
+    expect(formatProgress(0.29, 'en')).toBe('29%');
+    expect(formatProgress(0, 'it')).toBe('0%');
   });
 });
 

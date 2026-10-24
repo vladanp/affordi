@@ -57,7 +57,7 @@ test.describe('UI screenshot audit', () => {
     await completeSetup(page);
 
     await page.getByRole('link', { name: 'Earnings' }).click();
-    await expect(page.locator('.live-amount')).toHaveText(['€58.7225', '€90.8654']);
+    await expect(page.locator('.live-amount')).toHaveText(['€58.7225', '€90.8654', '€1,998.5795']);
 
     await attachScreenshot(page, testInfo, 'phone-earnings', true);
   });

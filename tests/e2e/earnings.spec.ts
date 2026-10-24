@@ -34,11 +34,14 @@ test.describe('Affordi earnings', () => {
       'page',
     );
     const amounts = page.locator('.live-amount');
-    await expect(amounts).toHaveText(['€49.4505', '€51.9231']);
+    await expect(amounts).toHaveText(['€49.4505', '€51.9231', '€1,960.2273']);
     await expect(page.getByText('Working until 5:00 PM · 5 hours left')).toBeVisible();
+    await expect(
+      page.getByText('65% of this month’s take home pay · Workdays: 14 of 22'),
+    ).toBeVisible();
 
     await page.clock.runFor(60_000);
-    await expect(amounts).toHaveText(['€49.5192', '€52.2115']);
+    await expect(amounts).toHaveText(['€49.5192', '€52.2115', '€1,960.5114']);
     await expect(
       page.getByText('Working until 5:00 PM · 4 hours and 59 minutes left'),
     ).toBeVisible();
@@ -58,7 +61,12 @@ test.describe('Affordi earnings', () => {
     await page.getByRole('button', { name: 'Hide amounts' }).click();
     const earnings = page.getByRole('region', { name: 'How much do you earn?' });
     await expect(earnings.getByText(/€/)).toHaveCount(0);
-    await expect(page.locator('.live-amount')).toHaveText(['••••Hidden', '••••Hidden']);
+    await expect(page.locator('.live-amount')).toHaveText([
+      '••••Hidden',
+      '••••Hidden',
+      '••••Hidden',
+    ]);
+    await expect(page.getByText(/% of this month’s take home pay/)).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
     await page.getByRole('link', { name: 'Cost' }).click();

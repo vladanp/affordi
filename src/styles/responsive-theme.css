@@ -125,8 +125,13 @@
     outline: 2px solid Highlight;
   }
 
-  .earnings-work[data-state='working'] .earnings-status::before {
+  .earnings-work[data-state='working'] .earnings-status::before,
+  .month-meter > span {
     background: CanvasText;
+  }
+
+  .month-meter {
+    outline: 1px solid CanvasText;
   }
 
   .share-segment {
