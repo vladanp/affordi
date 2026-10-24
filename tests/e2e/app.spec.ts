@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { completeSetup } from './helpers';
+import { completeSetup, waitForStillness } from './helpers';
 
 test.describe('Affordi calculator', () => {
   test.beforeEach(async ({ page }) => {
@@ -238,10 +238,12 @@ test.describe('Affordi calculator', () => {
 
     await price.fill('1300');
     await expect(page.locator('.result-primary')).toHaveText('75 hours of work');
+    await waitForStillness(page);
     const hoursPosition = await page.locator('.result-share').boundingBox();
     await price.fill('1400');
     await expect(page.locator('.result-primary')).toHaveText('2 weeks');
     await expect(page.locator('.result-approx')).toHaveText('≈ 81 hours');
+    await waitForStillness(page);
     const weeksPosition = await page.locator('.result-share').boundingBox();
 
     if (hoursPosition === null || weeksPosition === null) {
@@ -259,12 +261,14 @@ test.describe('Affordi calculator', () => {
 
     const price = page.getByRole('textbox', { name: 'Unesite cenu' });
     await price.fill('36');
+    await waitForStillness(page);
     const firstFontSize = await page
       .locator('.result-primary')
       .evaluate((element) => getComputedStyle(element).getPropertyValue('font-size'));
     const firstHeadline = await page.locator('.result-primary').boundingBox();
     const firstPosition = await page.locator('.result-share').boundingBox();
     await price.fill('360');
+    await waitForStillness(page);
     const secondFontSize = await page
       .locator('.result-primary')
       .evaluate((element) => getComputedStyle(element).getPropertyValue('font-size'));
