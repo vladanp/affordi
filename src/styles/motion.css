@@ -1,15 +1,32 @@
 /*
- * Small movements that show what changed: a page or row settles into place, meters and bars grow,
- * a sheet rises, and buttons give a little when pressed. They move with transforms and fade only
- * what holds no text, so they stay smooth and every word keeps its contrast. None of it runs for
- * people who ask for reduced motion.
+ * Small movements that show what changed: a page slides in from the side of its tab, a row settles
+ * into place and glows once it is saved, meters and bars grow, a sheet rises, and buttons give a
+ * little when pressed. They move with transforms, so they stay smooth. Text fades in only with a
+ * whole page, after which every word has its full contrast. None of it runs for people who ask
+ * for reduced motion.
  */
 @media (prefers-reduced-motion: no-preference) {
-  /* A page settles in when its tab opens. Showing a hidden page again restarts this. */
+  /*
+   * A page settles in when the app opens, and slides in from the side of its tab when tabs
+   * change. Showing a hidden page again restarts this. The shell clips the slide at its edges,
+   * so the page never scrolls sideways.
+   */
   .calculator,
   .earnings,
   .monthly {
     animation: settle-in 260ms var(--ease-out) both;
+  }
+
+  .page[data-motion] > :is(.calculator, .earnings, .monthly) {
+    animation: page-in-forward 340ms var(--ease-out) both;
+  }
+
+  .page[data-motion='back'] > :is(.calculator, .earnings, .monthly) {
+    animation-name: page-in-back;
+  }
+
+  .calculator-shell {
+    overflow-x: clip;
   }
 
   /* A row settles in as it is added, and a month's bills as the month changes. */
@@ -17,6 +34,13 @@
   .bill-row,
   .bill-missed {
     animation: settle-in-short 220ms var(--ease-out) both;
+  }
+
+  /* A row just added or saved glows for a moment, so it is easy to find in its list. */
+  :is(.item, .bill-row)[data-changed] {
+    animation:
+      settle-in-short 220ms var(--ease-out) both,
+      item-changed 1.6s ease-out both;
   }
 
   /* Meters fill from their start, then follow their value. */
@@ -77,6 +101,28 @@
 @keyframes settle-in {
   from {
     translate: 0 0.5rem;
+  }
+}
+
+@keyframes page-in-forward {
+  from {
+    opacity: 0;
+    translate: 1.75rem 0;
+  }
+}
+
+@keyframes page-in-back {
+  from {
+    opacity: 0;
+    translate: -1.75rem 0;
+  }
+}
+
+/* The name is also read in MonthlyCosts.tsx, which clears the mark once the glow ends. */
+@keyframes item-changed {
+  from,
+  25% {
+    background-color: color-mix(in oklab, var(--color-accent) 16%, var(--color-surface));
   }
 }
 

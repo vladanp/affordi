@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from 'react';
+import { useRef, useState, type AnimationEvent, type KeyboardEvent } from 'react';
 import { flushSync } from 'react-dom';
 import { ChevronDown, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 
@@ -75,6 +75,8 @@ function moveToNextAmount(event: KeyboardEvent<HTMLInputElement>) {
 
 interface BillAmountRowProps {
   bill: Bill;
+  /** Whether the bill was just added or saved, which makes its row glow for a moment. */
+  changed: boolean;
   copy: Translator;
   hidden: boolean;
   month: string;
@@ -87,6 +89,7 @@ interface BillAmountRowProps {
 /** One bill with its amount for the month, saved when the field is left. */
 function BillAmountRow({
   bill,
+  changed,
   copy,
   hidden,
   month,
@@ -124,7 +127,7 @@ function BillAmountRow({
   }
 
   return (
-    <li className="bill-row">
+    <li className="bill-row" data-changed={changed || undefined}>
       <label className="bill-row-name" htmlFor={id}>
         {bill.name}
       </label>
@@ -234,11 +237,14 @@ function MissedNote({ copy, missed, onEnter }: MissedNoteProps) {
 
 interface BillMonthProps {
   bills: readonly Bill[];
+  /** The bill just added or saved, or null. */
+  changedId: string | null;
   copy: Translator;
   hidden: boolean;
   index: number;
   missed: MissedMonth | null;
   now: Date;
+  onAnimationEnd: (event: AnimationEvent<HTMLElement>) => void;
   onBillChange: (bill: Bill) => void;
   onEdit: (bill: Bill, opener: HTMLElement) => void;
   onEnterMissed: () => void;
@@ -250,11 +256,13 @@ interface BillMonthProps {
 /** The bills of one month, entered together and added up, with the month's own controls. */
 function BillMonth({
   bills,
+  changedId,
   copy,
   hidden,
   index,
   missed,
   now,
+  onAnimationEnd,
   onBillChange,
   onEdit,
   onEnterMissed,
@@ -292,10 +300,11 @@ function BillMonth({
       {missed !== null && missed.month !== current.month && (
         <MissedNote copy={copy} missed={missed} onEnter={onEnterMissed} />
       )}
-      <ul aria-labelledby={MONTH_TITLE_ID} className="bill-rows">
+      <ul aria-labelledby={MONTH_TITLE_ID} className="bill-rows" onAnimationEnd={onAnimationEnd}>
         {bills.map((bill) => (
           <BillAmountRow
             bill={bill}
+            changed={bill.id === changedId}
             copy={copy}
             hidden={hidden}
             key={`${bill.id}:${current.month}`}
@@ -374,7 +383,10 @@ export function BillsSection({
     onBillsChange(
       exists ? bills.map((saved) => (saved.id === bill.id ? bill : saved)) : [...bills, bill],
     );
-    dialog.close();
+    // A new bill's amount may be for another month, which then shows it in place.
+    const added = exists ? undefined : bill.entries[0]?.month;
+    if (added !== undefined) setChosen(added);
+    dialog.saved(bill);
   }
 
   function remove(bill: Bill) {
@@ -407,11 +419,13 @@ export function BillsSection({
           />
           <BillMonth
             bills={bills}
+            changedId={dialog.changedId}
             copy={copy}
             hidden={hidden}
             index={selected}
             missed={missed}
             now={now}
+            onAnimationEnd={dialog.onAnimationEnd}
             onBillChange={change}
             onEdit={dialog.open}
             onEnterMissed={enterMissed}
@@ -428,6 +442,7 @@ export function BillsSection({
           copy={copy}
           currency={settings.currency}
           month={month}
+          months={months}
           onClose={dialog.close}
           onDelete={remove}
           onSave={save}

@@ -15,6 +15,11 @@ const savedSettings = JSON.stringify({
   },
 });
 
+/** The wrapper around every page, which says which way a page slides in. */
+function shell() {
+  return document.querySelector('.page');
+}
+
 describe('App', () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => {
@@ -27,6 +32,8 @@ describe('App', () => {
     render(<App />);
     const costLink = screen.getByRole('link', { name: 'Cost' });
     const earningsLink = screen.getByRole('link', { name: 'Earnings' });
+    // The page slides in from the side of its tab once tabs change, and not on first paint.
+    expect(shell()).not.toHaveAttribute('data-motion');
     expect(costLink).toHaveAttribute('aria-current', 'page');
     expect(earningsLink).not.toHaveAttribute('aria-current');
     fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
@@ -38,6 +45,7 @@ describe('App', () => {
       await screen.findByRole('heading', { name: 'How much do you earn?' }),
     ).toBeInTheDocument();
     expect(window.location.hash).toBe('#earnings');
+    expect(shell()).toHaveAttribute('data-motion', 'forward');
     expect(earningsLink).toHaveAttribute('aria-current', 'page');
     expect(document.title).toBe('Earnings · Affordi');
     expect(screen.queryByRole('heading', { name: 'How much does it cost?' })).toBeNull();
@@ -48,6 +56,7 @@ describe('App', () => {
       await screen.findByRole('heading', { name: 'How much does it cost?' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Enter a price' })).toHaveValue('750');
+    expect(shell()).toHaveAttribute('data-motion', 'back');
     expect(screen.getByText('43 hours of work')).toBeInTheDocument();
     expect(document.title).toBe('Affordi');
   });

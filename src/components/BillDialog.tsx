@@ -16,6 +16,8 @@ import {
 
 interface FormValues {
   name: string;
+  /** The month a new bill's amount is for, as YYYY-MM. */
+  month: string;
   amount: string;
 }
 
@@ -32,7 +34,6 @@ function readAmount(value: string, locale: string): number | null | undefined {
 function validate(
   values: FormValues,
   bill: Bill | null,
-  month: string,
   copy: Translator,
 ): { bill?: Bill; errors: FormErrors } {
   const name = values.name.trim();
@@ -44,7 +45,43 @@ function validate(
 
   if (bill !== null) return { errors, bill: { ...bill, name } };
   const added: Bill = { id: createItemId(), name, entries: [] };
-  return { errors, bill: amount === null ? added : withBillAmount(added, month, amount) };
+  return { errors, bill: amount === null ? added : withBillAmount(added, values.month, amount) };
+}
+
+interface MonthFieldProps {
+  copy: Translator;
+  months: readonly string[];
+  onChange: (value: string) => void;
+  value: string;
+}
+
+/** The month a new bill's amount is for, newest first, so last month's bill is one tap away. */
+function MonthField({ copy, months, onChange, value }: MonthFieldProps) {
+  return (
+    <div className="field">
+      <label className="field-label" htmlFor="item-month">
+        {copy.t('fixedCosts.month')}
+      </label>
+      <span className="select-wrap">
+        <select
+          id="item-month"
+          name="month"
+          onChange={(event) => onChange(event.target.value)}
+          value={value}
+        >
+          {months.toReversed().map((option) => {
+            const month = parseMonth(option);
+            return (
+              <option key={option} value={option}>
+                {month === null ? option : copy.month(monthStart(month), true)}
+              </option>
+            );
+          })}
+        </select>
+        <span aria-hidden="true" className="select-chevron" />
+      </span>
+    </div>
+  );
 }
 
 interface BillFormProps {
@@ -53,6 +90,7 @@ interface BillFormProps {
   currency: CurrencyCode;
   hidden: boolean;
   month: string;
+  months: readonly string[];
   onCancel: () => void;
   onDeleteRequest: () => void;
   onSave: (bill: Bill) => void;
@@ -65,13 +103,17 @@ function BillForm({
   currency,
   hidden,
   month,
+  months,
   onCancel,
   onDeleteRequest,
   onSave,
 }: BillFormProps) {
-  const [values, setValues] = useState<FormValues>(() => ({ name: bill?.name ?? '', amount: '' }));
+  const [values, setValues] = useState<FormValues>(() => ({
+    name: bill?.name ?? '',
+    month,
+    amount: '',
+  }));
   const [errors, setErrors] = useState<FormErrors>({});
-  const shownMonth = parseMonth(month);
 
   function update(name: keyof FormValues, value: string) {
     setValues((current) => ({ ...current, [name]: value }));
@@ -80,7 +122,7 @@ function BillForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const result = validate(values, bill, month, copy);
+    const result = validate(values, bill, copy);
     setErrors(result.errors);
     if (result.bill !== undefined) {
       onSave(result.bill);
@@ -103,16 +145,25 @@ function BillForm({
           value={values.name}
         />
       </div>
-      {bill === null && shownMonth !== null && (
-        <AmountField
-          copy={copy}
-          currency={currency}
-          error={errors.amount}
-          label={copy.t('bills.amountFor', { month: copy.month(monthStart(shownMonth), true) })}
-          onChange={(value) => update('amount', value)}
-          placeholder="85"
-          value={values.amount}
-        />
+      {bill === null && (
+        <>
+          <MonthField
+            copy={copy}
+            months={months}
+            onChange={(value) => update('month', value)}
+            value={values.month}
+          />
+          <AmountField
+            copy={copy}
+            currency={currency}
+            error={errors.amount}
+            hint={copy.t('bills.amountHint')}
+            label={copy.t('bills.amountLabel')}
+            onChange={(value) => update('amount', value)}
+            placeholder="85"
+            value={values.amount}
+          />
+        </>
       )}
       <FormActions
         copy={copy}
@@ -129,8 +180,10 @@ interface BillDialogProps {
   bill: Bill | null;
   copy: Translator;
   currency: CurrencyCode;
-  /** The month shown on the page, as YYYY-MM, which a new bill's amount is for. */
+  /** The month shown on the page, as YYYY-MM, which a new bill's amount is for at first. */
   month: string;
+  /** The months a new bill's amount can be for, oldest first. */
+  months: readonly string[];
   onClose: () => void;
   onDelete: (bill: Bill) => void;
   onSave: (bill: Bill) => void;
@@ -141,6 +194,7 @@ export function BillDialog({
   copy,
   currency,
   month,
+  months,
   onClose,
   onDelete,
   onSave,
@@ -174,6 +228,7 @@ export function BillDialog({
         currency={currency}
         hidden={confirmDelete}
         month={month}
+        months={months}
         onCancel={onClose}
         onDeleteRequest={() => setConfirmDelete(true)}
         onSave={onSave}

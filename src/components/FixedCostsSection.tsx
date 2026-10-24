@@ -70,6 +70,7 @@ function rowFigures(cost: FixedCost, settings: AffordiSettings, now: Date, copy:
 }
 
 interface FixedCostRowProps {
+  changed: boolean;
   copy: Translator;
   cost: FixedCost;
   hidden: boolean;
@@ -78,7 +79,7 @@ interface FixedCostRowProps {
   settings: AffordiSettings;
 }
 
-function FixedCostRow({ copy, cost, hidden, now, onEdit, settings }: FixedCostRowProps) {
+function FixedCostRow({ changed, copy, cost, hidden, now, onEdit, settings }: FixedCostRowProps) {
   const { details, share } = rowFigures(cost, settings, now, copy);
   const progress = paymentProgress(cost, now);
   const notes = [
@@ -88,6 +89,7 @@ function FixedCostRow({ copy, cost, hidden, now, onEdit, settings }: FixedCostRo
   return (
     <ItemRow
       amount={<Money copy={copy} hidden={hidden} settings={settings} value={cost.amount} />}
+      changed={changed}
       copy={copy}
       details={details}
       editLabel={copy.t('fixedCosts.edit', { name: cost.name })}
@@ -99,20 +101,6 @@ function FixedCostRow({ copy, cost, hidden, now, onEdit, settings }: FixedCostRo
       share={share}
     />
   );
-}
-
-/** The loans the card adds up, such as "For Mortgage and Car loan", naming three at most. */
-const NAMED_LOANS = 3;
-
-function loanNames(names: readonly string[], copy: Translator): string {
-  const named =
-    names.length > NAMED_LOANS + 1
-      ? [
-          ...names.slice(0, NAMED_LOANS),
-          copy.t('fixedCosts.moreLoans', { count: names.length - NAMED_LOANS }),
-        ]
-      : names;
-  return copy.t('fixedCosts.loansFor', { names: copy.list(named) });
 }
 
 interface LoansCardProps {
@@ -147,7 +135,6 @@ function LoansCard({ copy, hidden, loans, settings }: LoansCardProps) {
         </span>
       )}
       {paidNote !== null && <p className="stat-note">{paidNote}</p>}
-      <p className="stat-note">{loanNames(loans.names, copy)}</p>
       <p className="stat-note">{lastPaymentNote(loans.lastPayment, copy)}</p>
     </div>
   );
@@ -182,7 +169,7 @@ export function FixedCostsSection({
         ? fixedCosts.map((saved) => (saved.id === cost.id ? cost : saved))
         : [...fixedCosts, cost],
     );
-    dialog.close();
+    dialog.saved(cost);
   }
 
   function remove(cost: FixedCost) {
@@ -210,9 +197,14 @@ export function FixedCostsSection({
         <LoansCard copy={copy} hidden={hidden} loans={loans} settings={settings} />
       )}
       {fixedCosts.length > 0 && (
-        <ul aria-labelledby="fixed-cost-list-title" className="item-list">
+        <ul
+          aria-labelledby="fixed-cost-list-title"
+          className="item-list"
+          onAnimationEnd={dialog.onAnimationEnd}
+        >
           {sortFixedCosts(fixedCosts, now).map((cost) => (
             <FixedCostRow
+              changed={cost.id === dialog.changedId}
               copy={copy}
               cost={cost}
               hidden={hidden}

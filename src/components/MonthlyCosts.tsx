@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type AnimationEvent,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { ChevronRight, Plus } from 'lucide-react';
 
 import { formatWorkDuration } from '../domain/duration';
@@ -24,12 +31,19 @@ export function Money({ copy, hidden, settings, value }: MoneyProps) {
   return formatCurrency(value, settings.currency, copy.locale);
 }
 
+/** The glow in motion.css that marks a row just added or saved. */
+const CHANGED_ANIMATION = 'item-changed';
+
 /**
  * The item a dialog edits, undefined while it is closed and null while adding.
  * Focus returns to what opened the dialog, or to the add button once that is gone.
+ * The item just saved is marked until its row has glowed, so it is easy to find in the list.
  */
-export function useEditDialog<T>(addButtonRef: RefObject<HTMLButtonElement | null>) {
+export function useEditDialog<T extends { id: string }>(
+  addButtonRef: RefObject<HTMLButtonElement | null>,
+) {
   const [editing, setEditing] = useState<T | null | undefined>(undefined);
+  const [changedId, setChangedId] = useState<string | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const restoreFocusRef = useRef(false);
 
@@ -50,7 +64,17 @@ export function useEditDialog<T>(addButtonRef: RefObject<HTMLButtonElement | nul
     setEditing(undefined);
   }
 
-  return { close, editing, open };
+  function saved(item: T) {
+    setChangedId(item.id);
+    close();
+  }
+
+  /** Clears the mark once the glow has ended. Animation events bubble up to the list. */
+  function onAnimationEnd(event: AnimationEvent<HTMLElement>) {
+    if (event.animationName === CHANGED_ANIMATION) setChangedId(null);
+  }
+
+  return { changedId, close, editing, onAnimationEnd, open, saved };
 }
 
 interface CostCardProps {
@@ -175,6 +199,8 @@ export function ListHeading({
 
 interface ItemRowProps {
   amount: ReactNode;
+  /** Whether the item was just added or saved, which makes its row glow for a moment. */
+  changed: boolean;
   copy: Translator;
   /** The line under the name, such as the work time. */
   details: string;
@@ -193,6 +219,7 @@ interface ItemRowProps {
 /** One item with its amount, details, and share of pay. The whole row opens it for editing. */
 export function ItemRow({
   amount,
+  changed,
   copy,
   details,
   editLabel,
@@ -204,7 +231,7 @@ export function ItemRow({
   share,
 }: ItemRowProps) {
   return (
-    <li className="item" data-muted={muted || undefined}>
+    <li className="item" data-changed={changed || undefined} data-muted={muted || undefined}>
       <button
         aria-label={editLabel}
         className="item-edit"

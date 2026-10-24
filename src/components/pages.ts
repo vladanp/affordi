@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 
 import type { TranslationKey } from '../domain/i18n';
 
@@ -32,4 +32,23 @@ export function usePage(): Page {
     () => pageFromHash(window.location.hash),
     () => 'cost',
   );
+}
+
+/** Which way the page last moved: to a tab further along, or back to an earlier one. */
+export type PageMotion = 'forward' | 'back';
+
+/**
+ * Which way the page moved, so it can slide in from the side of its tab, or null until the
+ * first change. The page shown before is kept in state, as React suggests for a value that
+ * depends on an earlier render.
+ */
+export function usePageMotion(page: Page): PageMotion | null {
+  const [shown, setShown] = useState<{ page: Page; motion: PageMotion | null }>({
+    page,
+    motion: null,
+  });
+  if (shown.page === page) return shown.motion;
+  const motion = pages.indexOf(page) > pages.indexOf(shown.page) ? 'forward' : 'back';
+  setShown({ page, motion });
+  return motion;
 }
