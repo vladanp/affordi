@@ -164,8 +164,6 @@ export function paidShare({ paid, left }: PaymentProgress): number | null {
  * any cost with a last payment, so a subscription that keeps going is never one.
  */
 export interface LoansSummary {
-  /** The loans by name, the largest payment first. */
-  names: string[];
   left: number;
   /** Paid so far, or null when a loan has no first payment. */
   paid: number | null;
@@ -184,7 +182,6 @@ export function summarizeLoans(costs: readonly FixedCost[], now: Date): LoansSum
   const progress = loans.map((cost) => paymentProgress(cost, now));
   const allPaidKnown = progress.every((loan) => loan.paid !== null);
   return {
-    names: sortFixedCosts(loans, now).map((loan) => loan.name),
     left: progress.reduce((sum, loan) => sum + (loan.left ?? 0), 0),
     paid: allPaidKnown ? progress.reduce((sum, loan) => sum + (loan.paid ?? 0), 0) : null,
     lastPayment: loans

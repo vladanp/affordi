@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page } from '@playwright/test';
 
 export async function completeSetup(page: Page) {
@@ -28,4 +29,10 @@ export async function waitForStillness(page: Page) {
           animation.effect?.getComputedTiming().iterations === Number.POSITIVE_INFINITY,
       ),
   );
+}
+
+/** Audits the page with axe once it is still, so no text is caught part way through fading in. */
+export async function expectAccessible(page: Page) {
+  await waitForStillness(page);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 }

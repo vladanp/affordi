@@ -15,7 +15,7 @@ import { Earnings } from './components/Earnings';
 import { IncomeForm } from './components/IncomeForm';
 import { Monthly } from './components/Monthly';
 import { PageNav } from './components/PageNav';
-import { pageNames, usePage } from './components/pages';
+import { pageNames, usePage, usePageMotion } from './components/pages';
 import { SettingsDialog } from './components/SettingsDialog';
 import { UpdatePrompt } from './components/UpdatePrompt';
 import { loadBills, saveBills, type Bill } from './domain/bills';
@@ -61,6 +61,7 @@ function PageShell({
   settingsButtonRef,
 }: PageShellProps) {
   const page = usePage();
+  const motion = usePageMotion(page);
   const copy = createTranslator(settings.language);
   const title = page === 'cost' ? APP_NAME : `${copy.t(pageNames[page])} · ${APP_NAME}`;
 
@@ -73,7 +74,7 @@ function PageShell({
   }, [title]);
 
   return (
-    <div className="page">
+    <div className="page" data-motion={motion ?? undefined}>
       <header className="topbar">
         <Brand />
         <PageNav copy={copy} page={page} />

@@ -1,7 +1,6 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-import { completeSetup } from './helpers';
+import { completeSetup, expectAccessible } from './helpers';
 
 test.use({ timezoneId: 'UTC' });
 
@@ -10,10 +9,6 @@ type MonthAndYear = [month: string, year: string];
 interface Payments {
   first?: MonthAndYear;
   last?: MonthAndYear;
-}
-
-async function expectAccessible(page: Page) {
-  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 }
 
 async function openMonthly(page: Page) {
@@ -45,7 +40,7 @@ async function addBill(page: Page, name: string, amount?: string) {
   const dialog = page.getByRole('dialog', { name: 'Add a bill' });
   await dialog.getByRole('textbox', { name: 'Name' }).fill(name);
   if (amount !== undefined) {
-    await dialog.getByRole('textbox', { name: /^Amount for / }).fill(amount);
+    await dialog.getByRole('textbox', { name: 'Amount', exact: true }).fill(amount);
   }
   await dialog.getByRole('button', { name: 'Add bill' }).click();
   await expect(dialog).toBeHidden();
@@ -80,9 +75,6 @@ test.describe('Affordi monthly page', () => {
     const loans = page.locator('.fixed-costs-loans');
     await expect(loans).toContainText('€256,500.00');
     await expect(loans).toContainText('€31,350.00 of €287,850.00 paid');
-    // The phone bill keeps going, so it is no loan.
-    await expect(loans).toContainText('For Mortgage');
-    await expect(loans).not.toContainText('Phone');
     await expectAccessible(page);
 
     await page.reload();
@@ -92,8 +84,12 @@ test.describe('Affordi monthly page', () => {
     await expectAccessible(page);
     await dialog.getByRole('textbox', { name: 'Amount each month' }).fill('50');
     await dialog.getByRole('button', { name: 'Save' }).click();
-    await expect(list.getByRole('listitem').nth(1)).toContainText('€50.00');
+    const phone = list.getByRole('listitem').nth(1);
+    await expect(phone).toContainText('€50.00');
     await expect(page.getByRole('button', { name: 'Edit Phone' })).toBeFocused();
+    // The saved row glows for a moment, and the mark goes once the glow ends.
+    await expect(phone).toHaveAttribute('data-changed');
+    await expect(phone).not.toHaveAttribute('data-changed');
 
     await page.getByRole('button', { name: 'Edit Phone' }).click();
     await dialog.getByRole('button', { name: 'Delete' }).click();

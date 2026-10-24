@@ -1,12 +1,6 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
-import { completeSetup } from './helpers';
-
-async function expectAccessible(page: Parameters<typeof completeSetup>[0]) {
-  const results = await new AxeBuilder({ page }).analyze();
-  expect(results.violations).toEqual([]);
-}
+import { completeSetup, expectAccessible } from './helpers';
 
 test.describe('Affordi accessibility', () => {
   test.beforeEach(async ({ page }) => {

@@ -1,5 +1,6 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+
+import { expectAccessible } from './helpers';
 
 test.describe('localization and theme preferences', () => {
   test.use({ locale: 'de-DE', colorScheme: 'light' });
@@ -14,7 +15,7 @@ test.describe('localization and theme preferences', () => {
     await expect(page).toHaveTitle(/Affordi/);
     await expect(page.locator('html')).toHaveAttribute('lang', 'de');
     await expect(page.getByRole('heading', { name: 'Beginne mit deinem Einkommen' })).toBeVisible();
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await expectAccessible(page);
 
     await page.getByLabel('Nettoeinkommen').fill('3000');
     await page.getByRole('combobox', { name: 'Zahlungsrhythmus' }).selectOption('monthly');
@@ -30,7 +31,7 @@ test.describe('localization and theme preferences', () => {
     const language = page.getByRole('combobox', { name: 'Sprache' });
     await expect(language).toBeVisible();
     await expect(page.getByRole('group', { name: 'Darstellung' })).toBeVisible();
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await expectAccessible(page);
     await page.getByRole('radio', { name: 'Dunkel' }).check();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await language.selectOption('fr');
@@ -42,7 +43,7 @@ test.describe('localization and theme preferences', () => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await expect(page.getByRole('heading', { name: /Quel est son coût en temps/ })).toBeVisible();
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await expectAccessible(page);
 
     await page.reload();
 

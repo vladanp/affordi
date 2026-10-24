@@ -211,6 +211,11 @@ describe('Monthly fixed costs', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(rows()[0]).toBe('Mortgage€900.506 days and 4 hours of work30%30% of your pay');
     expect(edit).toHaveFocus();
+
+    // The saved row glows for a moment; a browser test sees the glow end.
+    const [saved, other] = fixedCostRows();
+    expect(saved).toHaveAttribute('data-changed');
+    expect(other).not.toHaveAttribute('data-changed');
   });
 
   it('shows what is paid and left on loans with a first payment', () => {
@@ -232,11 +237,12 @@ describe('Monthly fixed costs', () => {
     const meter = fixedCostRows()[0]!.querySelector<HTMLElement>('.meter > span');
     expect(meter?.style.inlineSize).toMatch(/^10\.89/);
 
+    // Insurance keeps going without a last payment, so it is no loan; the car loan has ended.
     const loans = screen.getByText('Left to pay on loans').closest('div')!;
     expect(within(loans).getByText('€256,500.00')).toBeInTheDocument();
     expect(within(loans).getByText('€31,350.00 of €287,850.00 paid')).toBeInTheDocument();
-    // Insurance keeps going without a last payment, so it is no loan; the car loan has ended.
-    expect(within(loans).getByText('For Mortgage')).toBeInTheDocument();
+    // The card adds the loans up without naming them; each one is in the list above it.
+    expect(loans).not.toHaveTextContent('Mortgage');
     expect(within(loans).getByText('Last payment: March 2049')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Hide amounts' }));
@@ -359,7 +365,7 @@ describe('Monthly bills', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Add bill' }));
     expect(dialog().getByRole('heading', { name: 'Add a bill' })).toBeInTheDocument();
-    fireEvent.change(dialog().getByRole('textbox', { name: 'Amount for October 2026' }), {
+    fireEvent.change(dialog().getByRole('textbox', { name: 'Amount' }), {
       target: { value: '0' },
     });
     fireEvent.click(dialog().getByRole('button', { name: 'Add bill' }));
@@ -369,7 +375,7 @@ describe('Monthly bills', () => {
     fireEvent.change(dialog().getByRole('textbox', { name: 'Name' }), {
       target: { value: 'Electricity' },
     });
-    fireEvent.change(dialog().getByRole('textbox', { name: 'Amount for October 2026' }), {
+    fireEvent.change(dialog().getByRole('textbox', { name: 'Amount' }), {
       target: { value: '91' },
     });
     fireEvent.click(dialog().getByRole('button', { name: 'Add bill' }));
@@ -392,6 +398,34 @@ describe('Monthly bills', () => {
     expect(monthTotal()).toBe('Total €125.00');
     const total = screen.getByText('Each month').closest('div')!;
     expect(within(total).getByText('€125.00')).toBeInTheDocument();
+  });
+
+  it('adds a bill with an earlier month’s amount and shows that month', () => {
+    render(<MonthlyPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Add bill' }));
+    // The amount is for the month shown at first, and any of the last twelve can be chosen.
+    const month = dialog().getByRole('combobox', { name: 'Month' });
+    expect(month).toHaveValue('2026-10');
+    const options = within(month).getAllByRole('option');
+    expect(options).toHaveLength(12);
+    expect(options[0]).toHaveTextContent('October 2026');
+    expect(options[1]).toHaveTextContent('September 2026');
+    expect(options[11]).toHaveTextContent('November 2025');
+    expect(dialog().getByRole('textbox', { name: 'Amount' })).toHaveAccessibleDescription(
+      /Optional\. Leave it empty if the bill hasn’t arrived yet\./,
+    );
+
+    fireEvent.change(dialog().getByRole('textbox', { name: 'Name' }), {
+      target: { value: 'Water' },
+    });
+    fireEvent.change(month, { target: { value: '2026-09' } });
+    fireEvent.change(dialog().getByRole('textbox', { name: 'Amount' }), {
+      target: { value: '34' },
+    });
+    fireEvent.click(dialog().getByRole('button', { name: 'Add bill' }));
+    expect(monthTitle()).toBe('September 2026');
+    expect(amount('Water')).toHaveValue('34.00');
+    expect(monthTotal()).toBe('Total €34.00');
   });
 
   it('shows one total with fixed costs and average bills, and what is left', () => {

@@ -225,13 +225,11 @@ describe('loan progress', () => {
     // A cost that keeps going, such as a subscription, is never a loan, nor is one that ended.
     expect(summarizeLoans([insurance, carLoan], october)).toBeNull();
     expect(summarizeLoans([phone, loan, carLoan, insurance], october)).toEqual({
-      names: ['Mortgage', 'Phone'],
       left: 270 * 950 + 25,
       paid: null,
       lastPayment: '2049-03',
     });
     expect(summarizeLoans([loan, { ...phone, firstPayment: '2026-07' }], october)).toEqual({
-      names: ['Mortgage', 'Phone'],
       left: 270 * 950 + 25,
       paid: 33 * 950 + 3 * 25,
       lastPayment: '2049-03',

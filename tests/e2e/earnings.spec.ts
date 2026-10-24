@@ -1,7 +1,6 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
-import { completeSetup } from './helpers';
+import { completeSetup, expectAccessible } from './helpers';
 
 /** Wednesday 21 October 2026, in the browser's time zone below. */
 const wednesdayMorning = new Date('2026-10-21T11:00:00Z');
@@ -53,7 +52,7 @@ test.describe('Affordi earnings', () => {
     await expect(table.getByRole('row', { name: /^Per month/ })).toHaveText(/€3,000\.00/);
     // Axe waits on timers, so the paused clock runs again for the audit.
     await page.clock.resume();
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await expectAccessible(page);
   });
 
   test('hides every amount and keeps them hidden across pages', async ({ page }) => {
@@ -69,7 +68,7 @@ test.describe('Affordi earnings', () => {
       '••••Hidden',
     ]);
     await expect(earnings.getByText(/^\d+%$/)).toBeVisible();
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await expectAccessible(page);
 
     await page.getByRole('link', { name: 'Cost', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'How much does it cost?' })).toBeVisible();
