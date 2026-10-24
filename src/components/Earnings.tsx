@@ -16,7 +16,8 @@ import {
   tickerDigits,
   type TickerParts,
 } from '../domain/earningsText';
-import { fixedCostsCoverage, monthlyFixedCosts, type FixedCost } from '../domain/fixedCosts';
+import { averageMonthlyBills, type Bill } from '../domain/bills';
+import { costsCoverage, monthlyFixedCosts, type FixedCost } from '../domain/fixedCosts';
 import { createTranslator, type Translator } from '../domain/i18n';
 import type { WorkProgress } from '../domain/schedule';
 import type { AffordiSettings } from '../domain/storage';
@@ -146,12 +147,13 @@ function WorkStatus({ copy, progress }: { copy: Translator; progress: WorkProgre
 }
 
 interface EarningsProps {
+  bills: readonly Bill[];
   fixedCosts: readonly FixedCost[];
   settings: AffordiSettings;
   onHideAmountsChange: (hideAmounts: boolean) => void;
 }
 
-export function Earnings({ fixedCosts, settings, onHideAmountsChange }: EarningsProps) {
+export function Earnings({ bills, fixedCosts, settings, onHideAmountsChange }: EarningsProps) {
   const amountsHidden = settings.hideAmounts;
   const reducedMotion = useSyncExternalStore(
     subscribeToReducedMotion,
@@ -166,7 +168,10 @@ export function Earnings({ fixedCosts, settings, onHideAmountsChange }: Earnings
   const { currency, language } = settings;
   const today = calculateEarnedToday(settings, rates, now);
   const month = calculateEarnedThisMonth(settings, rates, now);
-  const coverage = fixedCostsCoverage(month.amount, monthlyFixedCosts(fixedCosts, now));
+  // Bills count at their average month, beside the fixed costs still paid this month.
+  const billsAverage = averageMonthlyBills(bills, now);
+  const coverage = costsCoverage(month.amount, monthlyFixedCosts(fixedCosts, now) + billsAverage);
+  const withBills = billsAverage > 0;
   const digits = tickerDigits(rates.aroundTheClock.second, currency, language);
   const rate = (value: number) =>
     amountsHidden ? <HiddenAmount copy={copy} /> : formatRate(value, currency, language);
@@ -220,9 +225,13 @@ export function Earnings({ fixedCosts, settings, onHideAmountsChange }: Earnings
             className="earnings-fixed-costs"
             copy={copy}
             hidden={amountsHidden}
-            label={copy.t('earnings.fixedCosts')}
+            label={copy.t(withBills ? 'earnings.costsWithBills' : 'earnings.fixedCosts')}
             share={coverage.share}
-            spokenShare={(percentage) => copy.t('earnings.fixedCostsShare', { percentage })}
+            spokenShare={(percentage) =>
+              copy.t(withBills ? 'earnings.costsWithBillsShare' : 'earnings.fixedCostsShare', {
+                percentage,
+              })
+            }
             total={coverage.share >= 1 ? null : formatRate(coverage.total, currency, language)}
           />
         )}

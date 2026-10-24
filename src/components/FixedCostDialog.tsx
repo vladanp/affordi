@@ -1,20 +1,19 @@
-import { useState, type FormEvent, type KeyboardEvent, type SyntheticEvent } from 'react';
-import { X } from 'lucide-react';
+import { useState, type FormEvent } from 'react';
 
-import {
-  createFixedCostId,
-  isFixedCostName,
-  isMonthBefore,
-  MAX_FIXED_COST_NAME_LENGTH,
-  monthStart,
-  monthValue,
-  parseMonth,
-  type FixedCost,
-} from '../domain/fixedCosts';
+import type { FixedCost } from '../domain/fixedCosts';
 import type { Translator } from '../domain/i18n';
 import { parseDecimalInput } from '../domain/input';
-import { getCurrencySymbol, type CurrencyCode } from '../domain/locale';
+import { createItemId, isItemName } from '../domain/items';
+import type { CurrencyCode } from '../domain/locale';
+import { isMonthBefore, monthStart, monthValue, parseMonth } from '../domain/months';
 import { FieldError } from './FieldError';
+import {
+  AmountField,
+  DeleteConfirmation,
+  FormActions,
+  NameField,
+  SheetDialog,
+} from './SheetDialog';
 
 /** Mortgages run for decades, so the year list reaches this far ahead. */
 const YEARS_AHEAD = 50;
@@ -36,10 +35,9 @@ const errorControls = [
   ['lastPayment', 'month'],
 ] as const satisfies readonly (readonly [keyof FormErrors, keyof FormValues])[];
 
-function openAsModal(node: HTMLDialogElement | null) {
-  if (node === null || node.open) return;
-  if (typeof node.showModal === 'function') node.showModal();
-  else node.setAttribute('open', '');
+/** A saved amount in the user's locale, without grouping so it reads back the same way. */
+function amountInputValue(amount: number, locale: string): string {
+  return amount.toLocaleString(locale, { maximumFractionDigits: 6, useGrouping: false });
 }
 
 function initialValues(cost: FixedCost | null, locale: string): FormValues {
@@ -47,7 +45,7 @@ function initialValues(cost: FixedCost | null, locale: string): FormValues {
   const last = cost.lastPayment === null ? null : parseMonth(cost.lastPayment);
   return {
     name: cost.name,
-    amount: cost.amount.toLocaleString(locale, { maximumFractionDigits: 6, useGrouping: false }),
+    amount: amountInputValue(cost.amount, locale),
     month: last === null ? '' : String(last.month),
     year: last === null ? '' : String(last.year),
   };
@@ -88,12 +86,12 @@ function validate(
   const name = values.name.trim();
   const amount = parseDecimalInput(values.amount, copy.locale);
   const { lastPayment, error } = readLastPayment(values, cost, now, copy);
-  if (!isFixedCostName(name)) errors.name = copy.t('validation.costName');
+  if (!isItemName(name)) errors.name = copy.t('validation.costName');
   if (amount === null || amount <= 0) errors.amount = copy.t('validation.costAmount');
   if (error !== undefined) errors.lastPayment = error;
 
   if (amount === null || Object.keys(errors).length > 0) return { errors };
-  return { errors, cost: { id: cost?.id ?? createFixedCostId(), name, amount, lastPayment } };
+  return { errors, cost: { id: cost?.id ?? createItemId(), name, amount, lastPayment } };
 }
 
 function focusFirstError(form: HTMLFormElement, errors: FormErrors) {
@@ -211,63 +209,23 @@ function FixedCostForm({
   }
 
   return (
-    <form
-      className="income-form fixed-cost-form"
-      hidden={hidden}
-      noValidate
-      onSubmit={handleSubmit}
-    >
-      <div className="field">
-        <label className="field-label" htmlFor="fixed-cost-name">
-          {copy.t('fixedCosts.nameLabel')}
-        </label>
-        <input
-          aria-describedby={errors.name === undefined ? undefined : 'fixed-cost-name-error'}
-          aria-invalid={errors.name !== undefined}
-          autoComplete="off"
-          enterKeyHint="next"
-          id="fixed-cost-name"
-          maxLength={MAX_FIXED_COST_NAME_LENGTH}
-          name="name"
-          onChange={(event) => update('name', event.target.value)}
-          placeholder={copy.t('fixedCosts.namePlaceholder')}
-          type="text"
-          value={values.name}
-        />
-        <FieldError error={errors.name} id="fixed-cost-name-error" />
-      </div>
-      <div className="field">
-        <label className="field-label" htmlFor="fixed-cost-amount">
-          {copy.t('fixedCosts.amountLabel')}
-        </label>
-        <span className="input-with-prefix">
-          <span aria-hidden="true" className="input-prefix">
-            {getCurrencySymbol(currency, copy.locale)}
-          </span>
-          <input
-            aria-describedby={
-              errors.amount === undefined
-                ? 'fixed-cost-currency'
-                : 'fixed-cost-currency fixed-cost-amount-error'
-            }
-            aria-invalid={errors.amount !== undefined}
-            autoComplete="off"
-            enterKeyHint="next"
-            id="fixed-cost-amount"
-            inputMode="decimal"
-            name="amount"
-            onChange={(event) => update('amount', event.target.value)}
-            placeholder="950"
-            spellCheck={false}
-            type="text"
-            value={values.amount}
-          />
-        </span>
-        <small className="visually-hidden" id="fixed-cost-currency">
-          {copy.t('fixedCosts.amountDescription', { currency })}
-        </small>
-        <FieldError error={errors.amount} id="fixed-cost-amount-error" />
-      </div>
+    <form className="income-form item-form" hidden={hidden} noValidate onSubmit={handleSubmit}>
+      <NameField
+        copy={copy}
+        error={errors.name}
+        onChange={(value) => update('name', value)}
+        placeholder={copy.t('fixedCosts.namePlaceholder')}
+        value={values.name}
+      />
+      <AmountField
+        copy={copy}
+        currency={currency}
+        error={errors.amount}
+        label={copy.t('fixedCosts.amountLabel')}
+        onChange={(value) => update('amount', value)}
+        placeholder="950"
+        value={values.amount}
+      />
       <LastPaymentField
         copy={copy}
         error={errors.lastPayment}
@@ -275,47 +233,13 @@ function FixedCostForm({
         onChange={update}
         values={values}
       />
-      <div className="form-actions form-wide">
-        {cost !== null && (
-          <button className="text-button delete-button" onClick={onDeleteRequest} type="button">
-            {copy.t('fixedCosts.delete')}
-          </button>
-        )}
-        <button className="button button-quiet" onClick={onCancel} type="button">
-          {copy.t('form.cancel')}
-        </button>
-        <button className="button button-primary" type="submit">
-          {copy.t(cost === null ? 'fixedCosts.add' : 'fixedCosts.save')}
-        </button>
-      </div>
+      <FormActions
+        copy={copy}
+        onCancel={onCancel}
+        onDeleteRequest={cost === null ? null : onDeleteRequest}
+        submitLabel={copy.t(cost === null ? 'fixedCosts.add' : 'fixedCosts.save')}
+      />
     </form>
-  );
-}
-
-interface DeleteConfirmationProps {
-  copy: Translator;
-  onDelete: () => void;
-  onKeep: () => void;
-}
-
-/** Moves focus to the safe choice when the question appears. A stable callback runs only once. */
-function focusOnMount(node: HTMLButtonElement | null) {
-  node?.focus();
-}
-
-function DeleteConfirmation({ copy, onDelete, onKeep }: DeleteConfirmationProps) {
-  return (
-    <div className="reset-view">
-      <p className="reset-copy">{copy.t('fixedCosts.deleteDescription')}</p>
-      <div className="form-actions">
-        <button className="button button-quiet" onClick={onKeep} ref={focusOnMount} type="button">
-          {copy.t('fixedCosts.keep')}
-        </button>
-        <button className="button button-danger" onClick={onDelete} type="button">
-          {copy.t('fixedCosts.delete')}
-        </button>
-      </div>
-    </div>
   );
 }
 
@@ -348,55 +272,31 @@ export function FixedCostDialog({
 }: FixedCostDialogProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // Escape steps back from the delete question before it closes the dialog.
-  function handleCancel(event: SyntheticEvent<HTMLDialogElement>) {
-    event.preventDefault();
-    if (confirmDelete) setConfirmDelete(false);
-    else onClose();
-  }
-
-  function handleKeyDown(event: KeyboardEvent<HTMLDialogElement>) {
-    if (event.key === 'Escape') handleCancel(event);
-  }
-
   return (
-    <dialog
-      aria-labelledby="fixed-cost-title"
-      className="sheet-dialog"
-      onCancel={handleCancel}
-      onKeyDown={handleKeyDown}
-      ref={openAsModal}
+    <SheetDialog
+      closeLabel={copy.t('fixedCosts.close')}
+      onBack={confirmDelete ? () => setConfirmDelete(false) : null}
+      onClose={onClose}
+      title={dialogTitle(cost, confirmDelete, copy)}
     >
-      <div className="dialog-inner">
-        <div className="dialog-header">
-          <h2 id="fixed-cost-title">{dialogTitle(cost, confirmDelete, copy)}</h2>
-          <button
-            aria-label={copy.t('fixedCosts.close')}
-            className="icon-button"
-            onClick={onClose}
-            type="button"
-          >
-            <X aria-hidden="true" size={20} strokeWidth={1.75} />
-          </button>
-        </div>
-        {confirmDelete && cost !== null && (
-          <DeleteConfirmation
-            copy={copy}
-            onDelete={() => onDelete(cost)}
-            onKeep={() => setConfirmDelete(false)}
-          />
-        )}
-        <FixedCostForm
+      {confirmDelete && cost !== null && (
+        <DeleteConfirmation
           copy={copy}
-          cost={cost}
-          currency={currency}
-          hidden={confirmDelete}
-          now={now}
-          onCancel={onClose}
-          onDeleteRequest={() => setConfirmDelete(true)}
-          onSave={onSave}
+          description={copy.t('fixedCosts.deleteDescription')}
+          onDelete={() => onDelete(cost)}
+          onKeep={() => setConfirmDelete(false)}
         />
-      </div>
-    </dialog>
+      )}
+      <FixedCostForm
+        copy={copy}
+        cost={cost}
+        currency={currency}
+        hidden={confirmDelete}
+        now={now}
+        onCancel={onClose}
+        onDeleteRequest={() => setConfirmDelete(true)}
+        onSave={onSave}
+      />
+    </SheetDialog>
   );
 }
