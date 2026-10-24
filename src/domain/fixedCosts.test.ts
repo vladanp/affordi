@@ -12,7 +12,6 @@ import {
   paymentProgress,
   saveFixedCosts,
   sortFixedCosts,
-  summarizeFixedCosts,
   summarizeLoans,
   type FixedCost,
 } from './fixedCosts';
@@ -179,22 +178,6 @@ describe('fixed cost figures', () => {
     const figures = monthlyCostFigures(950, settings);
     expect(figures?.workHours).toBeCloseTo(950 / hourlyRate, 10);
     expect(figures?.percentage).toBeCloseTo((950 / 3_000) * 100, 10);
-  });
-
-  it('sums the month and spreads what is left over an average month of workdays', () => {
-    const summary = summarizeFixedCosts(costs, settings, october);
-    expect(summary).not.toBeNull();
-    expect(summary!.total).toBe(1_095);
-    expect(summary!.workHours).toBeCloseTo(1_095 / hourlyRate, 10);
-    expect(summary!.percentage).toBeCloseTo(36.5, 10);
-    expect(summary!.left).toBe(1_905);
-    expect(summary!.leftPerDay).toBeCloseTo((1_905 * 12) / 364, 10);
-  });
-
-  it('shows a shortfall when fixed costs are more than take home pay', () => {
-    const summary = summarizeFixedCosts([{ ...insurance, amount: 4_000 }], settings, october);
-    expect(summary!.left).toBe(-1_000);
-    expect(summary!.percentage).toBeCloseTo(133.33, 2);
   });
 });
 

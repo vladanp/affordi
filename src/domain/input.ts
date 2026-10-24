@@ -103,3 +103,16 @@ export function parseDecimalInput(value: string, locale = currentLocale()): numb
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : null;
 }
+
+/** A saved amount as a field shows it, without grouping so it reads back the same way. */
+export function formatDecimalInput(
+  amount: number,
+  locale: string,
+  minimumFractionDigits = 0,
+): string {
+  return amount.toLocaleString(locale, {
+    minimumFractionDigits,
+    maximumFractionDigits: Math.max(minimumFractionDigits, 6),
+    useGrouping: false,
+  });
+}

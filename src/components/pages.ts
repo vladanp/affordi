@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 
 import type { TranslationKey } from '../domain/i18n';
 
-export const pages = ['cost', 'earnings', 'fixed-costs', 'bills'] as const;
+export const pages = ['cost', 'earnings', 'monthly'] as const;
 
 export type Page = (typeof pages)[number];
 
@@ -10,12 +10,14 @@ export type Page = (typeof pages)[number];
 export const pageNames: Record<Page, TranslationKey> = {
   cost: 'nav.cost',
   earnings: 'nav.earnings',
-  'fixed-costs': 'nav.fixedCosts',
-  bills: 'nav.bills',
+  monthly: 'nav.monthly',
 };
 
+/** Fixed costs and bills had pages of their own before they shared the monthly page. */
+const formerPages: Record<string, Page> = { '#fixed-costs': 'monthly', '#bills': 'monthly' };
+
 function pageFromHash(hash: string): Page {
-  return pages.find((page) => `#${page}` === hash) ?? 'cost';
+  return pages.find((page) => `#${page}` === hash) ?? formerPages[hash] ?? 'cost';
 }
 
 function subscribeToHash(onChange: () => void) {

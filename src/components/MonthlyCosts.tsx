@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { ChevronRight, Plus, type LucideIcon } from 'lucide-react';
+import { ChevronRight, Plus } from 'lucide-react';
 
 import { formatWorkDuration } from '../domain/duration';
 import { formatRate } from '../domain/earningsText';
 import type { PayLeft } from '../domain/fixedCosts';
-import type { TranslationKey, Translator } from '../domain/i18n';
+import type { Translator } from '../domain/i18n';
 import { formatCurrency } from '../domain/locale';
 import { formatIncomePercentage } from '../domain/priceText';
 import type { AffordiSettings } from '../domain/storage';
 import { HiddenAmount } from './HiddenAmount';
 
-/** Parts shared by the pages of monthly costs: fixed costs and bills. */
+/** Parts shared by the sections of the monthly page: fixed costs and bills. */
 
 interface MoneyProps {
   copy: Translator;
@@ -100,36 +100,25 @@ export function CostCard({
 }
 
 interface PayLeftCardProps {
-  className: string;
   copy: Translator;
   hidden: boolean;
-  label: TranslationKey;
   payLeft: PayLeft;
   settings: AffordiSettings;
-  shortNote: TranslationKey;
 }
 
 /** What is left of monthly pay and per day, or the shortfall when nothing is. */
-export function PayLeftCard({
-  className,
-  copy,
-  hidden,
-  label,
-  payLeft,
-  settings,
-  shortNote,
-}: PayLeftCardProps) {
+export function PayLeftCard({ copy, hidden, payLeft, settings }: PayLeftCardProps) {
   const short = payLeft.left < 0;
-  let note: string | null = short ? copy.t(shortNote) : null;
+  let note: string | null = short ? copy.t('monthly.shortNote') : null;
   if (!short && !hidden) {
-    note = copy.t('fixedCosts.perDay', {
+    note = copy.t('monthly.perDay', {
       amount: formatRate(payLeft.leftPerDay, settings.currency, copy.locale),
     });
   }
 
   return (
-    <div className={`stat-card pay-left ${className}`} data-short={short || undefined}>
-      <p className="stat-label">{copy.t(short ? 'fixedCosts.short' : label)}</p>
+    <div className="stat-card pay-left monthly-left" data-short={short || undefined}>
+      <p className="stat-label">{copy.t(short ? 'monthly.short' : 'monthly.left')}</p>
       <p className="stat-amount">
         <Money copy={copy} hidden={hidden} settings={settings} value={Math.abs(payLeft.left)} />
       </p>
@@ -138,35 +127,12 @@ export function PayLeftCard({
   );
 }
 
-interface EmptyListProps {
-  addLabel: string;
-  icon: LucideIcon;
-  onAdd: (opener: HTMLElement) => void;
-  text: string;
-}
-
-export function EmptyList({ addLabel, icon: Icon, onAdd, text }: EmptyListProps) {
-  return (
-    <div className="empty-list">
-      <Icon aria-hidden="true" size={24} strokeWidth={1.75} />
-      <p>{text}</p>
-      <button
-        className="button button-primary"
-        onClick={(event) => onAdd(event.currentTarget)}
-        type="button"
-      >
-        <Plus aria-hidden="true" size={18} strokeWidth={2.25} />
-        {addLabel}
-      </button>
-    </div>
-  );
-}
-
-interface ItemListProps {
+interface ListHeadingProps {
   addButtonRef: RefObject<HTMLButtonElement | null>;
   addLabel: string;
   addShortLabel: string;
-  children: ReactNode;
+  /** What belongs in the section. */
+  hint: string;
   id: string;
   /** Shown instead of the add button working once the list is full. */
   limitNote: string | null;
@@ -174,17 +140,17 @@ interface ItemListProps {
   title: string;
 }
 
-/** A titled list with an add button above it. */
-export function ItemList({
+/** A section title with what belongs in it and a button that adds to it. */
+export function ListHeading({
   addButtonRef,
   addLabel,
   addShortLabel,
-  children,
+  hint,
   id,
   limitNote,
   onAdd,
   title,
-}: ItemListProps) {
+}: ListHeadingProps) {
   return (
     <>
       <div className="list-heading">
@@ -201,9 +167,7 @@ export function ItemList({
           {addShortLabel}
         </button>
       </div>
-      <ul aria-labelledby={id} className="item-list">
-        {children}
-      </ul>
+      <p className="list-hint">{hint}</p>
       {limitNote !== null && <p className="stat-note list-limit">{limitNote}</p>}
     </>
   );

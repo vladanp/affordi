@@ -93,6 +93,11 @@ function currencyFormat(currency: CurrencyCode, locale: string): Intl.NumberForm
   return format;
 }
 
+/** The fraction digits a currency's amounts show, such as 2 for euros. */
+export function currencyDigits(currency: CurrencyCode, locale = currentLocale()): number {
+  return currencyFormat(currency, locale)?.resolvedOptions().maximumFractionDigits ?? 2;
+}
+
 export function getCurrencySymbol(currency: CurrencyCode, locale = currentLocale()): string {
   const symbol = currencyFormat(currency, locale)
     ?.formatToParts(0)
