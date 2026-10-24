@@ -1,4 +1,12 @@
-import { Activity, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import {
+  Activity,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type RefObject,
+} from 'react';
 import { LockKeyhole, Settings2 } from 'lucide-react';
 
 import { Brand } from './components/Brand';
@@ -16,6 +24,9 @@ import { loadFixedCosts, saveFixedCosts, type FixedCost } from './domain/fixedCo
 import {
   createTranslator,
   detectLocale,
+  loadedLocaleCount,
+  loadLocale,
+  subscribeToLocales,
   type Locale,
   type TranslationKey,
   type Translator,
@@ -149,6 +160,19 @@ function useSavedList<T>(load: () => T[], save: (items: readonly T[]) => boolean
   return { forget, items, persist, saveFailed };
 }
 
+/**
+ * The language the app shows: one being previewed, the saved one, or the browser's. It loads
+ * the language's copy, and renders again once one chosen before it loaded arrives.
+ */
+function useLanguage(preview: Locale | null, saved: Locale | undefined): Locale {
+  const language = preview ?? saved ?? detectLocale();
+  useSyncExternalStore(subscribeToLocales, loadedLocaleCount, loadedLocaleCount);
+  useEffect(() => {
+    loadLocale(language).catch(() => undefined);
+  }, [language]);
+  return language;
+}
+
 export function App() {
   const [settings, setSettings] = useState<AffordiSettings | null>(() => loadSettings());
   const fixedCosts = useSavedList(loadFixedCosts, saveFixedCosts);
@@ -159,7 +183,7 @@ export function App() {
   const [previewTheme, setPreviewTheme] = useState<AffordiSettings['theme'] | null>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const restoreSettingsFocusRef = useRef(false);
-  const language = previewLanguage ?? settings?.language ?? detectLocale();
+  const language = useLanguage(previewLanguage, settings?.language);
   const theme = previewTheme ?? settings?.theme ?? 'system';
   const copy = createTranslator(language);
 
