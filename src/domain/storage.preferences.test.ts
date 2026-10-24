@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   clearSettings,
+  isValidAffordiSettings,
   loadSettings,
   saveSettings,
   SETTINGS_STORAGE_KEY,
@@ -19,6 +20,7 @@ const settings: AffordiSettings = {
   currency: 'EUR',
   language: 'fr',
   theme: 'dark',
+  hideAmounts: false,
 };
 
 describe('language and theme persistence', () => {
@@ -36,10 +38,19 @@ describe('language and theme persistence', () => {
   it('falls back safely when persisted preferences are invalid', () => {
     localStorage.setItem(
       SETTINGS_STORAGE_KEY,
-      JSON.stringify({ version: 1, settings: { ...settings, language: 'xx', theme: 'sepia' } }),
+      JSON.stringify({
+        version: 1,
+        settings: { ...settings, language: 'xx', theme: 'sepia', hideAmounts: 'yes' },
+      }),
     );
 
-    expect(loadSettings()).toMatchObject({ language: 'en', theme: 'system' });
+    expect(loadSettings()).toMatchObject({ language: 'en', theme: 'system', hideAmounts: false });
+  });
+
+  it('round trips hidden amounts and refuses a value that is not a boolean', () => {
+    expect(saveSettings({ ...settings, hideAmounts: true })).toBe(true);
+    expect(loadSettings()).toMatchObject({ hideAmounts: true });
+    expect(isValidAffordiSettings({ ...settings, hideAmounts: 1 })).toBe(false);
   });
 
   it('keeps legacy income settings usable with detected language and system theme', () => {

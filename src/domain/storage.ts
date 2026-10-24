@@ -22,6 +22,8 @@ export interface AffordiSettings extends IncomeSettings, WorkSchedule {
   currency: CurrencyCode;
   language: Locale;
   theme: ThemePreference;
+  /** Whether the earnings page opens with its amounts hidden, as it was last left. */
+  hideAmounts: boolean;
 }
 
 /** A schedule with the weekly hours and work days it implies. */
@@ -42,7 +44,8 @@ export function isValidAffordiSettings(value: unknown): value is AffordiSettings
     value === null ||
     !('currency' in value) ||
     !('language' in value) ||
-    !('theme' in value)
+    !('theme' in value) ||
+    !('hideAmounts' in value)
   ) {
     return false;
   }
@@ -53,12 +56,13 @@ export function isValidAffordiSettings(value: unknown): value is AffordiSettings
     isCurrencyCode(value.currency) &&
     isLocale(value.language) &&
     isThemePreference(value.theme) &&
+    typeof value.hideAmounts === 'boolean' &&
     value.weeklyHours === implied.weeklyHours &&
     value.workingDaysPerWeek === implied.workingDaysPerWeek
   );
 }
 
-type OptionalSettings = Pick<AffordiSettings, 'language' | 'theme'>;
+type OptionalSettings = Pick<AffordiSettings, 'language' | 'theme' | 'hideAmounts'>;
 
 /**
  * Fields added after the first release fall back to defaults, so older saves stay
@@ -68,6 +72,7 @@ function optionalSettings(value: object): OptionalSettings {
   return {
     language: 'language' in value && isLocale(value.language) ? value.language : detectLocale(),
     theme: 'theme' in value && isThemePreference(value.theme) ? value.theme : 'system',
+    hideAmounts: 'hideAmounts' in value && value.hideAmounts === true,
   };
 }
 
@@ -118,5 +123,6 @@ export function defaultSettings(): AffordiSettings {
     currency: detectCurrency(),
     language: detectLocale(),
     theme: 'system',
+    hideAmounts: false,
   };
 }

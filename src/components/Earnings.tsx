@@ -1,14 +1,17 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
 import {
+  calculateEarnedThisMonth,
   calculateEarnedToday,
   calculateEarningRates,
   rateUnits,
   totalPeriods,
+  type EarnedThisMonth,
 } from '../domain/earnings';
 import {
   describeWorkStatus,
+  formatProgress,
   formatRate,
   formatTicker,
   tickerDigits,
@@ -16,6 +19,7 @@ import {
 } from '../domain/earningsText';
 import { createTranslator, type Translator } from '../domain/i18n';
 import type { AffordiSettings } from '../domain/storage';
+import { useNow } from './useNow';
 
 /** Live totals move several times a second, and once a second for reduced motion or hidden amounts. */
 const TICK_MS = 100;
@@ -31,22 +35,6 @@ function subscribeToReducedMotion(onChange: () => void) {
 
 function prefersReducedMotion(): boolean {
   return typeof window.matchMedia === 'function' && window.matchMedia(REDUCED_MOTION_QUERY).matches;
-}
-
-/** The current time, refreshed on an interval while the page is shown. */
-function useNow(intervalMs: number): Date {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const tick = () => setNow(Date.now());
-    // A page shown again starts from the current time instead of when it was hidden.
-    const first = window.setTimeout(tick, 0);
-    const timer = window.setInterval(tick, intervalMs);
-    return () => {
-      window.clearTimeout(first);
-      window.clearInterval(timer);
-    };
-  }, [intervalMs]);
-  return new Date(now);
 }
 
 function HiddenAmount({ copy }: { copy: Translator }) {
@@ -81,12 +69,38 @@ function LiveAmount({ copy, hidden, parts }: LiveAmountProps) {
   );
 }
 
-interface EarningsProps {
-  settings: AffordiSettings;
+interface MonthProgressProps {
+  copy: Translator;
+  hidden: boolean;
+  month: EarnedThisMonth;
+  parts: TickerParts;
 }
 
-export function Earnings({ settings }: EarningsProps) {
-  const [amountsHidden, setAmountsHidden] = useState(false);
+/** Progress toward this month's pay by work time. The share stays visible when amounts hide. */
+function MonthProgress({ copy, hidden, month, parts }: MonthProgressProps) {
+  return (
+    <div className="earnings-card earnings-month">
+      <p className="earnings-label">{copy.t('earnings.month')}</p>
+      <LiveAmount copy={copy} hidden={hidden} parts={parts} />
+      <span aria-hidden="true" className="month-meter">
+        <span style={{ inlineSize: `${month.share * 100}%` }} />
+      </span>
+      <p className="earnings-note">
+        {copy.t('earnings.monthShare', { percentage: formatProgress(month.share, copy.locale) })}
+        {' · '}
+        {copy.t('earnings.workdays', { done: month.workdaysDone, total: month.workdaysTotal })}
+      </p>
+    </div>
+  );
+}
+
+interface EarningsProps {
+  settings: AffordiSettings;
+  onHideAmountsChange: (hideAmounts: boolean) => void;
+}
+
+export function Earnings({ settings, onHideAmountsChange }: EarningsProps) {
+  const amountsHidden = settings.hideAmounts;
   const reducedMotion = useSyncExternalStore(
     subscribeToReducedMotion,
     prefersReducedMotion,
@@ -99,6 +113,7 @@ export function Earnings({ settings }: EarningsProps) {
 
   const { currency, language } = settings;
   const today = calculateEarnedToday(settings, rates, now);
+  const month = calculateEarnedThisMonth(settings, rates, now);
   const digits = tickerDigits(rates.aroundTheClock.second, currency, language);
   const rate = (value: number) =>
     amountsHidden ? <HiddenAmount copy={copy} /> : formatRate(value, currency, language);
@@ -110,7 +125,8 @@ export function Earnings({ settings }: EarningsProps) {
         <button
           aria-label={copy.t(amountsHidden ? 'earnings.showAmounts' : 'earnings.hideAmounts')}
           className="icon-button"
-          onClick={() => setAmountsHidden((hidden) => !hidden)}
+          title={copy.t(amountsHidden ? 'earnings.showAmounts' : 'earnings.hideAmounts')}
+          onClick={() => onHideAmountsChange(!amountsHidden)}
           type="button"
         >
           {amountsHidden ? (
@@ -142,6 +158,12 @@ export function Earnings({ settings }: EarningsProps) {
             {describeWorkStatus(today.progress, copy)}
           </p>
         </div>
+        <MonthProgress
+          copy={copy}
+          hidden={amountsHidden}
+          month={month}
+          parts={formatTicker(month.amount, currency, language, digits)}
+        />
       </div>
 
       <h2 className="breakdown-title" id="breakdown-title">

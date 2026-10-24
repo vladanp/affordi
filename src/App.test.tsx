@@ -39,6 +39,7 @@ describe('App', () => {
     ).toBeInTheDocument();
     expect(window.location.hash).toBe('#earnings');
     expect(earningsLink).toHaveAttribute('aria-current', 'page');
+    expect(document.title).toBe('Earnings · Affordi');
     expect(screen.queryByRole('heading', { name: 'How much does it cost?' })).toBeNull();
     expect(screen.getByText('Saved only on this device.')).toBeInTheDocument();
 
@@ -48,6 +49,29 @@ describe('App', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Enter a price' })).toHaveValue('750');
     expect(screen.getByText('43 hours of work')).toBeInTheDocument();
+    expect(document.title).toBe('Affordi');
+  });
+
+  it('remembers hidden amounts across visits and settings changes', () => {
+    localStorage.setItem('affordi.settings.v1', savedSettings);
+    window.history.replaceState(null, '', '/#earnings');
+    const first = render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Hide amounts' }));
+    expect(screen.getByRole('button', { name: 'Show amounts' })).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('affordi.settings.v1') ?? '{}').settings).toMatchObject({
+      hideAmounts: true,
+    });
+    first.unmount();
+
+    render(<App />);
+    expect(screen.getByRole('button', { name: 'Show amounts' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+    expect(screen.getByRole('button', { name: 'Show amounts' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Show amounts' }));
+    expect(JSON.parse(localStorage.getItem('affordi.settings.v1') ?? '{}').settings).toMatchObject({
+      hideAmounts: false,
+    });
   });
 
   it('opens earnings directly from its link', () => {
@@ -483,6 +507,7 @@ describe('App', () => {
       currency: 'EUR',
       language: 'en',
       theme: 'system',
+      hideAmounts: false,
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));

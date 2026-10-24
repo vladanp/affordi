@@ -8,12 +8,14 @@ import {
 } from './calculations';
 import { formatPrimaryDuration, formatSecondaryDuration, formatTotalDuration } from './duration';
 import { createTranslator, type Translator } from './i18n';
-import { describePrice, formatIncomePercentage } from './priceText';
+import { describeEarnedBy, describePrice, formatIncomePercentage } from './priceText';
+import { workDoneAt } from './schedule';
 import type { AffordiSettings } from './storage';
 
 /** Each meter segment is one pay period; long bars stop at a readable number of segments. */
 const MAX_SHARE_SEGMENTS = 12;
 const MONTHS_PER_YEAR = 12;
+const MS_PER_HOUR = 3_600_000;
 
 export interface ShareSegment {
   period: number;
@@ -26,6 +28,11 @@ export interface PriceResult {
   secondary: string | null;
   /** The work time of a recurring price over its other period, or null for one payment. */
   repeatNote: string | null;
+  /**
+   * When a one time price will have been earned, working from now. It moves with
+   * the clock, so it stays out of the spoken announcement.
+   */
+  earnedBy: string | null;
   share: string;
   shareMultiple: string | null;
   shareSegments: ShareSegment[];
@@ -71,10 +78,21 @@ function describeRepeat(
 }
 
 /** Builds every piece of result copy for a valid price, or null when there is no result. */
+function describeEarnedAt(
+  workHours: number,
+  settings: AffordiSettings,
+  now: Date,
+  copy: Translator,
+): string | null {
+  const at = workDoneAt(settings, workHours * MS_PER_HOUR, now);
+  return at === null ? null : describeEarnedBy(at, now, copy);
+}
+
 export function describeResult(
   price: number | null,
   repeat: PriceRepeat,
   settings: AffordiSettings,
+  now = new Date(),
 ): PriceResult | null {
   if (price === null) return null;
   const comparison = priceComparison(price, repeat, settings);
@@ -92,6 +110,7 @@ export function describeResult(
     primary,
     secondary: formatSecondaryDuration(workHours, settings, settings.language),
     repeatNote: repeat === 'once' ? null : describeRepeat(workHours, repeat, settings, copy),
+    earnedBy: repeat === 'once' ? describeEarnedAt(workHours, settings, now, copy) : null,
     share: copy.t('calculator.payContext', {
       percentage: formatIncomePercentage(percentage, settings.language),
       period: copy.payPeriod(comparison.period),

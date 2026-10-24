@@ -277,6 +277,7 @@ function scheduleErrors(
 function validate(
   values: FormValues,
   copy: Translator,
+  hideAmounts: boolean,
 ): { settings?: AffordiSettings; errors: FormErrors } {
   const netIncome = parseDecimalInput(values.netIncome, copy.locale);
   const schedule = {
@@ -304,6 +305,7 @@ function validate(
     currency: values.currency,
     language: values.language,
     theme: values.theme,
+    hideAmounts,
   };
   if (!isValidAffordiSettings(candidate)) return { errors };
   return { errors, settings: candidate };
@@ -347,7 +349,9 @@ export function IncomeForm(props: IncomeFormProps) {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const result = validate(values, copy);
+    // Hidden amounts are chosen on the earnings page, so the form keeps the saved choice.
+    const hideAmounts = props.mode === 'edit' && props.initialValues.hideAmounts;
+    const result = validate(values, copy, hideAmounts);
     setErrors(result.errors);
     if (result.settings !== undefined) {
       props.onSubmit(result.settings);

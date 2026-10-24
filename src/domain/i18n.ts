@@ -1,5 +1,4 @@
 import type { PayFrequency } from './calculations';
-import type { Weekday } from './schedule';
 import type { ThemePreference } from './theme';
 
 /** The languages currently available in the Affordi interface. */
@@ -43,6 +42,10 @@ export const translationKeys = [
   'price.yearly',
   'calculator.overYear',
   'calculator.eachMonth',
+  'calculator.earnedToday',
+  'calculator.earnedTomorrow',
+  'calculator.earnedOn',
+  'calculator.earnedDate',
   'nav.cost',
   'nav.earnings',
   'earnings.title',
@@ -54,6 +57,9 @@ export const translationKeys = [
   'earnings.timeLeft',
   'earnings.finishedAt',
   'earnings.dayOff',
+  'earnings.month',
+  'earnings.monthShare',
+  'earnings.workdays',
   'earnings.hideAmounts',
   'earnings.showAmounts',
   'earnings.hiddenAmount',
@@ -143,6 +149,10 @@ const english: Catalog = {
   'price.yearly': '{{price}} a year',
   'calculator.overYear': 'Over a year: {{duration}}',
   'calculator.eachMonth': 'Each month: {{duration}}',
+  'calculator.earnedToday': 'Earned by {{time}} today',
+  'calculator.earnedTomorrow': 'Earned by {{time}} tomorrow',
+  'calculator.earnedOn': 'Earned by {{day}} at {{time}}',
+  'calculator.earnedDate': 'Earned by {{date}}',
   'nav.cost': 'Cost',
   'nav.earnings': 'Earnings',
   'earnings.title': 'How much do you earn?',
@@ -154,6 +164,9 @@ const english: Catalog = {
   'earnings.timeLeft': '{{duration}} left',
   'earnings.finishedAt': 'Finished at {{time}}',
   'earnings.dayOff': 'No work today',
+  'earnings.month': 'Earned this month',
+  'earnings.monthShare': '{{percentage}} of this month’s take home pay',
+  'earnings.workdays': 'Workdays: {{done}} of {{total}}',
   'earnings.hideAmounts': 'Hide amounts',
   'earnings.showAmounts': 'Show amounts',
   'earnings.hiddenAmount': 'Hidden',
@@ -242,6 +255,10 @@ const german: Catalog = {
   'price.yearly': '{{price}} pro Jahr',
   'calculator.overYear': 'Aufs Jahr gerechnet: {{duration}}',
   'calculator.eachMonth': 'Pro Monat: {{duration}}',
+  'calculator.earnedToday': 'Verdient bis heute um {{time}}',
+  'calculator.earnedTomorrow': 'Verdient bis morgen um {{time}}',
+  'calculator.earnedOn': 'Verdient bis {{day}} um {{time}}',
+  'calculator.earnedDate': 'Verdient bis zum {{date}}',
   'nav.cost': 'Kosten',
   'nav.earnings': 'Verdienst',
   'earnings.title': 'Wie viel verdienst du?',
@@ -253,6 +270,9 @@ const german: Catalog = {
   'earnings.timeLeft': 'Noch {{duration}}',
   'earnings.finishedAt': 'Feierabend seit {{time}}',
   'earnings.dayOff': 'Heute arbeitsfrei',
+  'earnings.month': 'Diesen Monat verdient',
+  'earnings.monthShare': '{{percentage}} deines monatlichen Nettoeinkommens',
+  'earnings.workdays': 'Arbeitstage: {{done}} von {{total}}',
   'earnings.hideAmounts': 'Beträge ausblenden',
   'earnings.showAmounts': 'Beträge anzeigen',
   'earnings.hiddenAmount': 'Ausgeblendet',
@@ -342,6 +362,10 @@ const french: Catalog = {
   'price.yearly': '{{price}} par an',
   'calculator.overYear': 'Sur un an : {{duration}}',
   'calculator.eachMonth': 'Par mois : {{duration}}',
+  'calculator.earnedToday': 'Gagné aujourd’hui à {{time}}',
+  'calculator.earnedTomorrow': 'Gagné demain à {{time}}',
+  'calculator.earnedOn': 'Gagné {{day}} à {{time}}',
+  'calculator.earnedDate': 'Gagné le {{date}}',
   'nav.cost': 'Coût',
   'nav.earnings': 'Revenus',
   'earnings.title': 'Combien gagnez-vous ?',
@@ -353,6 +377,9 @@ const french: Catalog = {
   'earnings.timeLeft': 'Encore {{duration}}',
   'earnings.finishedAt': 'Terminé à {{time}}',
   'earnings.dayOff': 'Pas de travail aujourd’hui',
+  'earnings.month': 'Gagné ce mois-ci',
+  'earnings.monthShare': '{{percentage}} de votre revenu net du mois',
+  'earnings.workdays': 'Jours travaillés : {{done}} sur {{total}}',
   'earnings.hideAmounts': 'Masquer les montants',
   'earnings.showAmounts': 'Afficher les montants',
   'earnings.hiddenAmount': 'Masqué',
@@ -440,6 +467,10 @@ const italian: Catalog = {
   'price.yearly': '{{price}} all’anno',
   'calculator.overYear': 'In un anno: {{duration}}',
   'calculator.eachMonth': 'Al mese: {{duration}}',
+  'calculator.earnedToday': 'Guadagnato oggi alle {{time}}',
+  'calculator.earnedTomorrow': 'Guadagnato domani alle {{time}}',
+  'calculator.earnedOn': 'Guadagnato {{day}} alle {{time}}',
+  'calculator.earnedDate': 'Guadagnato il {{date}}',
   'nav.cost': 'Costo',
   'nav.earnings': 'Guadagni',
   'earnings.title': 'Quanto guadagni?',
@@ -451,6 +482,9 @@ const italian: Catalog = {
   'earnings.timeLeft': 'Ancora {{duration}}',
   'earnings.finishedAt': 'Finito alle {{time}}',
   'earnings.dayOff': 'Oggi niente lavoro',
+  'earnings.month': 'Guadagnato questo mese',
+  'earnings.monthShare': '{{percentage}} dello stipendio netto del mese',
+  'earnings.workdays': 'Giorni lavorativi: {{done}} su {{total}}',
   'earnings.hideAmounts': 'Nascondi importi',
   'earnings.showAmounts': 'Mostra importi',
   'earnings.hiddenAmount': 'Nascosto',
@@ -538,6 +572,10 @@ const serbian: Catalog = {
   'price.yearly': '{{price}} godišnje',
   'calculator.overYear': 'Za godinu dana: {{duration}}',
   'calculator.eachMonth': 'Mesečno: {{duration}}',
+  'calculator.earnedToday': 'Zarađeno danas u {{time}}',
+  'calculator.earnedTomorrow': 'Zarađeno sutra u {{time}}',
+  'calculator.earnedOn': 'Zarađeno: {{day}}, {{time}}',
+  'calculator.earnedDate': 'Zarađeno: {{date}}',
   'nav.cost': 'Trošak',
   'nav.earnings': 'Zarada',
   'earnings.title': 'Koliko zarađujete?',
@@ -549,6 +587,9 @@ const serbian: Catalog = {
   'earnings.timeLeft': 'Još {{duration}}',
   'earnings.finishedAt': 'Završeno u {{time}}',
   'earnings.dayOff': 'Danas je slobodan dan',
+  'earnings.month': 'Zarađeno ovog meseca',
+  'earnings.monthShare': '{{percentage}} neto plate za ovaj mesec',
+  'earnings.workdays': 'Radni dani: {{done}} od {{total}}',
   'earnings.hideAmounts': 'Sakrij iznose',
   'earnings.showAmounts': 'Prikaži iznose',
   'earnings.hiddenAmount': 'Sakriveno',
@@ -817,6 +858,35 @@ const weekdayNames: Record<Locale, Record<'short' | 'long', readonly string[]>> 
   },
 };
 
+/** Intl writes Serbian dates in Cyrillic unless asked for the Latin script Affordi uses. */
+function intlLocale(locale: Locale): string {
+  return locale === 'sr' ? 'sr-Latn' : locale;
+}
+
+const dateFormats = new Map<string, Intl.DateTimeFormat>();
+/** French and Italian write the first of the month as an ordinal. */
+const firstDayForms: Partial<Record<Locale, string>> = { fr: '1er', it: '1°' };
+
+/** A day and month, with the year when it is not the current one. */
+function dateFor(locale: Locale, date: Date, withYear: boolean): string {
+  const key = `${locale}|${withYear}`;
+  let format = dateFormats.get(key);
+  if (format === undefined) {
+    format = new Intl.DateTimeFormat(intlLocale(locale), {
+      day: 'numeric',
+      month: 'long',
+      ...(withYear ? { year: 'numeric' } : {}),
+    });
+    dateFormats.set(key, format);
+  }
+
+  const firstOfMonth = date.getDate() === 1 ? firstDayForms[locale] : undefined;
+  return format
+    .formatToParts(date)
+    .map((part) => (part.type === 'day' && firstOfMonth !== undefined ? firstOfMonth : part.value))
+    .join('');
+}
+
 const timeFormats = new Map<Locale, Intl.DateTimeFormat>();
 
 function timeFor(locale: Locale, date: Date): string {
@@ -843,8 +913,10 @@ export interface Translator {
   payPeriod(frequency: PayFrequency): string;
   language(language: Locale): string;
   theme(theme: ThemePreference): string;
-  weekday(day: Weekday, form: 'short' | 'long'): string;
+  /** A weekday name for a `Date.getDay()` number, 0 for Sunday. */
+  weekday(day: number, form: 'short' | 'long'): string;
   time(date: Date): string;
+  date(date: Date, withYear: boolean): string;
   unit(value: number, unit: DurationUnit): string;
   duration(parts: readonly (DurationPart | string)[]): string;
   lessThanMinute(): string;
@@ -881,6 +953,7 @@ export function createTranslator(requestedLocale?: string): Translator {
     theme: (theme) => t(`theme.${theme}`),
     weekday: (day, form) => weekdayNames[locale][form][day] ?? '',
     time: (date) => timeFor(locale, date),
+    date: (date, withYear) => dateFor(locale, date, withYear),
     unit,
     duration: (parts) =>
       parts

@@ -3,7 +3,7 @@ import {
   calculateHoursPerWorkday,
   calculatePeriodIncome,
 } from './calculations';
-import { msSinceMidnight, workProgress, type WorkProgress } from './schedule';
+import { monthWorkProgress, msSinceMidnight, workProgress, type WorkProgress } from './schedule';
 import type { AffordiSettings } from './storage';
 
 const HOURS_PER_WEEK = 7 * 24;
@@ -63,6 +63,30 @@ export interface EarnedToday {
   /** Pay earned during today's working time at the hourly rate. */
   atWork: number;
   progress: WorkProgress;
+}
+
+export interface EarnedThisMonth {
+  /** This month's pay in proportion to the work done so far this month. */
+  amount: number;
+  /** The share of this month's scheduled work that is done, from 0 to 1. */
+  share: number;
+  workdaysDone: number;
+  workdaysTotal: number;
+}
+
+/**
+ * Progress toward this month's pay by work time: it grows only while working
+ * and reaches the full month when the month's last workday ends.
+ */
+export function calculateEarnedThisMonth(
+  settings: AffordiSettings,
+  rates: EarningRates,
+  now: Date,
+): EarnedThisMonth {
+  const { workedMs, scheduledMs, workdaysDone, workdaysTotal } = monthWorkProgress(settings, now);
+  // Every weekday occurs at least four times a month, so some work is always scheduled.
+  const share = workedMs / scheduledMs;
+  return { amount: rates.totals.month * share, share, workdaysDone, workdaysTotal };
 }
 
 export function calculateEarnedToday(

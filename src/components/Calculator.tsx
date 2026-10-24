@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from 'react';
-import { Hourglass, Repeat } from 'lucide-react';
+import { CalendarClock, Hourglass, Repeat } from 'lucide-react';
 
 import { isPriceRepeat, priceRepeats, type PriceRepeat } from '../domain/calculations';
 import { createTranslator, type Translator } from '../domain/i18n';
@@ -7,9 +7,12 @@ import { parseDecimalInput } from '../domain/input';
 import { getCurrencySymbol } from '../domain/locale';
 import { describeAnnouncement, describeResult, type PriceResult } from '../domain/priceResult';
 import type { AffordiSettings } from '../domain/storage';
+import { useNow } from './useNow';
 
 /** Screen readers hear the result once typing pauses instead of on every keystroke. */
 const ANNOUNCEMENT_DELAY_MS = 700;
+/** When a price will have been earned is shown to the minute. */
+const CLOCK_MS = 60_000;
 
 interface CalculatorProps {
   settings: AffordiSettings;
@@ -54,9 +57,15 @@ function ResultContext({ result }: { result: PriceResult }) {
     <div className="result-context">
       {result.secondary !== null && <p className="result-approx">≈ {result.secondary}</p>}
       {result.repeatNote !== null && (
-        <p className="result-note">
+        <p className="result-note result-repeat">
           <Repeat aria-hidden="true" size={16} strokeWidth={2} />
           <span>{result.repeatNote}</span>
+        </p>
+      )}
+      {result.earnedBy !== null && (
+        <p className="result-note result-earned-by">
+          <CalendarClock aria-hidden="true" size={16} strokeWidth={2} />
+          <span>{result.earnedBy}</span>
         </p>
       )}
       <div className={`result-share${over ? ' result-share-over' : ''}`}>
@@ -122,7 +131,8 @@ export function Calculator({ settings }: CalculatorProps) {
   const resultRef = useRef<HTMLDivElement>(null);
   const copy = createTranslator(settings.language);
   const price = parseDecimalInput(itemPrice, settings.language);
-  const result = describeResult(price, repeat, settings);
+  const now = useNow(CLOCK_MS);
+  const result = describeResult(price, repeat, settings, now);
   const priceError = itemPrice.trim() !== '' && result === null;
   let announcement = result === null ? '' : describeAnnouncement(result);
   if (priceError) announcement = copy.t('calculator.priceError');

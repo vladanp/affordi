@@ -1,8 +1,8 @@
 # Affordi
 
-Affordi answers one focused question: **How long do I need to work to afford this?** Enter a price to translate its cost into working time, days, and a secondary share of take home pay. Mark a price as paid every workday, weekly, monthly, or yearly to see what a habit or subscription costs over time.
+Affordi answers one focused question: **How long do I need to work to afford this?** Enter a price to translate its cost into working time, days, and a secondary share of take home pay. Mark a price as paid every workday, weekly, monthly, or yearly to see what a habit or subscription costs over time. A one time price also says when you will have earned it, working from now through your schedule, such as "Earned by 9:46 AM tomorrow".
 
-The Earnings page turns the same question around and counts what you earn as it happens. One total grows around the clock from midnight, as if a week of pay were spread over all 168 hours. A second total grows only during your work hours at your real hourly rate, and says when work starts, how much is left, or that today is a day off. Below, a table breaks pay down per second, minute, hour, and day both ways, with the shared weekly, monthly, and yearly totals. Amounts can be hidden with one tap.
+The Earnings page turns the same question around and counts what you earn as it happens. One total grows around the clock from midnight, as if a week of pay were spread over all 168 hours. A second total grows only during your work hours at your real hourly rate, and says when work starts, how much is left, or that today is a day off. A third total shows how much of this month's pay you have worked for: it moves only during work hours, counts the workdays done, and reaches the full month when the month's last workday ends. Below, a table breaks pay down per second, minute, hour, and day both ways, with the shared weekly, monthly, and yearly totals. Amounts can be hidden with one tap, and the page remembers that choice on the device.
 
 Settings describe work as a start time, an end time, and the work days of the week. Weekly hours and work days follow from them, so the calculator and the earnings page use one schedule.
 
@@ -66,7 +66,7 @@ With pnpm 12, bare `pnpm ci` is the package manager's frozen install alias. Use 
 
 - Pure functions calculate hourly income, work duration, earning rates, today's progress through the workday, and localized presentation.
 - One React state owner coordinates setup, the two pages, and the native settings dialog.
-- The Cost and Earnings pages are linked by URL hash (`#cost`, `#earnings`), so each has its own address and history entry without a router. React `Activity` keeps a hidden page's state, such as a typed price, and stops its timers.
+- The Cost and Earnings pages are linked by URL hash (`#cost`, `#earnings`), so each has its own address, title, and history entry without a router. Their tabs sit in the top bar, and on a phone the settings button shows only its icon so the page starts high. React `Activity` keeps a hidden page's state, such as a typed price, and stops its timers.
 - Live totals refresh ten times a second, or once a second with reduced motion or hidden amounts. They are never announced by screen readers on each change.
 - Versioned settings are validated from `unknown` at the storage boundary; malformed or older data recovers safely. Saves from before work times get a Monday-first schedule from 9:00 built from their weekly hours, and new saves keep weekly hours beside the schedule so an installed version that has not updated yet still reads them.
 - English, German, French, Italian, and Serbian are built in without a runtime i18n dependency.

@@ -14,11 +14,21 @@ const settings: AffordiSettings = {
   currency: 'EUR',
   language: 'en',
   theme: 'system',
+  hideAmounts: false,
 };
 
 describe('describeResult', () => {
   it('returns null without a price', () => {
     expect(describeResult(null, 'once', settings)).toBeNull();
+  });
+
+  it('says when a one time price will have been earned, working from now', () => {
+    const wednesdayNoon = new Date(2026, 9, 21, 12);
+    expect(describeResult(100, 'once', settings, wednesdayNoon)?.earnedBy).toBe(
+      'Earned by 9:46 AM tomorrow',
+    );
+    expect(describeResult(12.99, 'monthly', settings, wednesdayNoon)?.earnedBy).toBeNull();
+    expect(describeResult(0, 'once', settings, wednesdayNoon)?.earnedBy).toBeNull();
   });
 
   it('describes a single purchase without a repeat note', () => {
