@@ -1,15 +1,18 @@
 import { useRef, useState, type KeyboardEvent } from 'react';
-import { ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
+import { flushSync } from 'react-dom';
+import { ChevronDown, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 
 import {
   billAmount,
   billStats,
   MAX_BILLS,
+  missedLastMonth,
   summarizeBills,
   withBillAmount,
   withoutBillAmount,
   type Bill,
   type BillStats,
+  type MissedMonth,
   type MonthTotal,
 } from '../domain/bills';
 import type { Translator } from '../domain/i18n';
@@ -167,28 +170,94 @@ function BillAmountRow({
   );
 }
 
+interface MonthPickerProps {
+  copy: Translator;
+  index: number;
+  onSelect: (index: number) => void;
+  totals: readonly MonthTotal[];
+}
+
+/**
+ * The month's name, which opens a list of the last twelve months, newest first, so an amount
+ * forgotten months ago is two taps away. The list is the phone's own picker.
+ */
+function MonthPicker({ copy, index, onSelect, totals }: MonthPickerProps) {
+  const current = totals[index]!;
+  return (
+    <div className="bill-month-picker">
+      <h3 aria-live="polite" id={MONTH_TITLE_ID}>
+        {copy.month(monthDate(current.month), true)}
+      </h3>
+      <ChevronDown aria-hidden="true" className="bill-month-chevron" size={16} strokeWidth={2} />
+      <select
+        aria-label={copy.t('bills.chooseMonth')}
+        onChange={(event) =>
+          onSelect(totals.findIndex(({ month }) => month === event.target.value))
+        }
+        value={current.month}
+      >
+        {totals.toReversed().map(({ month, total }) => {
+          const name = copy.month(monthDate(month), true);
+          return (
+            <option key={month} value={month}>
+              {total === null ? copy.t('bills.monthNoAmounts', { month: name }) : name}
+            </option>
+          );
+        })}
+      </select>
+    </div>
+  );
+}
+
+interface MissedNoteProps {
+  copy: Translator;
+  missed: MissedMonth;
+  onEnter: () => void;
+}
+
+/** Names the bills with no amount for last month yet, with a button that opens that month. */
+function MissedNote({ copy, missed, onEnter }: MissedNoteProps) {
+  return (
+    <div className="bill-missed">
+      <p>
+        {copy.t('bills.missed', {
+          month: copy.month(monthDate(missed.month), false),
+          names: copy.list(missed.bills.map((bill) => bill.name)),
+        })}
+      </p>
+      <button className="pill-button" onClick={onEnter} type="button">
+        {copy.t('bills.enterMissed')}
+      </button>
+    </div>
+  );
+}
+
 interface BillMonthProps {
   bills: readonly Bill[];
   copy: Translator;
   hidden: boolean;
   index: number;
+  missed: MissedMonth | null;
   now: Date;
   onBillChange: (bill: Bill) => void;
   onEdit: (bill: Bill, opener: HTMLElement) => void;
+  onEnterMissed: () => void;
   onSelect: (index: number) => void;
   settings: AffordiSettings;
   totals: readonly MonthTotal[];
 }
 
-/** The bills of one month, entered together, with buttons that step through the months. */
+/** The bills of one month, entered together and added up, with the month's own controls. */
 function BillMonth({
   bills,
   copy,
   hidden,
   index,
+  missed,
   now,
   onBillChange,
   onEdit,
+  onEnterMissed,
   onSelect,
   settings,
   totals,
@@ -209,9 +278,7 @@ function BillMonth({
         >
           <ChevronLeft aria-hidden="true" size={20} strokeWidth={2} />
         </button>
-        <h3 aria-live="polite" id={MONTH_TITLE_ID}>
-          {copy.month(monthDate(current.month), true)}
-        </h3>
+        <MonthPicker copy={copy} index={index} onSelect={onSelect} totals={totals} />
         <button
           aria-disabled={last || undefined}
           aria-label={copy.t('bills.nextMonth')}
@@ -221,17 +288,10 @@ function BillMonth({
         >
           <ChevronRight aria-hidden="true" size={20} strokeWidth={2} />
         </button>
-        <p className="bill-month-total" data-empty={current.total === null || undefined}>
-          {current.total === null ? (
-            copy.t('bills.noAmounts')
-          ) : (
-            <>
-              <span className="visually-hidden">{copy.t('bills.total')} </span>
-              <Money copy={copy} hidden={hidden} settings={settings} value={current.total} />
-            </>
-          )}
-        </p>
       </div>
+      {missed !== null && missed.month !== current.month && (
+        <MissedNote copy={copy} missed={missed} onEnter={onEnterMissed} />
+      )}
       <ul aria-labelledby={MONTH_TITLE_ID} className="bill-rows">
         {bills.map((bill) => (
           <BillAmountRow
@@ -247,6 +307,16 @@ function BillMonth({
           />
         ))}
       </ul>
+      <p className="bill-month-total" data-empty={current.total === null || undefined}>
+        {current.total === null ? (
+          copy.t('bills.noAmounts')
+        ) : (
+          <>
+            <span>{copy.t('bills.total')}</span>{' '}
+            <Money copy={copy} hidden={hidden} settings={settings} value={current.total} />
+          </>
+        )}
+      </p>
     </div>
   );
 }
@@ -282,8 +352,17 @@ export function BillsSection({
   const selected = chosenIndex === -1 ? months.length - 1 : chosenIndex;
   const month = months[selected]!;
 
+  const missed = missedLastMonth(bills, now);
+
   function select(index: number) {
     setChosen(months[index] ?? null);
+  }
+
+  /** Opens last month at its first missing amount, in the same tap so a phone shows its keyboard. */
+  function enterMissed() {
+    if (missed === null) return;
+    flushSync(() => setChosen(missed.month));
+    document.getElementById(`bill-amount-${missed.bills[0]!.id}`)?.focus();
   }
 
   function change(bill: Bill) {
@@ -331,9 +410,11 @@ export function BillsSection({
             copy={copy}
             hidden={hidden}
             index={selected}
+            missed={missed}
             now={now}
             onBillChange={change}
             onEdit={dialog.open}
+            onEnterMissed={enterMissed}
             onSelect={select}
             settings={settings}
             totals={summary.totals}

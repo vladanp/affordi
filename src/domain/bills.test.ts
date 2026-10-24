@@ -7,6 +7,7 @@ import {
   billStats,
   isBill,
   loadBills,
+  missedLastMonth,
   monthlyBillTotals,
   saveBills,
   sortBills,
@@ -169,5 +170,30 @@ describe('bill figures', () => {
       lowest: null,
     });
     expect(summarizeBills([], october)).toMatchObject({ average: 0, highest: null });
+  });
+});
+
+describe('forgotten amounts', () => {
+  /** Wednesday 18 November 2026: October is last month and September the month before. */
+  const november = new Date(2026, 10, 18, 12);
+  const heating: Bill = {
+    id: 'h',
+    name: 'Heating',
+    entries: [{ month: '2026-04', amount: 60 }],
+  };
+
+  it('names the bills paid in September with no amount for October', () => {
+    const noOctober = { ...water, entries: water.entries.slice(0, 1) };
+    expect(missedLastMonth([electricity, noOctober, heating], november)).toEqual({
+      month: '2026-10',
+      bills: [noOctober],
+    });
+  });
+
+  it('names no bill that has last month’s amount or was not paid the month before', () => {
+    expect(missedLastMonth([electricity, water, heating, oldPhone], november)).toBeNull();
+    // In October, last month is September, and the bills paid in August have amounts for it.
+    expect(missedLastMonth([electricity, water], october)).toBeNull();
+    expect(missedLastMonth([], november)).toBeNull();
   });
 });

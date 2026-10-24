@@ -80,6 +80,9 @@ test.describe('Affordi monthly page', () => {
     const loans = page.locator('.fixed-costs-loans');
     await expect(loans).toContainText('€256,500.00');
     await expect(loans).toContainText('€31,350.00 of €287,850.00 paid');
+    // The phone bill keeps going, so it is no loan.
+    await expect(loans).toContainText('For Mortgage');
+    await expect(loans).not.toContainText('Phone');
     await expectAccessible(page);
 
     await page.reload();
@@ -142,6 +145,10 @@ test.describe('Affordi monthly page', () => {
     await page.keyboard.press('Home');
     await expect(monthTitle).toHaveText('November 2025');
     await expect(monthTotal).toHaveText('No amounts yet.');
+    // The month's name opens a list of the last twelve months.
+    await page.getByRole('combobox', { name: 'Choose a month' }).selectOption('2026-09');
+    await expect(monthTitle).toHaveText('September 2026');
+    await expect(amount('Electricity')).toHaveValue('79.00');
     await expectAccessible(page);
 
     await page.reload();

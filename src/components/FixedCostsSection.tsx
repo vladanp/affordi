@@ -101,6 +101,20 @@ function FixedCostRow({ copy, cost, hidden, now, onEdit, settings }: FixedCostRo
   );
 }
 
+/** The loans the card adds up, such as "For Mortgage and Car loan", naming three at most. */
+const NAMED_LOANS = 3;
+
+function loanNames(names: readonly string[], copy: Translator): string {
+  const named =
+    names.length > NAMED_LOANS + 1
+      ? [
+          ...names.slice(0, NAMED_LOANS),
+          copy.t('fixedCosts.moreLoans', { count: names.length - NAMED_LOANS }),
+        ]
+      : names;
+  return copy.t('fixedCosts.loansFor', { names: copy.list(named) });
+}
+
 interface LoansCardProps {
   copy: Translator;
   hidden: boolean;
@@ -133,6 +147,7 @@ function LoansCard({ copy, hidden, loans, settings }: LoansCardProps) {
         </span>
       )}
       {paidNote !== null && <p className="stat-note">{paidNote}</p>}
+      <p className="stat-note">{loanNames(loans.names, copy)}</p>
       <p className="stat-note">{lastPaymentNote(loans.lastPayment, copy)}</p>
     </div>
   );
