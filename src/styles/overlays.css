@@ -16,6 +16,11 @@
   animation: dialog-reveal 200ms var(--ease-out) both;
 }
 
+/* The page behind an open dialog stays still, also when it is dragged on a phone. */
+html:has(.sheet-dialog[open]) {
+  overflow: hidden;
+}
+
 .sheet-dialog::backdrop {
   background: var(--color-scrim);
   backdrop-filter: blur(0.375rem);

@@ -161,6 +161,29 @@ test.describe('Affordi monthly page', () => {
     await expect(coverage.locator('.live-amount')).toHaveText('€119.00');
   });
 
+  test('keeps the page still behind an open dialog', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 500 });
+    await completeSetup(page);
+    await openMonthly(page);
+    await addBill(page, 'Electricity', '91');
+    await page.evaluate(() => scrollTo(0, 200));
+    const top = await page.evaluate(() => scrollY);
+    expect(top).toBeGreaterThan(0);
+
+    await page.getByRole('button', { name: 'Add bill' }).click();
+    await expect(page.getByRole('dialog', { name: 'Add a bill' })).toBeVisible();
+    await page.mouse.move(195, 10);
+    await page.mouse.wheel(0, 400);
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    );
+    expect(await page.evaluate(() => scrollY)).toBe(top);
+
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await page.mouse.wheel(0, 400);
+    await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(top);
+  });
+
   test('fits the tabs, bills, and fixed costs on the narrowest phone', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 640 });
     await completeSetup(page);
