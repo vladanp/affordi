@@ -79,6 +79,34 @@
   overflow-wrap: anywhere;
 }
 
+/* The month's pay wraps below a long total and sits close to it there. */
+.month-amount {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.5rem;
+}
+
+.month-total {
+  color: var(--color-muted);
+  font-size: max(0.9375rem, 0.36em);
+  font-weight: 550;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.month-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.earnings-month .month-share {
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+
 .live-amount-extra {
   font-size: 0.6em;
   letter-spacing: -0.02em;
@@ -99,6 +127,18 @@
   border-radius: 50%;
   background: var(--color-accent);
   vertical-align: 0.1em;
+}
+
+/* Narrow cards show the time left on its own line instead of breaking it mid-phrase. */
+@container (max-width: 30rem) {
+  .status-separator {
+    display: none;
+  }
+
+  .status-time-left {
+    display: block;
+    padding-inline-start: 1rem;
+  }
 }
 
 .breakdown-title {
@@ -143,10 +183,6 @@
 
 .breakdown td {
   font-weight: 600;
-}
-
-.breakdown-totals td {
-  text-align: center;
 }
 
 .breakdown-totals tr:first-child > * {

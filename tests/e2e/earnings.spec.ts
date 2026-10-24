@@ -35,17 +35,15 @@ test.describe('Affordi earnings', () => {
       'page',
     );
     const amounts = page.locator('.live-amount');
-    await expect(amounts).toHaveText(['€49.4505', '€51.9231', '€1,960.2273']);
-    await expect(page.getByText('Working until 5:00 PM · 5 hours left')).toBeVisible();
-    await expect(
-      page.getByText('65% of this month’s take home pay · Workdays: 14 of 22'),
-    ).toBeVisible();
+    await expect(amounts).toHaveText(['€49.4505', '€51.9231', '€1,960.22 of €3,000.00']);
+    const status = page.locator('.earnings-status');
+    await expect(status).toHaveText('Working until 5:00 PM · 5 hours left');
+    await expect(page.locator('.month-caption')).toContainText('Workdays: 14 of 22');
+    await expect(page.getByText('65%', { exact: true })).toBeVisible();
 
     await page.clock.runFor(60_000);
-    await expect(amounts).toHaveText(['€49.5192', '€52.2115', '€1,960.5114']);
-    await expect(
-      page.getByText('Working until 5:00 PM · 4 hours and 59 minutes left'),
-    ).toBeVisible();
+    await expect(amounts).toHaveText(['€49.5192', '€52.2115', '€1,960.51 of €3,000.00']);
+    await expect(status).toHaveText('Working until 5:00 PM · 4 hours and 59 minutes left');
 
     const table = page.getByRole('table', { name: 'Your take home pay, broken down' });
     await expect(table.getByRole('row', { name: /^Per hour/ })).toHaveText(/€4\.12\s*€17\.31/);
@@ -67,7 +65,7 @@ test.describe('Affordi earnings', () => {
       '••••Hidden',
       '••••Hidden',
     ]);
-    await expect(page.getByText(/% of this month’s take home pay/)).toBeVisible();
+    await expect(earnings.getByText(/^\d+%$/)).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
     await page.getByRole('link', { name: 'Cost' }).click();
@@ -95,6 +93,12 @@ test.describe('Affordi earnings', () => {
 
     await expect(page.getByText('Starts at 1:00 PM')).toBeVisible();
     await expect(page.locator('.live-amount').nth(1)).toHaveText('€0.0000');
+    // A narrow card sets the time left on its own line rather than wrapping it mid-phrase.
+    const threePm = new Date('2026-10-21T15:00:00Z').getTime();
+    await page.clock.pauseAt(threePm - 100);
+    await page.clock.runFor(100);
+    await expect(page.locator('.status-separator')).toBeHidden();
+    await expect(page.locator('.status-time-left')).toHaveText('9 hours left');
     await expect(page.locator('.live-amount').first()).toBeInViewport();
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),

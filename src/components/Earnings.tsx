@@ -11,6 +11,7 @@ import {
 } from '../domain/earnings';
 import {
   describeWorkStatus,
+  formatEarned,
   formatProgress,
   formatRate,
   formatTicker,
@@ -18,6 +19,7 @@ import {
   type TickerParts,
 } from '../domain/earningsText';
 import { createTranslator, type Translator } from '../domain/i18n';
+import type { WorkProgress } from '../domain/schedule';
 import type { AffordiSettings } from '../domain/storage';
 import { useNow } from './useNow';
 
@@ -52,7 +54,7 @@ interface LiveAmountProps {
   parts: TickerParts;
 }
 
-/** A live total, with the digits beyond the currency's usual precision set smaller. */
+/** A live total for today, with the digits beyond the currency's usual precision set smaller. */
 function LiveAmount({ copy, hidden, parts }: LiveAmountProps) {
   return (
     <p className="live-amount">
@@ -71,26 +73,67 @@ function LiveAmount({ copy, hidden, parts }: LiveAmountProps) {
 
 interface MonthProgressProps {
   copy: Translator;
+  currency: string;
   hidden: boolean;
   month: EarnedThisMonth;
-  parts: TickerParts;
+  total: number;
 }
 
-/** Progress toward this month's pay by work time. The share stays visible when amounts hide. */
-function MonthProgress({ copy, hidden, month, parts }: MonthProgressProps) {
+/**
+ * Progress toward this month's pay by work time, in the currency's usual precision
+ * since a monthly total needs no live digits. The share stays visible when amounts hide.
+ */
+function MonthProgress({ copy, currency, hidden, month, total }: MonthProgressProps) {
+  const percentage = formatProgress(month.share, copy.locale);
   return (
     <div className="earnings-card earnings-month">
       <p className="earnings-label">{copy.t('earnings.month')}</p>
-      <LiveAmount copy={copy} hidden={hidden} parts={parts} />
+      <p className="live-amount month-amount">
+        {hidden ? (
+          <HiddenAmount copy={copy} />
+        ) : (
+          <>
+            {formatEarned(month.amount, currency, copy.locale)}{' '}
+            <span className="month-total">
+              {copy.t('earnings.monthTotal', {
+                total: formatRate(total, currency, copy.locale),
+              })}
+            </span>
+          </>
+        )}
+      </p>
       <span aria-hidden="true" className="month-meter">
         <span style={{ inlineSize: `${month.share * 100}%` }} />
       </span>
-      <p className="earnings-note">
-        {copy.t('earnings.monthShare', { percentage: formatProgress(month.share, copy.locale) })}
-        {' · '}
-        {copy.t('earnings.workdays', { done: month.workdaysDone, total: month.workdaysTotal })}
+      <p className="earnings-note month-caption">
+        <span>
+          {copy.t('earnings.workdays', { done: month.workdaysDone, total: month.workdaysTotal })}
+        </span>{' '}
+        <span className="month-share">
+          <span aria-hidden="true">{percentage}</span>
+          <span className="visually-hidden">{copy.t('earnings.monthShare', { percentage })}</span>
+        </span>
       </p>
     </div>
+  );
+}
+
+/** The work status, with the time left set on its own line in narrow cards. */
+function WorkStatus({ copy, progress }: { copy: Translator; progress: WorkProgress }) {
+  const [status, timeLeft] = describeWorkStatus(progress, copy);
+  return (
+    <p className="earnings-note earnings-status">
+      {status}
+      {timeLeft !== undefined && (
+        <>
+          {' '}
+          <span aria-hidden="true" className="status-separator">
+            ·
+          </span>{' '}
+          <span className="status-time-left">{timeLeft}</span>
+        </>
+      )}
+    </p>
   );
 }
 
@@ -154,15 +197,14 @@ export function Earnings({ settings, onHideAmountsChange }: EarningsProps) {
             hidden={amountsHidden}
             parts={formatTicker(today.atWork, currency, language, digits)}
           />
-          <p className="earnings-note earnings-status">
-            {describeWorkStatus(today.progress, copy)}
-          </p>
+          <WorkStatus copy={copy} progress={today.progress} />
         </div>
         <MonthProgress
           copy={copy}
+          currency={currency}
           hidden={amountsHidden}
           month={month}
-          parts={formatTicker(month.amount, currency, language, digits)}
+          total={rates.totals.month}
         />
       </div>
 
