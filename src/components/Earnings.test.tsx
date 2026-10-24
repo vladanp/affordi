@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { FixedCost } from '../domain/fixedCosts';
 import type { AffordiSettings } from '../domain/storage';
 import { Earnings } from './Earnings';
 
@@ -20,14 +21,30 @@ const settings: AffordiSettings = {
 };
 
 /** Holds settings the way the app does, so hiding amounts updates the page. */
-function EarningsPage({ initial = settings }: { initial?: AffordiSettings }) {
+interface EarningsPageProps {
+  fixedCosts?: readonly FixedCost[];
+  initial?: AffordiSettings;
+}
+
+function EarningsPage({ fixedCosts = noFixedCosts, initial = settings }: EarningsPageProps) {
   const [current, setCurrent] = useState(initial);
   return (
     <Earnings
+      fixedCosts={fixedCosts}
       onHideAmountsChange={(hideAmounts) => setCurrent({ ...current, hideAmounts })}
       settings={current}
     />
   );
+}
+
+const noFixedCosts: readonly FixedCost[] = [];
+
+function rent(amount: number): FixedCost {
+  return { id: 'rent', name: 'Rent', amount, lastPayment: null };
+}
+
+function fixedCostsCard() {
+  return document.querySelector('.earnings-fixed-costs');
 }
 
 function liveAmounts() {
@@ -124,6 +141,29 @@ describe('Earnings', () => {
     expect(liveAmounts()).toEqual(['€49.4505', '€51.9231', '€1,960.22 of €3,000.00']);
   });
 
+  it('shows how much of this month’s fixed costs the pay covers so far', () => {
+    const first = render(<EarningsPage fixedCosts={[rent(2_500)]} />);
+    expect(screen.getByText('Fixed costs this month')).toBeInTheDocument();
+    expect(fixedCostsCard()?.querySelector('.live-amount')).toHaveTextContent(
+      '€1,960.22 of €2,500.00',
+    );
+    expect(fixedCostsCard()).toHaveTextContent('Covered so far');
+    expect(screen.getByText('78% of this month’s fixed costs covered')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Hide amounts' }));
+    expect(fixedCostsCard()?.querySelector('.live-amount')).toHaveTextContent('••••Hidden');
+    expect(fixedCostsCard()).toHaveTextContent('78%');
+    first.unmount();
+
+    const second = render(<EarningsPage fixedCosts={[rent(1_000)]} />);
+    expect(fixedCostsCard()?.querySelector('.live-amount')).toHaveTextContent(/^€1,000\.00$/);
+    expect(fixedCostsCard()).toHaveTextContent('All covered');
+    expect(screen.getByText('100% of this month’s fixed costs covered')).toBeInTheDocument();
+    second.unmount();
+
+    render(<EarningsPage fixedCosts={[{ ...rent(500), lastPayment: '2026-09' }]} />);
+    expect(fixedCostsCard()).toBeNull();
+  });
+
   it('says when work starts, when it ended, and when there is none', () => {
     vi.setSystemTime(new Date(2026, 9, 21, 7, 30));
     const morning = render(<EarningsPage />);
@@ -136,9 +176,9 @@ describe('Earnings', () => {
     expect(screen.getByText('Finished at 5:00 PM')).toBeInTheDocument();
     expect(liveAmounts()[1]).toBe('€138.4615');
     expect(liveAmounts()[2]).toBe('€2,045.45 of €3,000.00');
-    expect(document.querySelector<HTMLElement>('.month-meter > span')?.style.inlineSize).toMatch(
-      /^68\.18/,
-    );
+    expect(
+      document.querySelector<HTMLElement>('.earnings-month .meter > span')?.style.inlineSize,
+    ).toMatch(/^68\.18/);
     evening.unmount();
 
     vi.setSystemTime(new Date(2026, 9, 24, 18));

@@ -18,6 +18,9 @@ describe('translation catalog completeness', () => {
       total: 22,
       day: 'Thursday',
       date: 'November 9',
+      amount: '€10',
+      month: 'March 2049',
+      name: 'Rent',
     } as const;
 
     for (const locale of supportedLocales) {

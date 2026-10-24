@@ -4,17 +4,28 @@ import { LockKeyhole, Settings2 } from 'lucide-react';
 import { Brand } from './components/Brand';
 import { Calculator } from './components/Calculator';
 import { Earnings } from './components/Earnings';
+import { FixedCosts } from './components/FixedCosts';
 import { IncomeForm } from './components/IncomeForm';
-import { PageNav, usePage } from './components/PageNav';
+import { PageNav } from './components/PageNav';
+import { pageNames, usePage } from './components/pages';
 import { SettingsDialog } from './components/SettingsDialog';
 import { UpdatePrompt } from './components/UpdatePrompt';
-import { createTranslator, detectLocale, type Locale } from './domain/i18n';
+import { loadFixedCosts, saveFixedCosts, type FixedCost } from './domain/fixedCosts';
+import {
+  createTranslator,
+  detectLocale,
+  type Locale,
+  type TranslationKey,
+  type Translator,
+} from './domain/i18n';
 import { clearSettings, loadSettings, saveSettings, type AffordiSettings } from './domain/storage';
 import { applyTheme } from './domain/theme';
 
 const APP_NAME = 'Affordi';
 
 interface PageShellProps {
+  fixedCosts: readonly FixedCost[];
+  onFixedCostsChange: (fixedCosts: FixedCost[]) => void;
   onHideAmountsChange: (hideAmounts: boolean) => void;
   onOpenSettings: () => void;
   settings: AffordiSettings;
@@ -22,10 +33,12 @@ interface PageShellProps {
 }
 
 /**
- * The top bar and page navigation around both pages. Hidden pages keep their
+ * The top bar and page navigation around every page. Hidden pages keep their
  * state, so a typed price survives a visit to earnings, and their timers stop.
  */
 function PageShell({
+  fixedCosts,
+  onFixedCostsChange,
   onHideAmountsChange,
   onOpenSettings,
   settings,
@@ -33,15 +46,15 @@ function PageShell({
 }: PageShellProps) {
   const page = usePage();
   const copy = createTranslator(settings.language);
-  const earningsTitle = `${copy.t('nav.earnings')} · ${APP_NAME}`;
+  const title = page === 'cost' ? APP_NAME : `${copy.t(pageNames[page])} · ${APP_NAME}`;
 
   // Each page names itself in the tab, the history list, and to screen readers.
   useEffect(() => {
-    document.title = page === 'earnings' ? earningsTitle : APP_NAME;
+    document.title = title;
     return () => {
       document.title = APP_NAME;
     };
-  }, [page, earningsTitle]);
+  }, [title]);
 
   return (
     <div className="page">
@@ -62,7 +75,19 @@ function PageShell({
         <Calculator settings={settings} />
       </Activity>
       <Activity mode={page === 'earnings' ? 'visible' : 'hidden'}>
-        <Earnings onHideAmountsChange={onHideAmountsChange} settings={settings} />
+        <Earnings
+          fixedCosts={fixedCosts}
+          onHideAmountsChange={onHideAmountsChange}
+          settings={settings}
+        />
+      </Activity>
+      <Activity mode={page === 'fixed-costs' ? 'visible' : 'hidden'}>
+        <FixedCosts
+          fixedCosts={fixedCosts}
+          onFixedCostsChange={onFixedCostsChange}
+          onHideAmountsChange={onHideAmountsChange}
+          settings={settings}
+        />
       </Activity>
       <p className="local-only-footer">
         <LockKeyhole aria-hidden="true" size={14} strokeWidth={2} />
@@ -72,8 +97,44 @@ function PageShell({
   );
 }
 
+interface StorageNoticeProps {
+  copy: Translator;
+  message: TranslationKey;
+  visible: boolean;
+}
+
+/** Says when something could not be saved on this device. */
+function StorageNotice({ copy, message, visible }: StorageNoticeProps) {
+  if (!visible) return null;
+  return (
+    <p className="storage-notice" role="status">
+      {copy.t(message)}
+    </p>
+  );
+}
+
+/** Saved fixed costs, with whether the last change could be saved. */
+function useFixedCosts() {
+  const [fixedCosts, setFixedCosts] = useState<FixedCost[]>(() => loadFixedCosts());
+  const [saveFailed, setSaveFailed] = useState(false);
+
+  function persist(nextFixedCosts: FixedCost[]) {
+    setFixedCosts(nextFixedCosts);
+    setSaveFailed(!saveFixedCosts(nextFixedCosts));
+  }
+
+  /** Forgets them after a reset has already erased them from the device. */
+  function forget() {
+    setFixedCosts([]);
+    setSaveFailed(false);
+  }
+
+  return { fixedCosts, forget, persist, saveFailed };
+}
+
 export function App() {
   const [settings, setSettings] = useState<AffordiSettings | null>(() => loadSettings());
+  const fixedCosts = useFixedCosts();
   const [showSettings, setShowSettings] = useState(false);
   const [storageNotice, setStorageNotice] = useState(false);
   const [previewLanguage, setPreviewLanguage] = useState<Locale | null>(null);
@@ -121,6 +182,7 @@ export function App() {
     setPreviewLanguage(null);
     setPreviewTheme(null);
     setSettings(null);
+    fixedCosts.forget();
     setShowSettings(false);
     setStorageNotice(false);
     return true;
@@ -136,26 +198,25 @@ export function App() {
           </div>
           <div className="setup-panel">
             <IncomeForm onSubmit={persist} />
-            {storageNotice && (
-              <p className="storage-notice" role="status">
-                {copy.t('storage.visitOnly')}
-              </p>
-            )}
+            <StorageNotice copy={copy} message="storage.visitOnly" visible={storageNotice} />
           </div>
         </main>
       ) : (
         <main className="app-shell calculator-shell">
           <PageShell
+            fixedCosts={fixedCosts.fixedCosts}
+            onFixedCostsChange={fixedCosts.persist}
             onHideAmountsChange={(hideAmounts) => persist({ ...settings, hideAmounts })}
             onOpenSettings={() => setShowSettings(true)}
             settings={settings}
             settingsButtonRef={settingsButtonRef}
           />
-          {storageNotice && (
-            <p className="storage-notice" role="status">
-              {copy.t('storage.couldNotSave')}
-            </p>
-          )}
+          <StorageNotice copy={copy} message="storage.couldNotSave" visible={storageNotice} />
+          <StorageNotice
+            copy={copy}
+            message="fixedCosts.couldNotSave"
+            visible={fixedCosts.saveFailed}
+          />
           {showSettings && (
             <SettingsDialog
               onClose={closeSettings}

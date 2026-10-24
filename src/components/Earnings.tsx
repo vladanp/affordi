@@ -1,5 +1,4 @@
 import { useSyncExternalStore } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
 
 import {
   calculateEarnedThisMonth,
@@ -7,7 +6,6 @@ import {
   calculateEarningRates,
   rateUnits,
   totalPeriods,
-  type EarnedThisMonth,
 } from '../domain/earnings';
 import {
   describeWorkStatus,
@@ -18,9 +16,11 @@ import {
   tickerDigits,
   type TickerParts,
 } from '../domain/earningsText';
+import { fixedCostsCoverage, monthlyFixedCosts, type FixedCost } from '../domain/fixedCosts';
 import { createTranslator, type Translator } from '../domain/i18n';
 import type { WorkProgress } from '../domain/schedule';
 import type { AffordiSettings } from '../domain/storage';
+import { HiddenAmount, HideAmountsButton } from './HiddenAmount';
 import { useNow } from './useNow';
 
 /** Live totals move several times a second, and once a second for reduced motion or hidden amounts. */
@@ -39,15 +39,6 @@ function prefersReducedMotion(): boolean {
   return typeof window.matchMedia === 'function' && window.matchMedia(REDUCED_MOTION_QUERY).matches;
 }
 
-function HiddenAmount({ copy }: { copy: Translator }) {
-  return (
-    <>
-      <span aria-hidden="true">••••</span>
-      <span className="visually-hidden">{copy.t('earnings.hiddenAmount')}</span>
-    </>
-  );
-}
-
 interface LiveAmountProps {
   copy: Translator;
   hidden: boolean;
@@ -57,7 +48,7 @@ interface LiveAmountProps {
 /** A live total for today, with the digits beyond the currency's usual precision set smaller. */
 function LiveAmount({ copy, hidden, parts }: LiveAmountProps) {
   return (
-    <p className="live-amount">
+    <p className="stat-amount live-amount">
       {hidden ? (
         <HiddenAmount copy={copy} />
       ) : (
@@ -71,47 +62,64 @@ function LiveAmount({ copy, hidden, parts }: LiveAmountProps) {
   );
 }
 
-interface MonthProgressProps {
+interface ProgressCardProps {
+  /** Formatted amounts so far and in all, shown only while amounts are visible. */
+  amount: string;
+  caption: string;
+  className: string;
   copy: Translator;
-  currency: string;
   hidden: boolean;
-  month: EarnedThisMonth;
-  total: number;
+  label: string;
+  /** Progress from 0 to 1. */
+  share: number;
+  /** The share as a sentence for screen readers, given the formatted percentage. */
+  spokenShare: (percentage: string) => string;
+  /** The amount to reach, left out once it is reached. */
+  total: string | null;
 }
 
 /**
- * Progress toward this month's pay by work time, in the currency's usual precision
- * since a monthly total needs no live digits. The share stays visible when amounts hide.
+ * Progress toward a monthly amount, in the currency's usual precision since it
+ * needs no live digits. The share stays visible when amounts hide.
  */
-function MonthProgress({ copy, currency, hidden, month, total }: MonthProgressProps) {
-  const percentage = formatProgress(month.share, copy.locale);
+function ProgressCard({
+  amount,
+  caption,
+  className,
+  copy,
+  hidden,
+  label,
+  share,
+  spokenShare,
+  total,
+}: ProgressCardProps) {
+  const percentage = formatProgress(share, copy.locale);
   return (
-    <div className="earnings-card earnings-month">
-      <p className="earnings-label">{copy.t('earnings.month')}</p>
-      <p className="live-amount month-amount">
+    <div className={`stat-card ${className}`}>
+      <p className="stat-label">{label}</p>
+      <p className="stat-amount live-amount stat-amount-with-total">
         {hidden ? (
           <HiddenAmount copy={copy} />
         ) : (
           <>
-            {formatEarned(month.amount, currency, copy.locale)}{' '}
-            <span className="month-total">
-              {copy.t('earnings.monthTotal', {
-                total: formatRate(total, currency, copy.locale),
-              })}
-            </span>
+            {amount}
+            {total !== null && (
+              <>
+                {' '}
+                <span className="stat-total">{copy.t('earnings.monthTotal', { total })}</span>
+              </>
+            )}
           </>
         )}
       </p>
-      <span aria-hidden="true" className="month-meter">
-        <span style={{ inlineSize: `${month.share * 100}%` }} />
+      <span aria-hidden="true" className="meter">
+        <span style={{ inlineSize: `${share * 100}%` }} />
       </span>
-      <p className="earnings-note month-caption">
-        <span>
-          {copy.t('earnings.workdays', { done: month.workdaysDone, total: month.workdaysTotal })}
-        </span>{' '}
-        <span className="month-share">
+      <p className="stat-note stat-caption">
+        <span>{caption}</span>{' '}
+        <span className="stat-share">
           <span aria-hidden="true">{percentage}</span>
-          <span className="visually-hidden">{copy.t('earnings.monthShare', { percentage })}</span>
+          <span className="visually-hidden">{spokenShare(percentage)}</span>
         </span>
       </p>
     </div>
@@ -122,7 +130,7 @@ function MonthProgress({ copy, currency, hidden, month, total }: MonthProgressPr
 function WorkStatus({ copy, progress }: { copy: Translator; progress: WorkProgress }) {
   const [status, timeLeft] = describeWorkStatus(progress, copy);
   return (
-    <p className="earnings-note earnings-status">
+    <p className="stat-note earnings-status">
       {status}
       {timeLeft !== undefined && (
         <>
@@ -138,11 +146,12 @@ function WorkStatus({ copy, progress }: { copy: Translator; progress: WorkProgre
 }
 
 interface EarningsProps {
+  fixedCosts: readonly FixedCost[];
   settings: AffordiSettings;
   onHideAmountsChange: (hideAmounts: boolean) => void;
 }
 
-export function Earnings({ settings, onHideAmountsChange }: EarningsProps) {
+export function Earnings({ fixedCosts, settings, onHideAmountsChange }: EarningsProps) {
   const amountsHidden = settings.hideAmounts;
   const reducedMotion = useSyncExternalStore(
     subscribeToReducedMotion,
@@ -157,41 +166,30 @@ export function Earnings({ settings, onHideAmountsChange }: EarningsProps) {
   const { currency, language } = settings;
   const today = calculateEarnedToday(settings, rates, now);
   const month = calculateEarnedThisMonth(settings, rates, now);
+  const coverage = fixedCostsCoverage(month.amount, monthlyFixedCosts(fixedCosts, now));
   const digits = tickerDigits(rates.aroundTheClock.second, currency, language);
   const rate = (value: number) =>
     amountsHidden ? <HiddenAmount copy={copy} /> : formatRate(value, currency, language);
 
   return (
     <section aria-labelledby="earnings-title" className="earnings">
-      <div className="earnings-heading">
+      <div className="page-heading">
         <h1 id="earnings-title">{copy.t('earnings.title')}</h1>
-        <button
-          aria-label={copy.t(amountsHidden ? 'earnings.showAmounts' : 'earnings.hideAmounts')}
-          className="icon-button"
-          title={copy.t(amountsHidden ? 'earnings.showAmounts' : 'earnings.hideAmounts')}
-          onClick={() => onHideAmountsChange(!amountsHidden)}
-          type="button"
-        >
-          {amountsHidden ? (
-            <Eye aria-hidden="true" size={20} strokeWidth={1.75} />
-          ) : (
-            <EyeOff aria-hidden="true" size={20} strokeWidth={1.75} />
-          )}
-        </button>
+        <HideAmountsButton copy={copy} hidden={amountsHidden} onChange={onHideAmountsChange} />
       </div>
 
-      <div className="earnings-cards">
-        <div className="earnings-card earnings-today">
-          <p className="earnings-label">{copy.t('earnings.today')}</p>
+      <div className="card-stack">
+        <div className="stat-card stat-card-highlight earnings-today">
+          <p className="stat-label">{copy.t('earnings.today')}</p>
           <LiveAmount
             copy={copy}
             hidden={amountsHidden}
             parts={formatTicker(today.aroundTheClock, currency, language, digits)}
           />
-          <p className="earnings-note">{copy.t('earnings.todayNote')}</p>
+          <p className="stat-note">{copy.t('earnings.todayNote')}</p>
         </div>
-        <div className="earnings-card earnings-work" data-state={today.progress.state}>
-          <p className="earnings-label">{copy.t('earnings.atWork')}</p>
+        <div className="stat-card earnings-work" data-state={today.progress.state}>
+          <p className="stat-label">{copy.t('earnings.atWork')}</p>
           <LiveAmount
             copy={copy}
             hidden={amountsHidden}
@@ -199,13 +197,35 @@ export function Earnings({ settings, onHideAmountsChange }: EarningsProps) {
           />
           <WorkStatus copy={copy} progress={today.progress} />
         </div>
-        <MonthProgress
+        <ProgressCard
+          amount={formatEarned(month.amount, currency, language)}
+          caption={copy.t('earnings.workdays', {
+            done: month.workdaysDone,
+            total: month.workdaysTotal,
+          })}
+          className="earnings-month"
           copy={copy}
-          currency={currency}
           hidden={amountsHidden}
-          month={month}
-          total={rates.totals.month}
+          label={copy.t('earnings.month')}
+          share={month.share}
+          spokenShare={(percentage) => copy.t('earnings.monthShare', { percentage })}
+          total={formatRate(rates.totals.month, currency, language)}
         />
+        {coverage !== null && (
+          <ProgressCard
+            amount={formatEarned(coverage.covered, currency, language)}
+            caption={copy.t(
+              coverage.share >= 1 ? 'earnings.fixedCostsAllCovered' : 'earnings.fixedCostsCovered',
+            )}
+            className="earnings-fixed-costs"
+            copy={copy}
+            hidden={amountsHidden}
+            label={copy.t('earnings.fixedCosts')}
+            share={coverage.share}
+            spokenShare={(percentage) => copy.t('earnings.fixedCostsShare', { percentage })}
+            total={coverage.share >= 1 ? null : formatRate(coverage.total, currency, language)}
+          />
+        )}
       </div>
 
       <h2 className="breakdown-title" id="breakdown-title">

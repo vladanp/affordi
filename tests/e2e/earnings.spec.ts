@@ -38,7 +38,7 @@ test.describe('Affordi earnings', () => {
     await expect(amounts).toHaveText(['€49.4505', '€51.9231', '€1,960.22 of €3,000.00']);
     const status = page.locator('.earnings-status');
     await expect(status).toHaveText('Working until 5:00 PM · 5 hours left');
-    await expect(page.locator('.month-caption')).toContainText('Workdays: 14 of 22');
+    await expect(page.locator('.earnings-month .stat-caption')).toContainText('Workdays: 14 of 22');
     await expect(page.getByText('65%', { exact: true })).toBeVisible();
 
     await page.clock.runFor(60_000);
@@ -68,7 +68,7 @@ test.describe('Affordi earnings', () => {
     await expect(earnings.getByText(/^\d+%$/)).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
-    await page.getByRole('link', { name: 'Cost' }).click();
+    await page.getByRole('link', { name: 'Cost', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'How much does it cost?' })).toBeVisible();
     await page.goBack();
     await expect(page.getByRole('heading', { name: 'How much do you earn?' })).toBeVisible();

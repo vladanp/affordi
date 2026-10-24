@@ -69,6 +69,33 @@ test.describe('UI screenshot audit', () => {
     await attachScreenshot(page, testInfo, 'phone-earnings', true);
   });
 
+  test('captures fixed costs on a phone at a fixed time', async ({ page }, testInfo) => {
+    await page.clock.setFixedTime(new Date('2026-10-21T14:15:00Z'));
+    await page.setViewportSize({ width: 390, height: 844 });
+    await completeSetup(page);
+    await page.evaluate(() =>
+      localStorage.setItem(
+        'affordi.fixedCosts.v1',
+        JSON.stringify({
+          version: 1,
+          fixedCosts: [
+            { id: 'a', name: 'Mortgage', amount: 950, lastPayment: '2049-03' },
+            { id: 'b', name: 'Car loan', amount: 280, lastPayment: '2028-06' },
+            { id: 'c', name: 'Home insurance', amount: 45.5, lastPayment: null },
+            { id: 'd', name: 'Phone and internet', amount: 59.99, lastPayment: null },
+            { id: 'e', name: 'Old loan', amount: 150, lastPayment: '2026-08' },
+          ],
+        }),
+      ),
+    );
+    await page.goto('/#fixed-costs');
+    await page.reload();
+
+    await expect(page.getByRole('heading', { name: 'What do you pay each month?' })).toBeVisible();
+    await expect(page.locator('.fixed-costs-total .stat-amount')).toHaveText('€1,335.49');
+    await attachScreenshot(page, testInfo, 'phone-fixed-costs', true);
+  });
+
   test('captures the reduced-motion dark theme on a phone', async ({ page }, testInfo) => {
     await page.clock.setFixedTime(new Date('2026-10-21T14:15:00Z'));
     await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
