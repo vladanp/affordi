@@ -218,22 +218,6 @@ export function payLeftAfter(costs: number, settings: IncomeSettings): PayLeft |
   return { left, leftPerDay: (left * MONTHS_PER_YEAR) / DAYS_PER_YEAR };
 }
 
-export interface FixedCostsSummary extends MonthlyCostFigures, PayLeft {
-  /** What the costs still paid this month add up to. */
-  total: number;
-}
-
-export function summarizeFixedCosts(
-  costs: readonly FixedCost[],
-  settings: IncomeSettings,
-  now: Date,
-): FixedCostsSummary | null {
-  const total = monthlyFixedCosts(costs, now);
-  const figures = monthlyCostFigures(total, settings);
-  const payLeft = payLeftAfter(total, settings);
-  return figures === null || payLeft === null ? null : { ...figures, ...payLeft, total };
-}
-
 /** How much of this month's costs the pay earned so far covers. */
 export interface CostsCoverage {
   covered: number;

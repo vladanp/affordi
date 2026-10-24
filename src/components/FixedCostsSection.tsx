@@ -1,5 +1,4 @@
 import { useRef } from 'react';
-import { House } from 'lucide-react';
 
 import { formatWorkDuration } from '../domain/duration';
 import { formatProgress } from '../domain/earningsText';
@@ -10,32 +9,18 @@ import {
   paidShare,
   paymentProgress,
   sortFixedCosts,
-  summarizeFixedCosts,
   summarizeLoans,
   type FixedCost,
   type LoansSummary,
   type PaymentProgress,
 } from '../domain/fixedCosts';
-import { createTranslator, type Translator } from '../domain/i18n';
+import type { Translator } from '../domain/i18n';
 import { formatCurrency } from '../domain/locale';
 import { monthStart, parseMonth } from '../domain/months';
 import { formatIncomePercentage } from '../domain/priceText';
 import type { AffordiSettings } from '../domain/storage';
 import { FixedCostDialog } from './FixedCostDialog';
-import { HideAmountsButton } from './HiddenAmount';
-import {
-  CostCard,
-  EmptyList,
-  ItemList,
-  ItemRow,
-  Money,
-  PayLeftCard,
-  useEditDialog,
-} from './MonthlyCosts';
-import { useNow } from './useNow';
-
-/** Costs start and end by the month, so the page checks the date once a minute. */
-const CLOCK_MS = 60_000;
+import { ItemRow, ListHeading, Money, useEditDialog } from './MonthlyCosts';
 
 /** The last payment as a line, such as "Last payment: March 2049". */
 function lastPaymentNote(lastPayment: string | null, copy: Translator): string | null {
@@ -153,27 +138,27 @@ function LoansCard({ copy, hidden, loans, settings }: LoansCardProps) {
   );
 }
 
-interface FixedCostsProps {
+interface FixedCostsSectionProps {
+  copy: Translator;
   fixedCosts: readonly FixedCost[];
+  hidden: boolean;
+  now: Date;
   onFixedCostsChange: (fixedCosts: FixedCost[]) => void;
-  onHideAmountsChange: (hideAmounts: boolean) => void;
   settings: AffordiSettings;
 }
 
-export function FixedCosts({
+/** Costs that are the same every month, with what is left to pay on loans. */
+export function FixedCostsSection({
+  copy,
   fixedCosts,
+  hidden,
+  now,
   onFixedCostsChange,
-  onHideAmountsChange,
   settings,
-}: FixedCostsProps) {
+}: FixedCostsSectionProps) {
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const dialog = useEditDialog<FixedCost>(addButtonRef);
-  const now = useNow(CLOCK_MS);
-  const copy = createTranslator(settings.language);
-  const hidden = settings.hideAmounts;
-  const summary = summarizeFixedCosts(fixedCosts, settings, now);
   const loans = summarizeLoans(fixedCosts, now);
-  if (summary === null) return null;
 
   function save(cost: FixedCost) {
     const exists = fixedCosts.some((saved) => saved.id === cost.id);
@@ -191,71 +176,38 @@ export function FixedCosts({
   }
 
   return (
-    <section aria-labelledby="fixed-costs-title" className="fixed-costs">
-      <div className="page-heading">
-        <h1 id="fixed-costs-title">{copy.t('fixedCosts.title')}</h1>
-        <HideAmountsButton copy={copy} hidden={hidden} onChange={onHideAmountsChange} />
-      </div>
-
-      {fixedCosts.length === 0 ? (
-        <EmptyList
-          addLabel={copy.t('fixedCosts.add')}
-          icon={House}
-          onAdd={(opener) => dialog.open(null, opener)}
-          text={copy.t('fixedCosts.empty')}
-        />
-      ) : (
-        <>
-          <div className="card-stack">
-            <CostCard
-              className="fixed-costs-total"
+    <section aria-labelledby="fixed-cost-list-title" className="monthly-section fixed-costs">
+      <ListHeading
+        addButtonRef={addButtonRef}
+        addLabel={copy.t('fixedCosts.add')}
+        addShortLabel={copy.t('fixedCosts.addShort')}
+        hint={copy.t('fixedCosts.hint')}
+        id="fixed-cost-list-title"
+        limitNote={
+          fixedCosts.length >= MAX_FIXED_COSTS
+            ? copy.t('fixedCosts.limit', { count: MAX_FIXED_COSTS })
+            : null
+        }
+        onAdd={(opener) => dialog.open(null, opener)}
+        title={copy.t('fixedCosts.list')}
+      />
+      {loans !== null && (
+        <LoansCard copy={copy} hidden={hidden} loans={loans} settings={settings} />
+      )}
+      {fixedCosts.length > 0 && (
+        <ul aria-labelledby="fixed-cost-list-title" className="item-list">
+          {sortFixedCosts(fixedCosts, now).map((cost) => (
+            <FixedCostRow
               copy={copy}
+              cost={cost}
               hidden={hidden}
-              label={copy.t('fixedCosts.total')}
-              percentage={summary.percentage}
+              key={cost.id}
+              now={now}
+              onEdit={dialog.open}
               settings={settings}
-              value={summary.total}
-              workHours={summary.workHours}
             />
-            <PayLeftCard
-              className="fixed-costs-left"
-              copy={copy}
-              hidden={hidden}
-              label="fixedCosts.left"
-              payLeft={summary}
-              settings={settings}
-              shortNote="fixedCosts.shortNote"
-            />
-            {loans !== null && (
-              <LoansCard copy={copy} hidden={hidden} loans={loans} settings={settings} />
-            )}
-          </div>
-          <ItemList
-            addButtonRef={addButtonRef}
-            addLabel={copy.t('fixedCosts.add')}
-            addShortLabel={copy.t('fixedCosts.addShort')}
-            id="fixed-cost-list-title"
-            limitNote={
-              fixedCosts.length >= MAX_FIXED_COSTS
-                ? copy.t('fixedCosts.limit', { count: MAX_FIXED_COSTS })
-                : null
-            }
-            onAdd={(opener) => dialog.open(null, opener)}
-            title={copy.t('fixedCosts.list')}
-          >
-            {sortFixedCosts(fixedCosts, now).map((cost) => (
-              <FixedCostRow
-                copy={copy}
-                cost={cost}
-                hidden={hidden}
-                key={cost.id}
-                now={now}
-                onEdit={dialog.open}
-                settings={settings}
-              />
-            ))}
-          </ItemList>
-        </>
+          ))}
+        </ul>
       )}
 
       {dialog.editing !== undefined && (

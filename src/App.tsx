@@ -12,9 +12,8 @@ import { LockKeyhole, Settings2 } from 'lucide-react';
 import { Brand } from './components/Brand';
 import { Calculator } from './components/Calculator';
 import { Earnings } from './components/Earnings';
-import { Bills } from './components/Bills';
-import { FixedCosts } from './components/FixedCosts';
 import { IncomeForm } from './components/IncomeForm';
+import { Monthly } from './components/Monthly';
 import { PageNav } from './components/PageNav';
 import { pageNames, usePage } from './components/pages';
 import { SettingsDialog } from './components/SettingsDialog';
@@ -100,19 +99,12 @@ function PageShell({
           settings={settings}
         />
       </Activity>
-      <Activity mode={page === 'fixed-costs' ? 'visible' : 'hidden'}>
-        <FixedCosts
-          fixedCosts={fixedCosts}
-          onFixedCostsChange={onFixedCostsChange}
-          onHideAmountsChange={onHideAmountsChange}
-          settings={settings}
-        />
-      </Activity>
-      <Activity mode={page === 'bills' ? 'visible' : 'hidden'}>
-        <Bills
+      <Activity mode={page === 'monthly' ? 'visible' : 'hidden'}>
+        <Monthly
           bills={bills}
           fixedCosts={fixedCosts}
           onBillsChange={onBillsChange}
+          onFixedCostsChange={onFixedCostsChange}
           onHideAmountsChange={onHideAmountsChange}
           settings={settings}
         />

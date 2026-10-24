@@ -1,10 +1,3 @@
-import type { IncomeSettings } from './calculations';
-import {
-  monthlyCostFigures,
-  payLeftAfter,
-  type MonthlyCostFigures,
-  type PayLeft,
-} from './fixedCosts';
 import { isItemId, isItemName } from './items';
 import { readRecord, writeRecord } from './localStore';
 import { monthValue, parseMonth, recentMonths } from './months';
@@ -109,6 +102,11 @@ export function withBillAmount(bill: Bill, month: string, amount: number): Bill 
   };
 }
 
+/** The bill without an amount for a month. */
+export function withoutBillAmount(bill: Bill, month: string): Bill {
+  return { ...bill, entries: bill.entries.filter((entry) => entry.month !== month) };
+}
+
 /** The amount saved for a month, if any. */
 export function billAmount(bill: Bill, month: string): number | null {
   return bill.entries.find((entry) => entry.month === month)?.amount ?? null;
@@ -173,8 +171,9 @@ interface MonthAmount {
   total: number;
 }
 
-export interface BillsSummary extends MonthlyCostFigures, PayLeft {
-  /** What bills cost in a typical month, in work time and share of pay. */
+/** The last twelve months of bills, for the chart. */
+export interface BillsSummary {
+  /** What bills cost in a typical month. */
   average: number;
   /** The highest and lowest recent months, once two months have amounts. */
   highest: MonthAmount | null;
@@ -182,29 +181,13 @@ export interface BillsSummary extends MonthlyCostFigures, PayLeft {
   totals: MonthTotal[];
 }
 
-/**
- * Bills in a typical month, what they take of the pay, and what is left once
- * fixed costs are paid too.
- */
-export function summarizeBills(
-  bills: readonly Bill[],
-  fixedCosts: number,
-  settings: IncomeSettings,
-  now: Date,
-): BillsSummary | null {
-  const average = averageMonthlyBills(bills, now);
-  const figures = monthlyCostFigures(average, settings);
-  const payLeft = payLeftAfter(fixedCosts + average, settings);
-  if (figures === null || payLeft === null) return null;
-
+export function summarizeBills(bills: readonly Bill[], now: Date): BillsSummary {
   const totals = monthlyBillTotals(bills, now);
   const months = totals.flatMap(({ month, total }) => (total === null ? [] : [{ month, total }]));
   const byTotal = months.toSorted((first, second) => second.total - first.total);
   const compared = byTotal.length >= 2;
   return {
-    ...figures,
-    ...payLeft,
-    average,
+    average: averageMonthlyBills(bills, now),
     highest: compared ? byTotal[0]! : null,
     lowest: compared ? byTotal.at(-1)! : null,
     totals,

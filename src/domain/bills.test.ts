@@ -12,17 +12,9 @@ import {
   sortBills,
   summarizeBills,
   withBillAmount,
+  withoutBillAmount,
   type Bill,
 } from './bills';
-import type { IncomeSettings } from './calculations';
-
-const settings: IncomeSettings = {
-  netIncome: 3_000,
-  payFrequency: 'monthly',
-  weeklyHours: 40,
-  workingDaysPerWeek: 5,
-};
-const hourlyRate = (3_000 * 12) / (52 * 40);
 /** Wednesday 21 October 2026, so the recent window runs from November 2025. */
 const october = new Date(2026, 9, 21, 12);
 
@@ -114,6 +106,11 @@ describe('monthly amounts', () => {
     expect(billAmount(water, '2026-08')).toBeNull();
   });
 
+  it('clears the amount of one month and keeps the others', () => {
+    expect(withoutBillAmount(water, '2026-09').entries).toEqual([{ month: '2026-10', amount: 34 }]);
+    expect(withoutBillAmount(water, '2026-08')).toEqual(water);
+  });
+
   it('keeps the newest ten years of amounts', () => {
     let bill: Bill = { ...water, entries: [] };
     for (let index = 0; index < 125; index += 1) {
@@ -157,26 +154,20 @@ describe('bill figures', () => {
     expect(totals.at(-1)).toEqual({ month: '2026-10', total: 125 });
   });
 
-  it('shows a typical month in work time and share of pay, and what is left after fixed costs', () => {
-    const summary = summarizeBills(bills, 1_000, settings, october);
-    expect(summary).not.toBeNull();
-    expect(summary!.average).toBeCloseTo(127.25, 10);
-    expect(summary!.workHours).toBeCloseTo(127.25 / hourlyRate, 10);
-    expect(summary!.percentage).toBeCloseTo((127.25 / 3_000) * 100, 10);
-    expect(summary!.left).toBeCloseTo(3_000 - 1_127.25, 10);
-    expect(summary!.leftPerDay).toBeCloseTo(((3_000 - 1_127.25) * 12) / 364, 10);
-    expect(summary!.highest).toEqual({ month: '2026-10', total: 125 });
-    expect(summary!.lowest).toEqual({ month: '2025-11', total: 90 });
+  it('finds the highest and lowest of the last twelve months', () => {
+    const summary = summarizeBills(bills, october);
+    expect(summary.average).toBeCloseTo(127.25, 10);
+    expect(summary.totals).toHaveLength(12);
+    expect(summary.highest).toEqual({ month: '2026-10', total: 125 });
+    expect(summary.lowest).toEqual({ month: '2025-11', total: 90 });
   });
 
   it('names no highest or lowest month until two months have amounts', () => {
-    const summary = summarizeBills(
-      [{ ...water, entries: [water.entries[1]!] }],
-      0,
-      settings,
-      october,
-    );
-    expect(summary).toMatchObject({ average: 34, highest: null, lowest: null });
-    expect(summarizeBills([], 0, settings, october)).toMatchObject({ average: 0, left: 3_000 });
+    expect(summarizeBills([{ ...water, entries: [water.entries[1]!] }], october)).toMatchObject({
+      average: 34,
+      highest: null,
+      lowest: null,
+    });
+    expect(summarizeBills([], october)).toMatchObject({ average: 0, highest: null });
   });
 });

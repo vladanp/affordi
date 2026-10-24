@@ -1,4 +1,4 @@
-/* Parts shared by the pages of monthly costs: fixed costs and bills. */
+/* Parts shared by the sections of the monthly page: fixed costs and bills. */
 
 .cost-work-time {
   font-size: 1.125rem;
@@ -9,32 +9,6 @@
 
 .pay-left[data-short] .stat-amount {
   color: var(--color-danger);
-}
-
-.empty-list {
-  display: grid;
-  justify-items: start;
-  gap: 1rem;
-  margin-top: 1.5rem;
-  border: 1px dashed var(--color-line-strong);
-  border-radius: var(--radius-card);
-  padding: clamp(1.25rem, 5vw, 1.75rem);
-  color: var(--color-ink-soft);
-}
-
-.empty-list p {
-  margin: 0;
-  line-height: 1.5;
-}
-
-.empty-list > svg {
-  color: var(--color-muted);
-}
-
-.empty-list .button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
 }
 
 .list-heading .pill-button:disabled {
@@ -53,6 +27,17 @@
 
 .list-heading h2 {
   margin: 0;
+}
+
+.list-hint {
+  margin: 0.25rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.monthly-section > .stat-card {
+  margin-top: 0.75rem;
 }
 
 .item-list {

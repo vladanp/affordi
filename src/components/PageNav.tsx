@@ -1,4 +1,4 @@
-import { Coins, House, Receipt, Tag, type LucideIcon } from 'lucide-react';
+import { Coins, Tag, Wallet, type LucideIcon } from 'lucide-react';
 
 import type { Translator } from '../domain/i18n';
 import { pageNames, pages, type Page } from './pages';
@@ -7,8 +7,7 @@ import { pageNames, pages, type Page } from './pages';
 const pageIcons: Record<Page, LucideIcon> = {
   cost: Tag,
   earnings: Coins,
-  'fixed-costs': House,
-  bills: Receipt,
+  monthly: Wallet,
 };
 
 interface PageNavProps {
