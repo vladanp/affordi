@@ -58,6 +58,8 @@ test.describe('UI screenshot audit', () => {
     await completeSetup(page);
 
     await page.getByRole('link', { name: 'Earnings' }).click();
+    // The hidden page is prerendered with these amounts, so wait until it actually shows.
+    await expect(page.getByRole('heading', { name: 'How much do you earn?' })).toBeVisible();
     await expect(page.locator('.live-amount')).toHaveText([
       '€58.7225',
       '€90.8654',
