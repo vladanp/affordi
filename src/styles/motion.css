@@ -1,0 +1,124 @@
+/*
+ * Small movements that show what changed: a page or row settles into place, meters and bars grow,
+ * a sheet rises, and buttons give a little when pressed. They move with transforms and fade only
+ * what holds no text, so they stay smooth and every word keeps its contrast. None of it runs for
+ * people who ask for reduced motion.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  /* A page settles in when its tab opens. Showing a hidden page again restarts this. */
+  .calculator,
+  .earnings,
+  .monthly {
+    animation: settle-in 260ms var(--ease-out) both;
+  }
+
+  /* A row settles in as it is added, and a month's bills as the month changes. */
+  .item,
+  .bill-row,
+  .bill-missed {
+    animation: settle-in-short 220ms var(--ease-out) both;
+  }
+
+  /* Meters fill from their start, then follow their value. */
+  .meter > span,
+  .share-segment > span {
+    transform-origin: left center;
+    animation: grow-across 600ms var(--ease-out) both;
+  }
+
+  .meter > span {
+    transition: inline-size 320ms var(--ease-out);
+  }
+
+  /* Each month's bar rises from the axis, and grows or shrinks as an amount changes. */
+  .bills-bar {
+    transform-origin: center bottom;
+    animation: grow-up 480ms var(--ease-out) both;
+    transition:
+      background-color 120ms ease,
+      block-size 320ms var(--ease-out);
+  }
+
+  /* The open tab's pill swells into place. */
+  .page-nav a[aria-current='page'] .page-nav-icon {
+    animation: pop-in 260ms var(--ease-out) both;
+  }
+
+  /* The page dims behind an open sheet, and on a phone the sheet rises from the bottom edge. */
+  .sheet-dialog[open]::backdrop {
+    animation: fade-in 200ms ease-out both;
+  }
+
+  @media (max-width: 38rem) {
+    .sheet-dialog[open] {
+      animation: rise-up 280ms var(--ease-out) both;
+    }
+  }
+
+  .update-prompt {
+    animation: settle-in 280ms var(--ease-out) both;
+  }
+
+  /* The dot beside the time at work breathes while the pay counts. */
+  .earnings-work[data-state='working'] .earnings-status::before {
+    animation: breathe 2.4s ease-in-out infinite;
+  }
+
+  /* Buttons, tabs, and choices give a little as they are pressed. */
+  :is(.pill-button, .icon-button, .income-visibility-button, .text-button, .page-nav a):active:not(
+      :disabled,
+      [aria-disabled='true']
+    ),
+  :is(.segment, .day-chip):active > span {
+    scale: 0.95;
+  }
+}
+
+@keyframes settle-in {
+  from {
+    translate: 0 0.5rem;
+  }
+}
+
+@keyframes settle-in-short {
+  from {
+    translate: 0 0.25rem;
+  }
+}
+
+@keyframes grow-across {
+  from {
+    scale: 0 1;
+  }
+}
+
+@keyframes grow-up {
+  from {
+    scale: 1 0;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise-up {
+  from {
+    translate: 0 100%;
+  }
+}
+
+@keyframes breathe {
+  50% {
+    opacity: 0.35;
+  }
+}

@@ -45,7 +45,8 @@
   transition:
     background-color 160ms ease,
     color 160ms ease,
-    box-shadow 160ms ease;
+    box-shadow 160ms ease,
+    scale 120ms var(--ease-out);
 }
 
 @media (hover: hover) {
@@ -79,7 +80,8 @@
   box-shadow: 0 1px 2px var(--color-shadow);
   transition:
     background-color 160ms ease,
-    border-color 160ms ease;
+    border-color 160ms ease,
+    scale 120ms var(--ease-out);
 }
 
 @media (hover: hover) {
