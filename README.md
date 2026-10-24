@@ -81,6 +81,8 @@ The precommit hook runs formatting, source and workflow linting, TypeScript, and
 
 Pull requests and pushes to `main` run the same gates in GitHub Actions. Required checks protect `main`, actions are pinned to immutable commits, actionlint validates workflow syntax, Fallow gates dead code and audits risk in changed code, and CodeQL scans the repository. Every browser run compares phone screenshots to reviewed baselines and uploads the Playwright report as audit evidence. Renovate proposes weekly dependency and action updates without automatic merging.
 
+Advisories are published at any time, so the gates are split to keep them from failing unrelated work. Every run audits production dependencies, and a change to `package.json`, `pnpm-lock.yaml`, or `pnpm-workspace.yaml` must pass a full audit of all dependencies. A daily dependency audit workflow runs the full audit on `main` and fails when a new advisory appears, and weekly Renovate lockfile maintenance pulls in patched transitive versions once they pass the seven day release age. Packages that pin a vulnerable version exactly are raised with a scoped override in `pnpm-workspace.yaml`.
+
 Lighthouse must score 100 for performance, accessibility, best practices, SEO, and agentic browsing across three runs. The built app also validates its `llms.txt` agent summary before deployment.
 
 After all `main` checks pass, semantic-release creates the appropriate tag and GitHub Release from Conventional Commits. The final job downloads the exact artifact produced by validation, deploys it to the protected Cloudflare Pages environment, and verifies every published file plus critical security headers. A daily production smoke workflow detects later drift or availability failures.
