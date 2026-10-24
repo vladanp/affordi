@@ -60,10 +60,12 @@
   padding: 0.7rem 0.95rem;
 }
 
-.field > input:hover,
-.select-wrap select:hover,
-.input-with-prefix:hover {
-  border-color: var(--color-muted);
+@media (hover: hover) {
+  .field > input:hover,
+  .select-wrap select:hover,
+  .input-with-prefix:hover {
+    border-color: var(--color-muted);
+  }
 }
 
 .field > input[aria-invalid='true'],
@@ -167,9 +169,11 @@
     color 160ms ease;
 }
 
-.day-chip:hover span {
-  border-color: var(--color-muted);
-  color: var(--color-ink);
+@media (hover: hover) {
+  .day-chip:hover span {
+    border-color: var(--color-muted);
+    color: var(--color-ink);
+  }
 }
 
 .day-chip input:checked + span {
@@ -189,9 +193,11 @@
   color: var(--color-muted);
 }
 
-.income-visibility-button:hover {
-  background: var(--color-sunken);
-  color: var(--color-ink);
+@media (hover: hover) {
+  .income-visibility-button:hover {
+    background: var(--color-sunken);
+    color: var(--color-ink);
+  }
 }
 
 .segmented {
@@ -239,8 +245,10 @@
     box-shadow 160ms ease;
 }
 
-.segment:hover span {
-  color: var(--color-ink);
+@media (hover: hover) {
+  .segment:hover span {
+    color: var(--color-ink);
+  }
 }
 
 .segment input:checked + span {
@@ -251,8 +259,8 @@
     0 0 0 1px var(--color-line);
 }
 
-.segment input:focus-visible + span,
-.day-chip input:focus-visible + span {
+[data-keyboard] .segment input:focus-visible + span,
+[data-keyboard] .day-chip input:focus-visible + span {
   outline: 0.1875rem solid var(--color-focus);
   outline-offset: 0.125rem;
 }
@@ -306,8 +314,10 @@
   color: var(--color-on-primary);
 }
 
-.button-primary:hover {
-  background: color-mix(in oklab, var(--color-primary) 86%, var(--color-page));
+@media (hover: hover) {
+  .button-primary:hover {
+    background: color-mix(in oklab, var(--color-primary) 86%, var(--color-page));
+  }
 }
 
 .button-quiet {
@@ -316,8 +326,10 @@
   color: var(--color-ink);
 }
 
-.button-quiet:hover {
-  background: var(--color-sunken);
+@media (hover: hover) {
+  .button-quiet:hover {
+    background: var(--color-sunken);
+  }
 }
 
 .button-danger {
@@ -325,8 +337,10 @@
   color: var(--color-on-danger);
 }
 
-.button-danger:hover {
-  background: color-mix(in oklab, var(--color-danger-action) 88%, black);
+@media (hover: hover) {
+  .button-danger:hover {
+    background: color-mix(in oklab, var(--color-danger-action) 88%, black);
+  }
 }
 
 /* Side by side once each field fits a 12 hour time with its picker button. */

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 
 import { App } from './App';
 import { detectLocale, loadLocale, supportedLocales } from './domain/i18n';
+import { trackKeyboardFocus } from './domain/keyboardFocus';
 import { loadSettings } from './domain/storage';
 import './styles/foundation.css';
 import './styles/forms.css';
@@ -19,6 +20,8 @@ const root = document.querySelector('#root');
 if (!(root instanceof HTMLElement)) {
   throw new Error('Affordi could not find its application root.');
 }
+
+trackKeyboardFocus();
 
 function render(element: HTMLElement) {
   createRoot(element).render(

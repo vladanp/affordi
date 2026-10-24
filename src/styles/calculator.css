@@ -42,15 +42,16 @@
   line-height: 1.2;
   text-align: center;
   text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
   transition:
     background-color 160ms ease,
     color 160ms ease,
     box-shadow 160ms ease;
 }
 
-.page-nav a:hover {
-  color: var(--color-ink);
+@media (hover: hover) {
+  .page-nav a:hover {
+    color: var(--color-ink);
+  }
 }
 
 .page-nav-icon {
@@ -81,9 +82,11 @@
     border-color 160ms ease;
 }
 
-.pill-button:hover {
-  border-color: var(--color-line-strong);
-  background: var(--color-sunken);
+@media (hover: hover) {
+  .pill-button:hover {
+    border-color: var(--color-line-strong);
+    background: var(--color-sunken);
+  }
 }
 
 /* Settings shows only its icon, so four page tabs fit beside the brand. */
@@ -124,8 +127,10 @@
   transition: border-color 160ms ease;
 }
 
-.price-input-wrap:hover {
-  border-color: var(--color-muted);
+@media (hover: hover) {
+  .price-input-wrap:hover {
+    border-color: var(--color-muted);
+  }
 }
 
 .price-input-wrap:has(input[aria-invalid='true']) {
@@ -357,13 +362,10 @@
     border-color 160ms ease;
 }
 
-.price-repeat select:hover {
-  border-color: var(--color-muted);
-}
-
-.price-repeat select:focus-visible {
-  outline: 0.1875rem solid var(--color-focus);
-  outline-offset: 0.1875rem;
+@media (hover: hover) {
+  .price-repeat select:hover {
+    border-color: var(--color-muted);
+  }
 }
 
 .price-repeat-icon {

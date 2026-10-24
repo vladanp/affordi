@@ -16,6 +16,11 @@
   animation: dialog-reveal 200ms var(--ease-out) both;
 }
 
+/* The page behind an open dialog stays still, also when it is dragged on a phone. */
+html:has(.sheet-dialog[open]) {
+  overflow: hidden;
+}
+
 .sheet-dialog::backdrop {
   background: var(--color-scrim);
   backdrop-filter: blur(0.375rem);
@@ -49,8 +54,10 @@
   padding: 0;
 }
 
-.icon-button:hover {
-  background: color-mix(in oklab, var(--color-sunken) 80%, var(--color-ink));
+@media (hover: hover) {
+  .icon-button:hover {
+    background: color-mix(in oklab, var(--color-sunken) 80%, var(--color-ink));
+  }
 }
 
 .reset-button {
@@ -63,9 +70,11 @@
   font-weight: 650;
 }
 
-.reset-button:hover {
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
+@media (hover: hover) {
+  .reset-button:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
 }
 
 .reset-copy {
@@ -97,10 +106,12 @@
   font-weight: 600;
 }
 
-.text-button:hover {
-  color: var(--color-ink);
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
+@media (hover: hover) {
+  .text-button:hover {
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
 }
 
 .update-prompt {

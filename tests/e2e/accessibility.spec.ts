@@ -45,4 +45,24 @@ test.describe('Affordi accessibility', () => {
     await page.keyboard.press('Tab');
     await expect(page.getByLabel('Work starts')).toBeFocused();
   });
+
+  test('shows focus rings while the keyboard is used and never after a tap or click', async ({
+    browserName,
+    page,
+  }) => {
+    const hideIncome = page.getByRole('button', { name: 'Hide income' });
+    const payFrequency = page.getByRole('combobox', { name: 'Pay frequency' });
+    await page.keyboard.press('Tab');
+    await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
+    await expect(hideIncome).toBeFocused();
+    await expect(hideIncome).toHaveCSS('outline-style', 'solid');
+    await page.keyboard.press('Tab');
+    await expect(payFrequency).toBeFocused();
+    await expect(payFrequency).toHaveCSS('outline-style', 'solid');
+
+    await page.getByLabel('Take home income').click();
+    await payFrequency.focus();
+    await expect(payFrequency).toBeFocused();
+    await expect(payFrequency).toHaveCSS('outline-style', 'none');
+  });
 });
