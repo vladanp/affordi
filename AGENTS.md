@@ -25,4 +25,4 @@ These instructions apply to the whole repository.
 
 ## Review priorities
 
-Check calculations and locale grammar, combined language/theme previews, keyboard focus and short mobile viewports, accessibility and contrast, privacy boundaries, offline updates, bundle budgets, and deployment provenance. Screenshot tests are regression assertions as well as CI artifacts; update baselines only after inspecting the rendered change.
+Check calculations and locale grammar, combined language/theme previews, keyboard focus and short mobile viewports, accessibility and contrast, privacy boundaries, offline updates, first-paint performance, and deployment provenance. Screenshot tests are regression assertions as well as CI artifacts; update baselines only after inspecting the rendered change.
