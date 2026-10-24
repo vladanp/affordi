@@ -5,7 +5,14 @@ import type { Translator } from '../domain/i18n';
 import { parseDecimalInput } from '../domain/input';
 import { createItemId, isItemName } from '../domain/items';
 import type { CurrencyCode } from '../domain/locale';
-import { isMonthBefore, monthStart, monthValue, parseMonth } from '../domain/months';
+import {
+  isMonthBefore,
+  monthsAfter,
+  monthStart,
+  monthValue,
+  parseMonth,
+  type CalendarMonth,
+} from '../domain/months';
 import { FieldError } from './FieldError';
 import {
   AmountField,
@@ -15,24 +22,38 @@ import {
   SheetDialog,
 } from './SheetDialog';
 
-/** Mortgages run for decades, so the year list reaches this far ahead. */
+/** Mortgages run for decades, so the year lists reach this far ahead and back. */
 const YEARS_AHEAD = 50;
+const YEARS_BACK = 50;
 const MONTHS = Array.from({ length: 12 }, (_, index) => index + 1);
 
 interface FormValues {
   name: string;
   amount: string;
-  month: string;
-  year: string;
+  firstMonth: string;
+  firstYear: string;
+  lastMonth: string;
+  lastYear: string;
 }
 
-type FormErrors = Partial<Record<'name' | 'amount' | 'lastPayment', string>>;
+type FormErrors = Partial<Record<'name' | 'amount' | 'firstPayment' | 'lastPayment', string>>;
+
+/** The error each field clears when it changes. */
+const errorOf: Record<keyof FormValues, keyof FormErrors> = {
+  name: 'name',
+  amount: 'amount',
+  firstMonth: 'firstPayment',
+  firstYear: 'firstPayment',
+  lastMonth: 'lastPayment',
+  lastYear: 'lastPayment',
+};
 
 /** Controls in the order they appear, so focus lands on the first problem. */
 const errorControls = [
   ['name', 'name'],
   ['amount', 'amount'],
-  ['lastPayment', 'month'],
+  ['firstPayment', 'firstMonth'],
+  ['lastPayment', 'lastMonth'],
 ] as const satisfies readonly (readonly [keyof FormErrors, keyof FormValues])[];
 
 /** A saved amount in the user's locale, without grouping so it reads back the same way. */
@@ -40,40 +61,78 @@ function amountInputValue(amount: number, locale: string): string {
   return amount.toLocaleString(locale, { maximumFractionDigits: 6, useGrouping: false });
 }
 
+/** A saved month as the values of its month and year lists. */
+function monthParts(value: string | null): [month: string, year: string] {
+  const month = value === null ? null : parseMonth(value);
+  return month === null ? ['', ''] : [String(month.month), String(month.year)];
+}
+
 function initialValues(cost: FixedCost | null, locale: string): FormValues {
-  if (cost === null) return { name: '', amount: '', month: '', year: '' };
-  const last = cost.lastPayment === null ? null : parseMonth(cost.lastPayment);
+  const [firstMonth, firstYear] = monthParts(cost?.firstPayment ?? null);
+  const [lastMonth, lastYear] = monthParts(cost?.lastPayment ?? null);
   return {
-    name: cost.name,
-    amount: amountInputValue(cost.amount, locale),
-    month: last === null ? '' : String(last.month),
-    year: last === null ? '' : String(last.year),
+    name: cost?.name ?? '',
+    amount: cost === null ? '' : amountInputValue(cost.amount, locale),
+    firstMonth,
+    firstYear,
+    lastMonth,
+    lastYear,
   };
 }
 
-interface LastPaymentResult {
-  lastPayment: string | null;
+interface MonthResult {
+  month: CalendarMonth | null;
   error?: string;
 }
 
-/** Both parts of the last payment or neither, and not in the past unless it was saved that way. */
+/** Both parts of an optional month, or neither. */
+function readMonth(month: string, year: string, copy: Translator): MonthResult {
+  if (month === '' && year === '') return { month: null };
+  if (month === '' || year === '') return { month: null, error: copy.t('validation.lastPayment') };
+  return { month: { year: Number(year), month: Number(month) } };
+}
+
+/** The last payment is not in the past, unless it was saved that way. */
 function readLastPayment(
   values: FormValues,
   cost: FixedCost | null,
   now: Date,
   copy: Translator,
-): LastPaymentResult {
-  if (values.month === '' && values.year === '') return { lastPayment: null };
-  if (values.month === '' || values.year === '') {
-    return { lastPayment: null, error: copy.t('validation.lastPayment') };
+): MonthResult {
+  const result = readMonth(values.lastMonth, values.lastYear, copy);
+  const { month } = result;
+  if (month !== null && isMonthBefore(month, now) && monthValue(month) !== cost?.lastPayment) {
+    return { month, error: copy.t('validation.lastPaymentPast') };
   }
+  return result;
+}
 
-  const month = { year: Number(values.year), month: Number(values.month) };
-  const lastPayment = monthValue(month);
-  if (isMonthBefore(month, now) && lastPayment !== cost?.lastPayment) {
-    return { lastPayment, error: copy.t('validation.lastPaymentPast') };
+/** The first payment comes no later than the last one. */
+function readFirstPayment(
+  values: FormValues,
+  last: CalendarMonth | null,
+  copy: Translator,
+): MonthResult {
+  const result = readMonth(values.firstMonth, values.firstYear, copy);
+  if (result.month !== null && last !== null && monthsAfter(result.month, last) > 0) {
+    return { month: result.month, error: copy.t('validation.firstPaymentAfterLast') };
   }
-  return { lastPayment };
+  return result;
+}
+
+function savedMonth({ month }: MonthResult): string | null {
+  return month === null ? null : monthValue(month);
+}
+
+/** An amount greater than 0, or null. */
+function readAmount(value: string, locale: string): number | null {
+  const amount = parseDecimalInput(value, locale);
+  return amount !== null && amount > 0 ? amount : null;
+}
+
+/** The fields that have an error. */
+function formErrors(errors: Record<keyof FormErrors, string | undefined>): FormErrors {
+  return Object.fromEntries(Object.entries(errors).filter(([, error]) => error !== undefined));
 }
 
 function validate(
@@ -82,16 +141,23 @@ function validate(
   now: Date,
   copy: Translator,
 ): { cost?: FixedCost; errors: FormErrors } {
-  const errors: FormErrors = {};
   const name = values.name.trim();
-  const amount = parseDecimalInput(values.amount, copy.locale);
-  const { lastPayment, error } = readLastPayment(values, cost, now, copy);
-  if (!isItemName(name)) errors.name = copy.t('validation.costName');
-  if (amount === null || amount <= 0) errors.amount = copy.t('validation.costAmount');
-  if (error !== undefined) errors.lastPayment = error;
+  const amount = readAmount(values.amount, copy.locale);
+  const last = readLastPayment(values, cost, now, copy);
+  const first = readFirstPayment(values, last.month, copy);
+  const errors = formErrors({
+    name: isItemName(name) ? undefined : copy.t('validation.costName'),
+    amount: amount === null ? copy.t('validation.costAmount') : undefined,
+    firstPayment: first.error,
+    lastPayment: last.error,
+  });
 
   if (amount === null || Object.keys(errors).length > 0) return { errors };
-  return { errors, cost: { id: cost?.id ?? createItemId(), name, amount, lastPayment } };
+  const id = cost?.id ?? createItemId();
+  return {
+    errors,
+    cost: { id, name, amount, firstPayment: savedMonth(first), lastPayment: savedMonth(last) },
+  };
 }
 
 function focusFirstError(form: HTMLFormElement, errors: FormErrors) {
@@ -100,39 +166,54 @@ function focusFirstError(form: HTMLFormElement, errors: FormErrors) {
   if (control instanceof HTMLElement) control.focus();
 }
 
-/** Years from this one, or from a saved earlier year, to decades ahead. */
-function yearOptions(now: Date, savedYear: string): number[] {
-  const thisYear = now.getFullYear();
-  const firstYear = Math.min(thisYear, Number(savedYear) || thisYear);
-  return Array.from(
-    { length: thisYear + YEARS_AHEAD - firstYear + 1 },
-    (_, index) => firstYear + index,
-  );
+/** Years from `from` to `to` in that order, reaching a saved year outside them. */
+function yearRange(from: number, to: number, savedYear: string): number[] {
+  const saved = Number(savedYear) || from;
+  const step = from <= to ? 1 : -1;
+  const start = step === 1 ? Math.min(from, saved) : Math.max(from, saved);
+  const end = step === 1 ? Math.max(to, saved) : Math.min(to, saved);
+  return Array.from({ length: Math.abs(end - start) + 1 }, (_, index) => start + index * step);
 }
 
-interface LastPaymentFieldProps {
+interface MonthYearFieldProps {
   copy: Translator;
   error: string | undefined;
+  hint: string;
+  /** Prefixes the ids of the hint and the error. */
+  id: string;
+  legend: string;
+  names: readonly [month: keyof FormValues, year: keyof FormValues];
   now: Date;
-  onChange: (name: 'month' | 'year', value: string) => void;
+  onChange: (name: keyof FormValues, value: string) => void;
   values: FormValues;
+  years: readonly number[];
 }
 
 /** An optional month and year, chosen from lists because month inputs are missing in some browsers. */
-function LastPaymentField({ copy, error, now, onChange, values }: LastPaymentFieldProps) {
-  const describedBy =
-    error === undefined ? 'last-payment-hint' : 'last-payment-hint last-payment-error';
+function MonthYearField({
+  copy,
+  error,
+  hint,
+  id,
+  legend,
+  names: [monthName, yearName],
+  now,
+  onChange,
+  values,
+  years,
+}: MonthYearFieldProps) {
+  const describedBy = error === undefined ? `${id}-hint` : `${id}-hint ${id}-error`;
   return (
     <fieldset aria-describedby={describedBy} className="field form-wide">
-      <legend className="field-label">{copy.t('fixedCosts.lastPaymentLabel')}</legend>
+      <legend className="field-label">{legend}</legend>
       <div className="month-year">
         <span className="select-wrap">
           <select
             aria-invalid={error !== undefined}
             aria-label={copy.t('fixedCosts.month')}
-            name="month"
-            onChange={(event) => onChange('month', event.target.value)}
-            value={values.month}
+            name={monthName}
+            onChange={(event) => onChange(monthName, event.target.value)}
+            value={values[monthName]}
           >
             <option value="">{copy.t('fixedCosts.month')}</option>
             {MONTHS.map((month) => (
@@ -147,12 +228,12 @@ function LastPaymentField({ copy, error, now, onChange, values }: LastPaymentFie
           <select
             aria-invalid={error !== undefined}
             aria-label={copy.t('fixedCosts.year')}
-            name="year"
-            onChange={(event) => onChange('year', event.target.value)}
-            value={values.year}
+            name={yearName}
+            onChange={(event) => onChange(yearName, event.target.value)}
+            value={values[yearName]}
           >
             <option value="">{copy.t('fixedCosts.year')}</option>
-            {yearOptions(now, values.year).map((year) => (
+            {years.map((year) => (
               <option key={year} value={year}>
                 {year}
               </option>
@@ -161,10 +242,10 @@ function LastPaymentField({ copy, error, now, onChange, values }: LastPaymentFie
           <span aria-hidden="true" className="select-chevron" />
         </span>
       </div>
-      <small className="field-hint" id="last-payment-hint">
-        {copy.t('fixedCosts.lastPaymentHint')}
+      <small className="field-hint" id={`${id}-hint`}>
+        {hint}
       </small>
-      <FieldError error={error} id="last-payment-error" />
+      <FieldError error={error} id={`${id}-error`} />
     </fieldset>
   );
 }
@@ -193,11 +274,11 @@ function FixedCostForm({
 }: FixedCostFormProps) {
   const [values, setValues] = useState(() => initialValues(cost, copy.locale));
   const [errors, setErrors] = useState<FormErrors>({});
+  const thisYear = now.getFullYear();
 
   function update(name: keyof FormValues, value: string) {
     setValues((current) => ({ ...current, [name]: value }));
-    const field = name === 'month' || name === 'year' ? 'lastPayment' : name;
-    setErrors((current) => ({ ...current, [field]: undefined }));
+    setErrors((current) => ({ ...current, [errorOf[name]]: undefined }));
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -226,12 +307,30 @@ function FixedCostForm({
         placeholder="950"
         value={values.amount}
       />
-      <LastPaymentField
+      <MonthYearField
         copy={copy}
-        error={errors.lastPayment}
+        error={errors.firstPayment}
+        hint={copy.t('fixedCosts.firstPaymentHint')}
+        id="first-payment"
+        legend={copy.t('fixedCosts.firstPaymentLabel')}
+        names={['firstMonth', 'firstYear']}
         now={now}
         onChange={update}
         values={values}
+        // Recent years first, since most loans started not long ago.
+        years={yearRange(thisYear + 1, thisYear - YEARS_BACK, values.firstYear)}
+      />
+      <MonthYearField
+        copy={copy}
+        error={errors.lastPayment}
+        hint={copy.t('fixedCosts.lastPaymentHint')}
+        id="last-payment"
+        legend={copy.t('fixedCosts.lastPaymentLabel')}
+        names={['lastMonth', 'lastYear']}
+        now={now}
+        onChange={update}
+        values={values}
+        years={yearRange(thisYear, thisYear + YEARS_AHEAD, values.lastYear)}
       />
       <FormActions
         copy={copy}

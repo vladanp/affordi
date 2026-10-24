@@ -36,6 +36,11 @@ export function monthStart({ year, month }: CalendarMonth): Date {
   return new Date(year, month - 1, 1);
 }
 
+/** How many months `later` comes after `earlier`, negative when it comes before. */
+export function monthsAfter(later: CalendarMonth, earlier: CalendarMonth): number {
+  return monthNumber(later) - monthNumber(earlier);
+}
+
 /** Whether a month came before the month of `now`. */
 export function isMonthBefore(month: CalendarMonth, now: Date): boolean {
   return monthNumber(month) < monthNumber(monthOf(now));

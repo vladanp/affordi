@@ -95,7 +95,7 @@ function BillRow({ bill, copy, hidden, now, onEdit, settings }: BillRowProps) {
       editLabel={copy.t('bills.edit', { name: bill.name })}
       muted={stats.average === null}
       name={bill.name}
-      note={latestNote(stats, hidden, settings, now, copy)}
+      notes={[latestNote(stats, hidden, settings, now, copy)]}
       onEdit={(opener) => onEdit(bill, opener)}
       share={figures === null ? null : formatIncomePercentage(figures.percentage, copy.locale)}
     />

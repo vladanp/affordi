@@ -2,6 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './App';
+import { detectLocale, loadLocale, supportedLocales } from './domain/i18n';
+import { loadSettings } from './domain/storage';
 import './styles/foundation.css';
 import './styles/forms.css';
 import './styles/calculator.css';
@@ -18,8 +20,25 @@ if (!(root instanceof HTMLElement)) {
   throw new Error('Affordi could not find its application root.');
 }
 
-createRoot(root).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+function render(element: HTMLElement) {
+  createRoot(element).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+}
+
+// Only English is part of the first screen. Another language loads before the first render,
+// so the page never flashes in English, and falls back to it if the file cannot load.
+loadLocale(loadSettings()?.language ?? detectLocale())
+  .catch(() => undefined)
+  .finally(() => render(root));
+
+// The other languages load once the page has, so switching language is instant.
+window.addEventListener(
+  'load',
+  () => {
+    for (const locale of supportedLocales) loadLocale(locale).catch(() => undefined);
+  },
+  { once: true },
 );

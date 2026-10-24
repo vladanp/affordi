@@ -109,7 +109,7 @@ interface PayLeftCardProps {
   shortNote: TranslationKey;
 }
 
-/** What is left of monthly pay and per workday, or the shortfall when nothing is. */
+/** What is left of monthly pay and per day, or the shortfall when nothing is. */
 export function PayLeftCard({
   className,
   copy,
@@ -122,8 +122,8 @@ export function PayLeftCard({
   const short = payLeft.left < 0;
   let note: string | null = short ? copy.t(shortNote) : null;
   if (!short && !hidden) {
-    note = copy.t('fixedCosts.perWorkday', {
-      amount: formatRate(payLeft.leftPerWorkday, settings.currency, copy.locale),
+    note = copy.t('fixedCosts.perDay', {
+      amount: formatRate(payLeft.leftPerDay, settings.currency, copy.locale),
     });
   }
 
@@ -215,10 +215,12 @@ interface ItemRowProps {
   /** The line under the name, such as the work time. */
   details: string;
   editLabel: string;
+  /** A filled part from 0 to 1, such as how much of a loan is paid, or null for none. */
+  meter?: number | null;
   muted: boolean;
   name: string;
-  /** A last line, such as the last payment. */
-  note: string | null;
+  /** Last lines, such as what is paid and the last payment. */
+  notes: readonly string[];
   onEdit: (opener: HTMLElement) => void;
   /** The formatted percentage of monthly pay, or null to leave it out. */
   share: string | null;
@@ -230,9 +232,10 @@ export function ItemRow({
   copy,
   details,
   editLabel,
+  meter = null,
   muted,
   name,
-  note,
+  notes,
   onEdit,
   share,
 }: ItemRowProps) {
@@ -257,7 +260,16 @@ export function ItemRow({
           </span>
         </span>
       )}
-      {note !== null && <span className="item-details item-note">{note}</span>}
+      {meter !== null && (
+        <span aria-hidden="true" className="meter item-meter">
+          <span style={{ inlineSize: `${meter * 100}%` }} />
+        </span>
+      )}
+      {notes.map((note) => (
+        <span className="item-details item-note" key={note}>
+          {note}
+        </span>
+      ))}
     </li>
   );
 }

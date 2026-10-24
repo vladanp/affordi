@@ -2,15 +2,22 @@ import { useRef } from 'react';
 import { House } from 'lucide-react';
 
 import { formatWorkDuration } from '../domain/duration';
+import { formatProgress } from '../domain/earningsText';
 import {
   isPaidOff,
   MAX_FIXED_COSTS,
   monthlyCostFigures,
+  paidShare,
+  paymentProgress,
   sortFixedCosts,
   summarizeFixedCosts,
+  summarizeLoans,
   type FixedCost,
+  type LoansSummary,
+  type PaymentProgress,
 } from '../domain/fixedCosts';
 import { createTranslator, type Translator } from '../domain/i18n';
+import { formatCurrency } from '../domain/locale';
 import { monthStart, parseMonth } from '../domain/months';
 import { formatIncomePercentage } from '../domain/priceText';
 import type { AffordiSettings } from '../domain/storage';
@@ -30,10 +37,39 @@ import { useNow } from './useNow';
 /** Costs start and end by the month, so the page checks the date once a minute. */
 const CLOCK_MS = 60_000;
 
-/** The last payment as a month and year, such as "March 2049". */
-function lastPaymentMonth(cost: FixedCost, copy: Translator): string | null {
-  const last = cost.lastPayment === null ? null : parseMonth(cost.lastPayment);
-  return last === null ? null : copy.month(monthStart(last), true);
+/** The last payment as a line, such as "Last payment: March 2049". */
+function lastPaymentNote(lastPayment: string | null, copy: Translator): string | null {
+  const last = lastPayment === null ? null : parseMonth(lastPayment);
+  if (last === null) return null;
+  return copy.t('fixedCosts.lastPayment', { month: copy.month(monthStart(last), true) });
+}
+
+/**
+ * What is paid and left, such as "€31,350.00 paid · €256,500.00 left", or only the paid
+ * share while amounts are hidden.
+ */
+function progressNote(
+  progress: PaymentProgress,
+  hidden: boolean,
+  settings: AffordiSettings,
+  copy: Translator,
+): string | null {
+  if (hidden) {
+    const share = paidShare(progress);
+    if (share === null) return null;
+    return copy.t('fixedCosts.paidShare', { percentage: formatProgress(share, copy.locale) });
+  }
+
+  const money = (value: number) => formatCurrency(value, settings.currency, copy.locale);
+  const { paid, left } = progress;
+  if (left !== null && left > 0) {
+    return paid === null
+      ? copy.t('fixedCosts.leftToPay', { amount: money(left) })
+      : copy.t('fixedCosts.paidAndLeft', { paid: money(paid), left: money(left) });
+  }
+  if (paid === null || paid <= 0) return null;
+  const key = left === null ? 'fixedCosts.paidSoFar' : 'fixedCosts.paidInTotal';
+  return copy.t(key, { amount: money(paid) });
 }
 
 /** What a row says under its name: its work time and share of pay, or that it ended. */
@@ -59,7 +95,11 @@ interface FixedCostRowProps {
 
 function FixedCostRow({ copy, cost, hidden, now, onEdit, settings }: FixedCostRowProps) {
   const { details, share } = rowFigures(cost, settings, now, copy);
-  const month = lastPaymentMonth(cost, copy);
+  const progress = paymentProgress(cost, now);
+  const notes = [
+    progressNote(progress, hidden, settings, copy),
+    lastPaymentNote(cost.lastPayment, copy),
+  ].filter((note) => note !== null);
   return (
     <ItemRow
       amount={<Money copy={copy} hidden={hidden} settings={settings} value={cost.amount} />}
@@ -68,10 +108,48 @@ function FixedCostRow({ copy, cost, hidden, now, onEdit, settings }: FixedCostRo
       editLabel={copy.t('fixedCosts.edit', { name: cost.name })}
       muted={isPaidOff(cost, now)}
       name={cost.name}
-      note={month === null ? null : copy.t('fixedCosts.lastPayment', { month })}
+      meter={paidShare(progress)}
+      notes={notes}
       onEdit={(opener) => onEdit(cost, opener)}
       share={share}
     />
+  );
+}
+
+interface LoansCardProps {
+  copy: Translator;
+  hidden: boolean;
+  loans: LoansSummary;
+  settings: AffordiSettings;
+}
+
+/** What is left to pay on loans, and how much is paid once every first payment is known. */
+function LoansCard({ copy, hidden, loans, settings }: LoansCardProps) {
+  const share = paidShare(loans);
+  let paidNote: string | null = null;
+  if (share !== null && hidden) {
+    paidNote = copy.t('fixedCosts.paidShare', { percentage: formatProgress(share, copy.locale) });
+  } else if (share !== null && loans.paid !== null) {
+    paidNote = copy.t('fixedCosts.loansPaid', {
+      paid: formatCurrency(loans.paid, settings.currency, copy.locale),
+      total: formatCurrency(loans.paid + loans.left, settings.currency, copy.locale),
+    });
+  }
+
+  return (
+    <div className="stat-card fixed-costs-loans">
+      <p className="stat-label">{copy.t('fixedCosts.loans')}</p>
+      <p className="stat-amount">
+        <Money copy={copy} hidden={hidden} settings={settings} value={loans.left} />
+      </p>
+      {share !== null && (
+        <span aria-hidden="true" className="meter">
+          <span style={{ inlineSize: `${share * 100}%` }} />
+        </span>
+      )}
+      {paidNote !== null && <p className="stat-note">{paidNote}</p>}
+      <p className="stat-note">{lastPaymentNote(loans.lastPayment, copy)}</p>
+    </div>
   );
 }
 
@@ -94,6 +172,7 @@ export function FixedCosts({
   const copy = createTranslator(settings.language);
   const hidden = settings.hideAmounts;
   const summary = summarizeFixedCosts(fixedCosts, settings, now);
+  const loans = summarizeLoans(fixedCosts, now);
   if (summary === null) return null;
 
   function save(cost: FixedCost) {
@@ -147,6 +226,9 @@ export function FixedCosts({
               settings={settings}
               shortNote="fixedCosts.shortNote"
             />
+            {loans !== null && (
+              <LoansCard copy={copy} hidden={hidden} loans={loans} settings={settings} />
+            )}
           </div>
           <ItemList
             addButtonRef={addButtonRef}
