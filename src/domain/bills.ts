@@ -117,6 +117,25 @@ function recentMonthValues(now: Date): string[] {
   return recentMonths(now, RECENT_MONTHS).map(monthValue);
 }
 
+/** Last month, with the bills that have no amount for it yet. */
+export interface MissedMonth {
+  month: string;
+  bills: Bill[];
+}
+
+/**
+ * The bills paid two months ago that have no amount for last month, which is most likely an
+ * amount forgotten. A bill paid only some months, such as heating, is named once at most.
+ */
+export function missedLastMonth(bills: readonly Bill[], now: Date): MissedMonth | null {
+  const [beforeLast, last] = recentMonths(now, 3).map(monthValue);
+  if (beforeLast === undefined || last === undefined) return null;
+  const missed = bills.filter(
+    (bill) => billAmount(bill, last) === null && billAmount(bill, beforeLast) !== null,
+  );
+  return missed.length === 0 ? null : { month: last, bills: missed };
+}
+
 /** A bill's recent average and its latest amount, which may be older than the window. */
 export interface BillStats {
   /** The average over the months with an amount in the recent window, or null without one. */

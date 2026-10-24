@@ -152,6 +152,12 @@ export const translationKeys = [
   'bills.total',
   'bills.amountFor',
   'bills.editTitle',
+  'bills.chooseMonth',
+  'bills.monthNoAmounts',
+  'bills.missed',
+  'bills.enterMissed',
+  'fixedCosts.loansFor',
+  'fixedCosts.moreLoans',
   'earnings.costsWithBills',
   'earnings.costsWithBillsShare',
   'form.heading',
@@ -288,7 +294,8 @@ const english: Catalog = {
   'fixedCosts.amountLabel': 'Amount each month',
   'fixedCosts.amountDescription': 'Amount in {{currency}}.',
   'fixedCosts.lastPaymentLabel': 'Last payment',
-  'fixedCosts.lastPaymentHint': 'Optional, for loans and other costs that end.',
+  'fixedCosts.lastPaymentHint':
+    'Optional, for loans and other costs that end. Only costs with a last payment count as loans.',
   'fixedCosts.firstPaymentLabel': 'First payment',
   'fixedCosts.firstPaymentHint': 'Optional, to see how much is already paid.',
   'fixedCosts.paidAndLeft': '{{paid}} paid · {{left}} left',
@@ -340,6 +347,12 @@ const english: Catalog = {
   'bills.total': 'Total',
   'bills.amountFor': 'Amount for {{month}}',
   'bills.editTitle': 'Edit bill',
+  'bills.chooseMonth': 'Choose a month',
+  'bills.monthNoAmounts': '{{month}} · no amounts',
+  'bills.missed': 'No amount for {{month}} yet: {{names}}.',
+  'bills.enterMissed': 'Enter amounts',
+  'fixedCosts.loansFor': 'For {{names}}',
+  'fixedCosts.moreLoans': '{{count}} more',
   'earnings.costsWithBills': 'Fixed costs and bills this month',
   'earnings.costsWithBillsShare': '{{percentage}} of this month’s fixed costs and bills covered',
   'form.heading': 'Start with your income',
@@ -684,6 +697,18 @@ function timeFor(locale: Locale, date: Date): string {
   return format.format(date);
 }
 
+const listFormats = new Map<Locale, Intl.ListFormat>();
+
+/** Names joined the way the language lists them, such as "Mortgage and Car loan". */
+function listFor(locale: Locale, items: readonly string[]): string {
+  let format = listFormats.get(locale);
+  if (format === undefined) {
+    format = new Intl.ListFormat(intlLocale(locale), { type: 'conjunction' });
+    listFormats.set(locale, format);
+  }
+  return format.format(items);
+}
+
 const languageNames: Record<Locale, string> = {
   en: 'English',
   de: 'Deutsch',
@@ -712,6 +737,7 @@ export interface Translator {
   lessThanMinute(): string;
   moreThanWeeks(count: number): string;
   ofWork(duration: string): string;
+  list(items: readonly string[]): string;
 }
 
 /** Creates a small translator without runtime dependencies for components and domain formatters. */
@@ -756,5 +782,6 @@ export function createTranslator(requestedLocale?: string): Translator {
     lessThanMinute: () => t('duration.lessThanMinute'),
     moreThanWeeks: (count) => t('duration.moreThanWeeks', { count: numberFor(locale, count) }),
     ofWork: (duration) => t('duration.ofWork', { duration }),
+    list: (items) => listFor(locale, items),
   };
 }

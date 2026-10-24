@@ -88,7 +88,8 @@ const german: Catalog = {
   'fixedCosts.amountLabel': 'Betrag pro Monat',
   'fixedCosts.amountDescription': 'Betrag in {{currency}}.',
   'fixedCosts.lastPaymentLabel': 'Letzte Zahlung',
-  'fixedCosts.lastPaymentHint': 'Optional, für Kredite und andere Kosten mit Ende.',
+  'fixedCosts.lastPaymentHint':
+    'Optional, für Kredite und andere Kosten mit Ende. Nur Kosten mit letzter Zahlung zählen als Kredit.',
   'fixedCosts.firstPaymentLabel': 'Erste Zahlung',
   'fixedCosts.firstPaymentHint': 'Optional, um zu sehen, wie viel schon bezahlt ist.',
   'fixedCosts.paidAndLeft': '{{paid}} bezahlt · {{left}} offen',
@@ -141,6 +142,12 @@ const german: Catalog = {
   'bills.total': 'Summe',
   'bills.amountFor': 'Betrag für {{month}}',
   'bills.editTitle': 'Rechnung bearbeiten',
+  'bills.chooseMonth': 'Monat wählen',
+  'bills.monthNoAmounts': '{{month}} · keine Beträge',
+  'bills.missed': 'Noch kein Betrag für {{month}}: {{names}}.',
+  'bills.enterMissed': 'Beträge eingeben',
+  'fixedCosts.loansFor': 'Für {{names}}',
+  'fixedCosts.moreLoans': '{{count}} weitere',
   'earnings.costsWithBills': 'Fixkosten und Rechnungen diesen Monat',
   'earnings.costsWithBillsShare':
     '{{percentage}} der Fixkosten und Rechnungen dieses Monats gedeckt',

@@ -75,6 +75,14 @@ describe('i18n', () => {
     expect(createTranslator('sr').weekday(4, 'short')).toBe('čet');
   });
 
+  it('lists names the way each language does, with Serbian in the Latin script', () => {
+    const names = ['Mortgage', 'Car loan', 'Kredit'];
+    expect(createTranslator('en').list(names)).toBe('Mortgage, Car loan, and Kredit');
+    expect(createTranslator('de').list(names.slice(0, 2))).toBe('Mortgage und Car loan');
+    expect(createTranslator('sr').list(names.slice(0, 2))).toBe('Mortgage i Car loan');
+    expect(createTranslator('fr').list(['Mortgage'])).toBe('Mortgage');
+  });
+
   it('formats clock times for the interface language', () => {
     const evening = new Date(2026, 9, 21, 17, 30);
     expect(createTranslator('en').time(evening)).toBe('5:30 PM');

@@ -25,6 +25,7 @@ describe('translation catalog completeness', () => {
       left: '€5',
       fixed: '€5',
       bills: '€5',
+      names: 'Mortgage and Car loan',
     } as const;
 
     for (const locale of supportedLocales) {
