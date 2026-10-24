@@ -198,8 +198,10 @@ test.describe('Affordi calculator', () => {
     await page.reload();
 
     await expect(page.getByRole('group', { name: 'Currency' })).toBeVisible();
-    await expect(page.getByLabel('Work hours each week')).toBeVisible();
-    await expect(page.getByLabel('Work days each week')).toBeVisible();
+    await expect(page.getByLabel('Work starts')).toBeVisible();
+    await expect(page.getByLabel('Work ends')).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Work days' })).toBeVisible();
+    await expect(page.getByRole('checkbox', { name: 'Sunday' })).toBeVisible();
     await expect(page.locator('details')).toHaveCount(0);
     await page.getByRole('button', { name: 'Start calculating' }).scrollIntoViewIfNeeded();
     await expect(page.getByRole('button', { name: 'Start calculating' })).toBeInViewport();

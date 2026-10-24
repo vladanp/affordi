@@ -1,13 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
-import {
-  isPayFrequency,
-  isWorkingDayCount,
-  MAX_HOURS_PER_WORKDAY,
-  MAX_WEEKLY_HOURS,
-  payFrequencies,
-} from '../domain/calculations';
+import { isPayFrequency, payFrequencies } from '../domain/calculations';
 import {
   createTranslator,
   isLocale,
@@ -18,9 +12,17 @@ import {
 } from '../domain/i18n';
 import { parseDecimalInput } from '../domain/input';
 import { currencyOptions, getCurrencySymbol, isCurrencyCode } from '../domain/locale';
-import { defaultSettings, isValidAffordiSettings, type AffordiSettings } from '../domain/storage';
+import { isWorkSchedule, parseTimeInput, timeInputValue, type Weekday } from '../domain/schedule';
+import {
+  defaultSettings,
+  isValidAffordiSettings,
+  withScheduleHours,
+  type AffordiSettings,
+} from '../domain/storage';
 import { isThemePreference, themePreferences, type ThemePreference } from '../domain/theme';
+import { FieldError } from './FieldError';
 import { Segmented, type SegmentOption } from './Segmented';
+import { WorkScheduleFields, type ScheduleErrors } from './WorkScheduleFields';
 
 interface IncomeFormBaseProps {
   onSubmit: (settings: AffordiSettings) => void;
@@ -44,58 +46,19 @@ type IncomeFormProps = SetupIncomeFormProps | EditIncomeFormProps;
 interface FormValues {
   netIncome: string;
   payFrequency: string;
-  weeklyHours: string;
-  workingDaysPerWeek: string;
+  workStart: string;
+  workEnd: string;
+  workDays: readonly Weekday[];
   currency: string;
   language: string;
   theme: string;
 }
 
+type TextValueName = Exclude<keyof FormValues, 'workDays'>;
 type FormErrors = Partial<Record<keyof FormValues, string>>;
-type UpdateField = (name: keyof FormValues, value: string) => void;
+type UpdateField = (name: TextValueName, value: string) => void;
 
 type FieldOption = SegmentOption<string>;
-
-interface TextFieldProps {
-  error: string | undefined;
-  inputMode: 'decimal' | 'numeric';
-  label: string;
-  name: 'weeklyHours' | 'workingDaysPerWeek';
-  onChange: UpdateField;
-  value: string;
-}
-
-function FieldError({ error, id }: { error: string | undefined; id: string }) {
-  if (error === undefined) return null;
-  return (
-    <small className="field-error" id={id}>
-      {error}
-    </small>
-  );
-}
-
-function TextField({ error, inputMode, label, name, onChange, value }: TextFieldProps) {
-  const errorId = `${name}-error`;
-  return (
-    <div className="field">
-      <label className="field-label" htmlFor={name}>
-        {label}
-      </label>
-      <input
-        aria-describedby={error ? errorId : undefined}
-        aria-invalid={error !== undefined}
-        autoComplete="off"
-        id={name}
-        inputMode={inputMode}
-        name={name}
-        onChange={(event) => onChange(name, event.target.value)}
-        type="text"
-        value={value}
-      />
-      <FieldError error={error} id={errorId} />
-    </div>
-  );
-}
 
 interface SelectFieldProps {
   error: string | undefined;
@@ -264,8 +227,9 @@ function valuesFromSettings(settings: AffordiSettings): FormValues {
   return {
     netIncome: String(settings.netIncome),
     payFrequency: settings.payFrequency,
-    weeklyHours: String(settings.weeklyHours),
-    workingDaysPerWeek: String(settings.workingDaysPerWeek),
+    workStart: timeInputValue(settings.workStart),
+    workEnd: timeInputValue(settings.workEnd),
+    workDays: settings.workDays,
     currency: settings.currency,
     language: settings.language,
     theme: settings.theme,
@@ -288,27 +252,25 @@ const fieldOrder = [
   'netIncome',
   'payFrequency',
   'currency',
-  'weeklyHours',
-  'workingDaysPerWeek',
+  'workStart',
+  'workEnd',
+  'workDays',
   'language',
   'theme',
 ] as const satisfies readonly (keyof FormValues)[];
 
 function scheduleErrors(
-  weeklyHours: number | null,
-  workingDays: number | null,
+  workStart: number | null,
+  workEnd: number | null,
+  workDays: readonly Weekday[],
   copy: Translator,
-): FormErrors {
-  const errors: FormErrors = {};
-  if (!isWorkingDayCount(workingDays)) {
-    errors.workingDaysPerWeek = copy.t('validation.workingDays');
+): ScheduleErrors {
+  const errors: ScheduleErrors = {};
+  if (workStart === null) errors.workStart = copy.t('validation.workStart');
+  if (workEnd === null || (workStart !== null && workEnd <= workStart)) {
+    errors.workEnd = copy.t('validation.workEnd');
   }
-
-  if (weeklyHours === null || weeklyHours < 1 || weeklyHours > MAX_WEEKLY_HOURS) {
-    errors.weeklyHours = copy.t('validation.weeklyHours');
-  } else if (isWorkingDayCount(workingDays) && weeklyHours > workingDays * MAX_HOURS_PER_WORKDAY) {
-    errors.weeklyHours = copy.t('validation.hoursPerDay');
-  }
+  if (workDays.length === 0) errors.workDays = copy.t('validation.workDays');
   return errors;
 }
 
@@ -317,26 +279,40 @@ function validate(
   copy: Translator,
 ): { settings?: AffordiSettings; errors: FormErrors } {
   const netIncome = parseDecimalInput(values.netIncome, copy.locale);
-  const weeklyHours = parseDecimalInput(values.weeklyHours, copy.locale);
-  const workingDaysPerWeek = parseDecimalInput(values.workingDaysPerWeek, copy.locale);
-  const errors = scheduleErrors(weeklyHours, workingDaysPerWeek, copy);
+  const schedule = {
+    workStart: parseTimeInput(values.workStart, 'start'),
+    workEnd: parseTimeInput(values.workEnd, 'end'),
+    workDays: values.workDays,
+  };
+  const errors: FormErrors = scheduleErrors(
+    schedule.workStart,
+    schedule.workEnd,
+    schedule.workDays,
+    copy,
+  );
 
   if (netIncome === null || netIncome <= 0) errors.netIncome = copy.t('validation.income');
   for (const field of choiceFields) {
     if (!field.isValid(values[field.name])) errors[field.name] = copy.t(field.message);
   }
+  if (Object.keys(errors).length > 0 || !isWorkSchedule(schedule)) return { errors };
 
   const candidate = {
     netIncome,
     payFrequency: values.payFrequency,
-    weeklyHours,
-    workingDaysPerWeek,
+    ...withScheduleHours(schedule),
     currency: values.currency,
     language: values.language,
     theme: values.theme,
   };
-  if (Object.keys(errors).length > 0 || !isValidAffordiSettings(candidate)) return { errors };
+  if (!isValidAffordiSettings(candidate)) return { errors };
   return { errors, settings: candidate };
+}
+
+/** The first control of a field, since radio and checkbox groups share one name. */
+function firstControl(form: HTMLFormElement, name: string): Element | null {
+  const control = form.elements.namedItem(name);
+  return control instanceof RadioNodeList ? (control.item(0) ?? null) : control;
 }
 
 export function IncomeForm(props: IncomeFormProps) {
@@ -349,7 +325,7 @@ export function IncomeForm(props: IncomeFormProps) {
   const [errors, setErrors] = useState<FormErrors>({});
   const copy = createTranslator(values.language);
 
-  function update(name: keyof FormValues, value: string) {
+  function update(name: TextValueName, value: string) {
     if (props.mode === 'edit' && name === 'theme' && isThemePreference(value)) {
       props.onThemePreview(value);
     }
@@ -357,6 +333,15 @@ export function IncomeForm(props: IncomeFormProps) {
       props.onLanguagePreview(value);
     }
     setValues((current) => ({ ...current, [name]: value }));
+    clearError(name);
+  }
+
+  function updateWorkDays(workDays: Weekday[]) {
+    setValues((current) => ({ ...current, workDays }));
+    clearError('workDays');
+  }
+
+  function clearError(name: keyof FormValues) {
     setErrors((current) => ({ ...current, [name]: undefined }));
   }
 
@@ -370,7 +355,7 @@ export function IncomeForm(props: IncomeFormProps) {
     }
 
     const firstInvalidName = fieldOrder.find((name) => result.errors[name] !== undefined);
-    const firstInvalidControl = event.currentTarget.elements.namedItem(firstInvalidName ?? '');
+    const firstInvalidControl = firstControl(event.currentTarget, firstInvalidName ?? '');
     if (firstInvalidControl instanceof HTMLElement) firstInvalidControl.focus();
   }
 
@@ -419,21 +404,12 @@ export function IncomeForm(props: IncomeFormProps) {
         options={currencyOptions.map((currency) => ({ label: currency, value: currency }))}
         value={values.currency}
       />
-      <TextField
-        error={errors.weeklyHours}
-        inputMode="decimal"
-        label={copy.t('form.weeklyHoursLabel')}
-        name="weeklyHours"
-        onChange={update}
-        value={values.weeklyHours}
-      />
-      <TextField
-        error={errors.workingDaysPerWeek}
-        inputMode="numeric"
-        label={copy.t('form.workingDaysLabel')}
-        name="workingDaysPerWeek"
-        onChange={update}
-        value={values.workingDaysPerWeek}
+      <WorkScheduleFields
+        copy={copy}
+        errors={errors}
+        onTimeChange={update}
+        onWorkDaysChange={updateWorkDays}
+        values={values}
       />
       {editMode && (
         <>

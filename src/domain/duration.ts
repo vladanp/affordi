@@ -21,13 +21,17 @@ function formatSubdayDuration(workHours: number, copy: Translator): string {
     return copy.lessThanMinute();
   }
 
-  const roundedMinutes = Math.round(totalMinutes);
-  const hours = Math.floor(roundedMinutes / MINUTES_PER_HOUR);
-  const minutes = roundedMinutes % MINUTES_PER_HOUR;
+  return formatHoursAndMinutes(Math.round(totalMinutes), copy);
+}
+
+/** A whole number of minutes as hours and minutes, such as "7 hours and 30 minutes". */
+export function formatHoursAndMinutes(totalMinutes: number, copy: Translator): string {
+  const hours = Math.floor(totalMinutes / MINUTES_PER_HOUR);
+  const minutes = totalMinutes % MINUTES_PER_HOUR;
 
   return copy.duration([
     ...(hours > 0 ? [copy.unit(hours, 'hour')] : []),
-    ...(minutes > 0 ? [copy.unit(minutes, 'minute')] : []),
+    ...(minutes > 0 || hours === 0 ? [copy.unit(minutes, 'minute')] : []),
   ]);
 }
 

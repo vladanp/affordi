@@ -2,6 +2,10 @@
 
 Affordi answers one focused question: **How long do I need to work to afford this?** Enter a price to translate its cost into working time, days, and a secondary share of take home pay. Mark a price as paid every workday, weekly, monthly, or yearly to see what a habit or subscription costs over time.
 
+The Earnings page turns the same question around and counts what you earn as it happens. One total grows around the clock from midnight, as if a week of pay were spread over all 168 hours. A second total grows only during your work hours at your real hourly rate, and says when work starts, how much is left, or that today is a day off. Below, a table breaks pay down per second, minute, hour, and day both ways, with the shared weekly, monthly, and yearly totals. Amounts can be hidden with one tap.
+
+Settings describe work as a start time, an end time, and the work days of the week. Weekly hours and work days follow from them, so the calculator and the earnings page use one schedule.
+
 Affordi has no account, backend, analytics, advertising, or tracking. Income settings stay in `localStorage` on the device and the installed app works offline.
 
 ## Stack
@@ -60,9 +64,11 @@ With pnpm 12, bare `pnpm ci` is the package manager's frozen install alias. Use 
 
 ## Architecture
 
-- Pure functions calculate hourly income, work duration, and localized presentation.
-- One React state owner coordinates setup, calculator, and the native settings dialog.
-- Versioned settings are validated from `unknown` at the storage boundary; malformed or older data recovers safely.
+- Pure functions calculate hourly income, work duration, earning rates, today's progress through the workday, and localized presentation.
+- One React state owner coordinates setup, the two pages, and the native settings dialog.
+- The Cost and Earnings pages are linked by URL hash (`#cost`, `#earnings`), so each has its own address and history entry without a router. React `Activity` keeps a hidden page's state, such as a typed price, and stops its timers.
+- Live totals refresh ten times a second, or once a second with reduced motion or hidden amounts. They are never announced by screen readers on each change.
+- Versioned settings are validated from `unknown` at the storage boundary; malformed or older data recovers safely. Saves from before work times get a Monday-first schedule from 9:00 built from their weekly hours, and new saves keep weekly hours beside the schedule so an installed version that has not updated yet still reads them.
 - English, German, French, Italian, and Serbian are built in without a runtime i18n dependency.
 - Light, dark, and system appearance preferences use CSS custom properties.
 - Hourly pay is compared with a full working week, because a share of one hour of pay is not a useful reference.
@@ -74,6 +80,8 @@ With pnpm 12, bare `pnpm ci` is the package manager's frozen install alias. Use 
 The precommit hook runs formatting, source and workflow linting, TypeScript, and unit tests. The prepush hook runs the main verification suite. `pnpm run ci` adds dependency audit, all three browser engines, accessibility, PWA flows, screenshot comparisons, and Lighthouse when a change that affects releases needs the complete local pipeline.
 
 Pull requests and pushes to `main` run the same gates in GitHub Actions. Required checks protect `main`, actions are pinned to immutable commits, actionlint validates workflow syntax, Fallow gates dead code and audits risk in changed code, and CodeQL scans the repository. Every browser run compares phone screenshots to reviewed baselines and uploads the Playwright report as audit evidence. Renovate proposes weekly dependency and action updates without automatic merging.
+
+Advisories are published at any time, so the gates are split to keep them from failing unrelated work. Every run audits production dependencies, and a change to `package.json`, `pnpm-lock.yaml`, or `pnpm-workspace.yaml` must pass a full audit of all dependencies. A daily dependency audit workflow runs the full audit on `main` and fails when a new advisory appears, and weekly Renovate lockfile maintenance pulls in patched transitive versions once they pass the seven day release age. Packages that pin a vulnerable version exactly are raised with a scoped override in `pnpm-workspace.yaml`.
 
 Lighthouse must score 100 for performance, accessibility, best practices, SEO, and agentic browsing across three runs. The built app also validates its `llms.txt` agent summary before deployment.
 

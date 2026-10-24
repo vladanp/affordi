@@ -8,5 +8,8 @@
   "vulnerabilityAlerts": {
     "prConcurrentLimit": 5
   },
+  "lockFileMaintenance": {
+    "enabled": true
+  },
   "automerge": false
 }

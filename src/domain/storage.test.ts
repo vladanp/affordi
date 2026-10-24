@@ -13,6 +13,9 @@ const settings: AffordiSettings = {
   payFrequency: 'monthly',
   weeklyHours: 40,
   workingDaysPerWeek: 5,
+  workStart: 540,
+  workEnd: 1020,
+  workDays: [1, 2, 3, 4, 5],
   currency: 'USD',
   language: 'en',
   theme: 'system',
@@ -47,6 +50,57 @@ describe('settings persistence', () => {
       }),
     );
     expect(loadSettings()).toEqual(settings);
+  });
+
+  it('gives saves from before work times a schedule from their weekly hours', () => {
+    const { workStart: _start, workEnd: _end, workDays: _days, ...legacy } = settings;
+    localStorage.setItem(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        settings: { ...legacy, weeklyHours: 30, workingDaysPerWeek: 4 },
+      }),
+    );
+    expect(loadSettings()).toEqual({
+      ...settings,
+      weeklyHours: 30,
+      workingDaysPerWeek: 4,
+      workStart: 540,
+      workEnd: 990,
+      workDays: [1, 2, 3, 4],
+    });
+  });
+
+  it('derives weekly hours from the saved schedule', () => {
+    localStorage.setItem(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        settings: { ...settings, workEnd: 780, weeklyHours: 99, workingDaysPerWeek: 2 },
+      }),
+    );
+    expect(loadSettings()).toMatchObject({ workEnd: 780, weeklyHours: 20, workingDaysPerWeek: 5 });
+  });
+
+  it('falls back to weekly hours when the saved schedule is malformed', () => {
+    localStorage.setItem(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({ version: 1, settings: { ...settings, workDays: [5, 1], weeklyHours: 24 } }),
+    );
+    expect(loadSettings()).toMatchObject({ workEnd: 828, workDays: [1, 2, 3, 4, 5] });
+  });
+
+  it('treats a save without any usable schedule as a first visit', () => {
+    localStorage.setItem(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({ version: 1, settings: { ...settings, workEnd: 0, weeklyHours: 200 } }),
+    );
+    expect(loadSettings()).toBeNull();
+  });
+
+  it('refuses to save weekly hours that disagree with the schedule', () => {
+    expect(saveSettings({ ...settings, weeklyHours: 38 })).toBe(false);
+    expect(localStorage.getItem(SETTINGS_STORAGE_KEY)).toBeNull();
   });
 
   it('never throws when storage is unavailable', () => {

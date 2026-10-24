@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from 'react';
-import { Hourglass, LockKeyhole, Repeat, Settings2 } from 'lucide-react';
+import { Hourglass, Repeat } from 'lucide-react';
 
-import { Brand } from './Brand';
 import { isPriceRepeat, priceRepeats, type PriceRepeat } from '../domain/calculations';
 import { createTranslator, type Translator } from '../domain/i18n';
 import { parseDecimalInput } from '../domain/input';
@@ -14,8 +13,6 @@ const ANNOUNCEMENT_DELAY_MS = 700;
 
 interface CalculatorProps {
   settings: AffordiSettings;
-  onOpenSettings: () => void;
-  settingsButtonRef: RefObject<HTMLButtonElement | null>;
 }
 
 interface PriceRepeatFieldProps {
@@ -118,7 +115,7 @@ function useDelayedValue(value: string, delay: number): string {
   return delayed;
 }
 
-export function Calculator({ settings, onOpenSettings, settingsButtonRef }: CalculatorProps) {
+export function Calculator({ settings }: CalculatorProps) {
   const [itemPrice, setItemPrice] = useState('');
   const [repeat, setRepeat] = useState<PriceRepeat>('once');
   const priceInputRef = useRef<HTMLInputElement>(null);
@@ -143,18 +140,6 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
 
   return (
     <section aria-labelledby="calculator-title" className="calculator">
-      <header className="topbar">
-        <Brand />
-        <button
-          className="pill-button"
-          onClick={onOpenSettings}
-          ref={settingsButtonRef}
-          type="button"
-        >
-          <Settings2 aria-hidden="true" size={18} strokeWidth={2} />
-          <span>{copy.t('calculator.settings')}</span>
-        </button>
-      </header>
       <h1 id="calculator-title">{copy.t('calculator.title')}</h1>
 
       <form className="price-field" onSubmit={handlePriceSubmit}>
@@ -201,11 +186,6 @@ export function Calculator({ settings, onOpenSettings, settingsButtonRef }: Calc
       <ResultPanel copy={copy} result={result} resultRef={resultRef} />
       <p aria-atomic="true" aria-live="polite" className="visually-hidden">
         {spokenResult}
-      </p>
-
-      <p className="local-only-footer">
-        <LockKeyhole aria-hidden="true" size={14} strokeWidth={2} />
-        <span>{copy.t('privacy.localOnly')}</span>
       </p>
     </section>
   );

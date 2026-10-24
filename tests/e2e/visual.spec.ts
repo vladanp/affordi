@@ -8,6 +8,8 @@ async function attachScreenshot(page: Page, testInfo: TestInfo, name: string, fu
   await testInfo.attach(name, { body: screenshot, contentType: 'image/png' });
 }
 
+test.use({ timezoneId: 'UTC' });
+
 test.describe('UI screenshot audit', () => {
   test.beforeEach(({ browserName }) => {
     test.skip(browserName !== 'chromium', 'One deterministic browser captures UI audit evidence.');
@@ -47,6 +49,17 @@ test.describe('UI screenshot audit', () => {
     await expect(price).not.toBeFocused();
     await expect(page.locator('.result-primary')).toBeInViewport();
     await attachScreenshot(page, testInfo, 'phone-calculator-result');
+  });
+
+  test('captures live earnings on a phone at a fixed time', async ({ page }, testInfo) => {
+    await page.clock.setFixedTime(new Date('2026-10-21T14:15:00Z'));
+    await page.setViewportSize({ width: 390, height: 844 });
+    await completeSetup(page);
+
+    await page.getByRole('link', { name: 'Earnings' }).click();
+    await expect(page.locator('.live-amount')).toHaveText(['€58.7225', '€90.8654']);
+
+    await attachScreenshot(page, testInfo, 'phone-earnings', true);
   });
 
   test('captures the reduced-motion dark theme on a phone', async ({ page }, testInfo) => {

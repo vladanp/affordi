@@ -116,8 +116,17 @@
     border: 1px solid CanvasText;
   }
 
-  .segment input:checked + span {
+  .earnings-card {
+    border: 1px solid CanvasText;
+  }
+
+  .segment input:checked + span,
+  .day-chip input:checked + span {
     outline: 2px solid Highlight;
+  }
+
+  .earnings-work[data-state='working'] .earnings-status::before {
+    background: CanvasText;
   }
 
   .share-segment {

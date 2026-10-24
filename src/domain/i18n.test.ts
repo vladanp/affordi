@@ -60,6 +60,28 @@ describe('i18n', () => {
     expect(createTranslator('sr').unit(12, 'hour')).toBe('12 sati');
   });
 
+  it.each(supportedLocales)('names weekdays in %s so each chip starts its full name', (locale) => {
+    const copy = createTranslator(locale);
+    for (const day of [0, 1, 2, 3, 4, 5, 6] as const) {
+      const short = copy.weekday(day, 'short');
+      expect(short.length).toBeGreaterThan(0);
+      expect(copy.weekday(day, 'long').startsWith(short)).toBe(true);
+    }
+  });
+
+  it('names weekdays by their Date.getDay() number', () => {
+    expect(createTranslator('en').weekday(0, 'long')).toBe('Sunday');
+    expect(createTranslator('de').weekday(1, 'long')).toBe('Montag');
+    expect(createTranslator('sr').weekday(4, 'short')).toBe('čet');
+  });
+
+  it('formats clock times for the interface language', () => {
+    const evening = new Date(2026, 9, 21, 17, 30);
+    expect(createTranslator('en').time(evening)).toBe('5:30 PM');
+    expect(createTranslator('de').time(evening)).toBe('17:30');
+    expect(createTranslator('sr').time(evening)).toBe('17:30');
+  });
+
   it('interpolates translated copy and exposes typed keys', () => {
     const key: TranslationKey = 'calculator.priceDescription';
     expect(createTranslator('fr').t(key, { currency: 'EUR' })).toBe('Prix en EUR.');

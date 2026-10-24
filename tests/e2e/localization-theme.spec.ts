@@ -18,8 +18,9 @@ test.describe('localization and theme preferences', () => {
 
     await page.getByLabel('Nettoeinkommen').fill('3000');
     await page.getByRole('combobox', { name: 'Zahlungsrhythmus' }).selectOption('monthly');
-    await page.getByRole('textbox', { name: 'Arbeitsstunden pro Woche' }).fill('40');
-    await page.getByRole('textbox', { name: 'Arbeitstage pro Woche' }).fill('5');
+    await page.getByLabel('Arbeitsbeginn').fill('09:00');
+    await page.getByLabel('Arbeitsende').fill('17:00');
+    await expect(page.getByText('8 Stunden pro Tag, 40 Stunden pro Woche')).toBeVisible();
     await page.getByRole('radio', { name: 'EUR' }).check();
     await page.getByRole('button', { name: 'Berechnung starten' }).click();
 
