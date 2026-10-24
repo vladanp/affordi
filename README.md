@@ -61,7 +61,7 @@ pnpm format:check    # Verify formatting
 pnpm typecheck       # Strict TypeScript
 pnpm verify          # Main local quality gates
 pnpm run ci          # All local CI gates, including browsers and Lighthouse
-pnpm lighthouse      # Lighthouse assertions for perfect scores
+pnpm lighthouse      # Lighthouse assertions for speed, accessibility, and SEO
 ```
 
 With pnpm 12, bare `pnpm ci` is the package manager's frozen install alias. Use `pnpm run ci` for Affordi's quality script.
@@ -88,7 +88,7 @@ Pull requests and pushes to `main` run the same gates in GitHub Actions. A pull 
 
 Advisories are published at any time, so the gates are split to keep them from failing unrelated work. Every run audits production dependencies, and a change to `package.json`, `pnpm-lock.yaml`, or `pnpm-workspace.yaml` must pass a full audit of all dependencies. A daily dependency audit workflow runs the full audit on `main` and fails when a new advisory appears, and weekly Renovate lockfile maintenance pulls in patched transitive versions once they pass the seven day release age. Packages that pin a vulnerable version exactly are raised with a scoped override in `pnpm-workspace.yaml`.
 
-Lighthouse must score 100 for performance, accessibility, best practices, SEO, and agentic browsing across three runs, with the largest paint under 2 seconds, total blocking time under 200 ms, and layout shift under 0.1. The first screen ships as one HTML file with its script and styles inlined. Copy in languages other than English is a small file of its own: it loads before the app first renders in that language, the others load once the page has, and all are cached for offline use. A bundle check fails the build when the first screen's gzipped JavaScript passes 96 KiB, all JavaScript passes 120 KiB, or CSS passes 20 KiB. The first screen has the tighter budget because its script runs before anything paints: at 94 KiB Lighthouse scored 100 and at 100 KiB it fell to 99. React and React DOM take about 60 KiB of it. The built app also validates its `llms.txt` agent summary before deployment.
+Lighthouse must score 100 for accessibility, best practices, SEO, and agentic browsing and at least 90 for performance across three runs, with the largest paint under 2 seconds, total blocking time under 200 ms, and layout shift under 0.1. Those three limits guard what users notice, so a score of 99 rather than 100 does not hold back a release. The first screen ships as one HTML file with its script and styles inlined. Copy in languages other than English is a small file of its own: it loads before the app first renders in that language, the others load once the page has, and all are cached for offline use. The build reports the gzipped size of the first screen's script, all JavaScript, and CSS without limiting it; Lighthouse checks what users notice instead. The built app also validates its `llms.txt` agent summary before deployment.
 
 After all `main` checks pass, semantic-release creates the appropriate tag and GitHub Release from Conventional Commits. The final job downloads the exact artifact produced by validation, deploys it to the protected Cloudflare Pages environment, and verifies every published file plus critical security headers. A daily production smoke workflow detects later drift or availability failures.
 
@@ -107,7 +107,7 @@ The iOS home screen icon is bundled with a content hash. iOS keeps an icon by it
 
 Every form field uses text of at least 16px, because iOS zooms into a focused field with smaller text. A browser test keeps this true.
 
-Automated checks validate the manifest, icons, service worker, cache rules, offline reload, bundle budgets, and critical accessibility flows. Meaningful PWA changes should also be checked on a current iPhone or iPad because browser automation cannot fully reproduce the installed iOS lifecycle.
+Automated checks validate the manifest, icons, service worker, cache rules, offline reload, and critical accessibility flows. Meaningful PWA changes should also be checked on a current iPhone or iPad because browser automation cannot fully reproduce the installed iOS lifecycle.
 
 ## Cloudflare Pages
 
