@@ -71,7 +71,7 @@ export function SettingsDialog({
   return (
     <dialog
       aria-labelledby="settings-title"
-      className="settings-dialog"
+      className="sheet-dialog settings-dialog"
       onCancel={handleCancel}
       onKeyDown={handleKeyDown}
       ref={openAsModal}

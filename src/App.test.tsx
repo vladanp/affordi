@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App';
@@ -72,6 +72,55 @@ describe('App', () => {
     expect(JSON.parse(localStorage.getItem('affordi.settings.v1') ?? '{}').settings).toMatchObject({
       hideAmounts: false,
     });
+  });
+
+  it('keeps fixed costs on their own page, saves them, and counts them on earnings', async () => {
+    localStorage.setItem('affordi.settings.v1', savedSettings);
+    window.history.replaceState(null, '', '/#fixed-costs');
+    render(<App />);
+    expect(
+      screen.getByRole('heading', { name: 'What do you pay each month?' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Fixed costs' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(document.title).toBe('Fixed costs · Affordi');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add fixed cost' }));
+    const dialog = within(screen.getByRole('dialog'));
+    fireEvent.change(dialog.getByRole('textbox', { name: 'Name' }), { target: { value: 'Rent' } });
+    fireEvent.change(dialog.getByRole('textbox', { name: 'Amount each month' }), {
+      target: { value: '900' },
+    });
+    fireEvent.click(dialog.getByRole('button', { name: 'Add fixed cost' }));
+    expect(
+      JSON.parse(localStorage.getItem('affordi.fixedCosts.v1') ?? '{}').fixedCosts,
+    ).toMatchObject([{ name: 'Rent', amount: 900, lastPayment: null }]);
+
+    fireEvent.click(screen.getByRole('link', { name: 'Earnings' }));
+    expect(await screen.findByText('Fixed costs this month')).toBeInTheDocument();
+  });
+
+  it('says when fixed costs could not be saved', () => {
+    localStorage.setItem('affordi.settings.v1', savedSettings);
+    window.history.replaceState(null, '', '/#fixed-costs');
+    render(<App />);
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('Quota exceeded');
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add fixed cost' }));
+    const dialog = within(screen.getByRole('dialog'));
+    fireEvent.change(dialog.getByRole('textbox', { name: 'Name' }), { target: { value: 'Rent' } });
+    fireEvent.change(dialog.getByRole('textbox', { name: 'Amount each month' }), {
+      target: { value: '900' },
+    });
+    fireEvent.click(dialog.getByRole('button', { name: 'Add fixed cost' }));
+    setItem.mockRestore();
+    expect(
+      screen.getByText('Fixed costs are available for this visit, but could not be saved.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit Rent' })).toBeInTheDocument();
   });
 
   it('opens earnings directly from its link', () => {
@@ -484,6 +533,13 @@ describe('App', () => {
         checks: [{ id: 'a', name: 'Gym', price: 40, repeat: 'monthly', currency: 'EUR' }],
       }),
     );
+    localStorage.setItem(
+      'affordi.fixedCosts.v1',
+      JSON.stringify({
+        version: 1,
+        fixedCosts: [{ id: 'rent', name: 'Rent', amount: 900, lastPayment: null }],
+      }),
+    );
     render(<App />);
     fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
       target: { value: '750' },
@@ -513,10 +569,11 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     fireEvent.click(screen.getByRole('button', { name: 'Reset saved settings' }));
     expect(
-      screen.getByText('This removes your income details from this device.'),
+      screen.getByText('This removes your income details and fixed costs from this device.'),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
     expect(localStorage.getItem('affordi.checks.v1')).toBeNull();
+    expect(localStorage.getItem('affordi.fixedCosts.v1')).toBeNull();
     expect(localStorage.getItem('affordi.settings.v1')).toBeNull();
     expect(screen.getByRole('button', { name: 'Start calculating' })).toBeInTheDocument();
   });

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { loadFixedCosts, saveFixedCosts } from './fixedCosts';
 import {
   clearSettings,
   loadSettings,
@@ -117,11 +118,13 @@ describe('settings persistence', () => {
     setItem.mockRestore();
   });
 
-  it('clears saved settings and saved items from earlier releases', () => {
+  it('clears saved settings, fixed costs, and saved items from earlier releases', () => {
     saveSettings(settings);
+    saveFixedCosts([{ id: 'rent', name: 'Rent', amount: 900, lastPayment: null }]);
     localStorage.setItem('affordi.checks.v1', JSON.stringify({ version: 1, checks: [] }));
     expect(clearSettings()).toBe(true);
     expect(loadSettings()).toBeNull();
+    expect(loadFixedCosts()).toEqual([]);
     expect(localStorage.getItem('affordi.checks.v1')).toBeNull();
   });
 });

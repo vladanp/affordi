@@ -1,4 +1,4 @@
-.settings-dialog {
+.sheet-dialog {
   width: min(100% - 1.5rem, 40rem);
   max-block-size: calc(100dvh - 1.5rem);
   margin: auto;
@@ -12,11 +12,11 @@
   box-shadow: var(--shadow-raised);
 }
 
-.settings-dialog[open] {
+.sheet-dialog[open] {
   animation: dialog-reveal 200ms var(--ease-out) both;
 }
 
-.settings-dialog::backdrop {
+.sheet-dialog::backdrop {
   background: var(--color-scrim);
   backdrop-filter: blur(0.375rem);
 }
@@ -73,8 +73,8 @@
   color: var(--color-muted);
 }
 
-/* Cancel and save stay in reach while a long settings sheet scrolls. */
-.settings-dialog .income-form .form-actions {
+/* Cancel and save stay in reach while a long sheet scrolls. */
+.sheet-dialog .income-form .form-actions {
   position: sticky;
   bottom: 0;
   z-index: 1;

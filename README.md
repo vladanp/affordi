@@ -4,9 +4,11 @@ Affordi answers one focused question: **How long do I need to work to afford thi
 
 The Earnings page turns the same question around and counts what you earn as it happens. One total grows around the clock from midnight, as if a week of pay were spread over all 168 hours. A second total grows only during your work hours at your real hourly rate, and says when work starts, how much is left, or that today is a day off. A third total shows how much of this month's pay you have worked for: it moves only during work hours, counts the workdays done, and reaches the full month when the month's last workday ends. Below, a table breaks pay down per second, minute, hour, and day both ways, with the shared weekly, monthly, and yearly totals. Amounts can be hidden with one tap, and the page remembers that choice on the device.
 
+The Fixed costs page keeps what you pay every month, such as rent, a mortgage, loans, or insurance. Each cost has a name, a monthly amount, and for loans an optional month of the last payment, after which it no longer counts. The page adds up the costs still paid this month and shows them in work time and as a share of take home pay, along with what is left each month and per workday, or the shortfall when fixed costs are more than pay. Each cost shows its own work time and share. The Earnings page then shows how much of this month's fixed costs the pay earned so far covers.
+
 Settings describe work as a start time, an end time, and the work days of the week. Weekly hours and work days follow from them, so the calculator and the earnings page use one schedule.
 
-Affordi has no account, backend, analytics, advertising, or tracking. Income settings stay in `localStorage` on the device and the installed app works offline.
+Affordi has no account, backend, analytics, advertising, or tracking. Income settings and fixed costs stay in `localStorage` on the device, a reset erases both, and the installed app works offline.
 
 ## Stack
 
@@ -65,8 +67,9 @@ With pnpm 12, bare `pnpm ci` is the package manager's frozen install alias. Use 
 ## Architecture
 
 - Pure functions calculate hourly income, work duration, earning rates, today's progress through the workday, and localized presentation.
-- One React state owner coordinates setup, the two pages, and the native settings dialog.
-- The Cost and Earnings pages are linked by URL hash (`#cost`, `#earnings`), so each has its own address, title, and history entry without a router. Their tabs sit in the top bar, and on a phone the settings button shows only its icon so the page starts high. React `Activity` keeps a hidden page's state, such as a typed price, and stops its timers.
+- One React state owner coordinates setup, the three pages, fixed costs, and the native settings dialog.
+- The Cost, Earnings, and Fixed costs pages are linked by URL hash (`#cost`, `#earnings`, `#fixed-costs`), so each has its own address, title, and history entry without a router. Their tabs sit in the top bar, or in a full row under it on a phone, where the settings button shows only its icon. React `Activity` keeps a hidden page's state, such as a typed price, and stops its timers.
+- Fixed costs are added and edited in a native dialog. Each one is validated at its own versioned storage boundary, and malformed or repeated entries are dropped one by one instead of losing the whole list.
 - Live totals refresh ten times a second, or once a second with reduced motion or hidden amounts. They are never announced by screen readers on each change.
 - Versioned settings are validated from `unknown` at the storage boundary; malformed or older data recovers safely. Saves from before work times get a Monday-first schedule from 9:00 built from their weekly hours, and new saves keep weekly hours beside the schedule so an installed version that has not updated yet still reads them.
 - English, German, French, Italian, and Serbian are built in without a runtime i18n dependency.

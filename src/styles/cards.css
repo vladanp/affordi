@@ -1,0 +1,117 @@
+/* Cards of headline figures, shared by the earnings and fixed costs pages. */
+
+.page-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.card-stack {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.stat-card {
+  container-type: inline-size;
+  display: grid;
+  gap: 0.375rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  padding: clamp(1.25rem, 5vw, 1.75rem);
+  box-shadow: 0 1px 2px var(--color-shadow);
+}
+
+.stat-card p {
+  margin: 0;
+}
+
+.stat-card-highlight {
+  border: 0;
+  background: var(--color-highlight);
+  color: var(--color-on-highlight);
+  box-shadow: none;
+}
+
+.stat-label {
+  color: var(--color-muted);
+  font-size: 1.0625rem;
+  font-weight: 550;
+}
+
+.stat-note {
+  color: var(--color-muted);
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
+.stat-card-highlight .stat-label,
+.stat-card-highlight .stat-note {
+  color: var(--color-on-highlight-muted);
+}
+
+.stat-amount {
+  font-size: clamp(1.75rem, 8vw, 3.5rem);
+  font-size: clamp(1.5rem, 11cqi, 3.75rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  /* Very large totals break rather than hide digits or widen the page. */
+  overflow-wrap: anywhere;
+}
+
+/* A total beside the amount wraps below a long amount and sits close to it there. */
+.stat-amount-with-total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.5rem;
+}
+
+.stat-total {
+  color: var(--color-muted);
+  font-size: max(0.9375rem, 0.36em);
+  font-weight: 550;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.meter {
+  display: block;
+  overflow: hidden;
+  block-size: 0.375rem;
+  margin-block: 0.375rem 0.125rem;
+  border-radius: 999px;
+  background: var(--color-sunken);
+}
+
+.meter > span {
+  display: block;
+  max-inline-size: 100%;
+  block-size: 100%;
+  border-radius: inherit;
+  background: var(--color-accent);
+}
+
+.stat-card-highlight .meter {
+  background: color-mix(in oklab, var(--color-on-highlight) 14%, transparent);
+}
+
+.stat-card-highlight .meter > span {
+  background: var(--color-on-highlight);
+}
+
+.stat-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.stat-share {
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}

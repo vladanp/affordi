@@ -10,7 +10,7 @@
   margin-inline: auto;
 }
 
-/* Brand, page tabs, and settings share one row, so the page starts high on a phone. */
+/* Brand, page tabs, and settings share one row where the tabs fit beside the brand. */
 .topbar {
   display: flex;
   align-items: center;
@@ -39,6 +39,8 @@
   color: var(--color-muted);
   font-size: 0.9375rem;
   font-weight: 650;
+  line-height: 1.2;
+  text-align: center;
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
   transition:
