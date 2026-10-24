@@ -43,6 +43,6 @@ test.describe('Affordi accessibility', () => {
     await page.keyboard.press('ArrowLeft');
     await expect(page.getByRole('radio', { name: 'EUR' })).toBeChecked();
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('textbox', { name: 'Work hours each week' })).toBeFocused();
+    await expect(page.getByLabel('Work starts')).toBeFocused();
   });
 });

@@ -3,9 +3,60 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App';
 
+const savedSettings = JSON.stringify({
+  version: 1,
+  settings: {
+    netIncome: 3000,
+    payFrequency: 'monthly',
+    weeklyHours: 40,
+    workingDaysPerWeek: 5,
+    currency: 'EUR',
+    language: 'en',
+  },
+});
+
 describe('App', () => {
   beforeEach(() => localStorage.clear());
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('switches between cost and earnings and keeps the typed price', async () => {
+    localStorage.setItem('affordi.settings.v1', savedSettings);
+    render(<App />);
+    const costLink = screen.getByRole('link', { name: 'Cost' });
+    const earningsLink = screen.getByRole('link', { name: 'Earnings' });
+    expect(costLink).toHaveAttribute('aria-current', 'page');
+    expect(earningsLink).not.toHaveAttribute('aria-current');
+    fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
+      target: { value: '750' },
+    });
+
+    fireEvent.click(earningsLink);
+    expect(
+      await screen.findByRole('heading', { name: 'How much do you earn?' }),
+    ).toBeInTheDocument();
+    expect(window.location.hash).toBe('#earnings');
+    expect(earningsLink).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('heading', { name: 'How much does it cost?' })).toBeNull();
+    expect(screen.getByText('Saved only on this device.')).toBeInTheDocument();
+
+    fireEvent.click(costLink);
+    expect(
+      await screen.findByRole('heading', { name: 'How much does it cost?' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Enter a price' })).toHaveValue('750');
+    expect(screen.getByText('43 hours of work')).toBeInTheDocument();
+  });
+
+  it('opens earnings directly from its link', () => {
+    localStorage.setItem('affordi.settings.v1', savedSettings);
+    window.history.replaceState(null, '', '/#earnings');
+    render(<App />);
+    expect(screen.getByRole('heading', { name: 'How much do you earn?' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hide amounts' })).toBeInTheDocument();
+  });
 
   it('renders the setup flow for a first visit', () => {
     render(<App />);
@@ -424,6 +475,9 @@ describe('App', () => {
     expect(JSON.parse(localStorage.getItem('affordi.settings.v1') ?? '{}').settings).toEqual({
       netIncome: 3000,
       payFrequency: 'monthly',
+      workStart: 540,
+      workEnd: 1020,
+      workDays: [1, 2, 3, 4, 5],
       weeklyHours: 40,
       workingDaysPerWeek: 5,
       currency: 'EUR',
@@ -445,21 +499,39 @@ describe('App', () => {
   it('rejects impossible work schedules during setup', () => {
     render(<App />);
     fireEvent.change(screen.getByLabelText('Take home income'), { target: { value: '3000' } });
-    fireEvent.change(screen.getByRole('textbox', { name: 'Work hours each week' }), {
-      target: { value: '100' },
-    });
-    fireEvent.change(screen.getByRole('textbox', { name: 'Work days each week' }), {
-      target: { value: '4' },
-    });
+    expect(screen.getByText('8 hours a day, 40 hours a week')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Work ends'), { target: { value: '08:00' } });
+    expect(screen.queryByText(/a day, .* a week/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Start calculating' }));
-    expect(screen.getByText('Use no more than 24 hours for each work day.')).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'Work hours each week' })).toHaveFocus();
+    expect(screen.getByText('Choose an end time later the same day.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Work ends')).toHaveFocus();
+    expect(screen.getByLabelText('Work ends')).toHaveAttribute('aria-invalid', 'true');
 
-    fireEvent.change(screen.getByRole('textbox', { name: 'Work hours each week' }), {
-      target: { value: '0.5' },
-    });
+    fireEvent.change(screen.getByLabelText('Work ends'), { target: { value: '00:00' } });
+    expect(screen.getByText('15 hours a day, 75 hours a week')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Work starts'), { target: { value: '' } });
+    for (const day of ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']) {
+      fireEvent.click(screen.getByRole('checkbox', { name: day }));
+    }
     fireEvent.click(screen.getByRole('button', { name: 'Start calculating' }));
-    expect(screen.getByText('Use between 1 and 168 hours each week.')).toBeInTheDocument();
+    expect(screen.getByText('Choose when work starts.')).toBeInTheDocument();
+    expect(screen.getByText('Choose at least one work day.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Work starts')).toHaveFocus();
+
+    fireEvent.change(screen.getByLabelText('Work starts'), { target: { value: '22:30' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Start calculating' }));
+    expect(screen.getByRole('checkbox', { name: 'Monday' })).toHaveFocus();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Sunday' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Saturday' }));
+    expect(screen.getByText('1 hour and 30 minutes a day, 3 hours a week')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Start calculating' }));
+    expect(JSON.parse(localStorage.getItem('affordi.settings.v1') ?? '{}').settings).toMatchObject({
+      workStart: 1350,
+      workEnd: 1440,
+      workDays: [0, 6],
+      weeklyHours: 3,
+      workingDaysPerWeek: 2,
+    });
   });
 
   it('keeps unsaved edits and returns focus after declining a reset', () => {

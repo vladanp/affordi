@@ -1,13 +1,58 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Activity, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { LockKeyhole, Settings2 } from 'lucide-react';
 
 import { Brand } from './components/Brand';
 import { Calculator } from './components/Calculator';
+import { Earnings } from './components/Earnings';
 import { IncomeForm } from './components/IncomeForm';
+import { PageNav, usePage } from './components/PageNav';
 import { SettingsDialog } from './components/SettingsDialog';
 import { UpdatePrompt } from './components/UpdatePrompt';
 import { createTranslator, detectLocale, type Locale } from './domain/i18n';
 import { clearSettings, loadSettings, saveSettings, type AffordiSettings } from './domain/storage';
 import { applyTheme } from './domain/theme';
+
+interface PageShellProps {
+  onOpenSettings: () => void;
+  settings: AffordiSettings;
+  settingsButtonRef: RefObject<HTMLButtonElement | null>;
+}
+
+/**
+ * The top bar and page navigation around both pages. Hidden pages keep their
+ * state, so a typed price survives a visit to earnings, and their timers stop.
+ */
+function PageShell({ onOpenSettings, settings, settingsButtonRef }: PageShellProps) {
+  const page = usePage();
+  const copy = createTranslator(settings.language);
+  return (
+    <div className="page">
+      <header className="topbar">
+        <Brand />
+        <button
+          className="pill-button"
+          onClick={onOpenSettings}
+          ref={settingsButtonRef}
+          type="button"
+        >
+          <Settings2 aria-hidden="true" size={18} strokeWidth={2} />
+          <span>{copy.t('calculator.settings')}</span>
+        </button>
+      </header>
+      <PageNav copy={copy} page={page} />
+      <Activity mode={page === 'cost' ? 'visible' : 'hidden'}>
+        <Calculator settings={settings} />
+      </Activity>
+      <Activity mode={page === 'earnings' ? 'visible' : 'hidden'}>
+        <Earnings settings={settings} />
+      </Activity>
+      <p className="local-only-footer">
+        <LockKeyhole aria-hidden="true" size={14} strokeWidth={2} />
+        <span>{copy.t('privacy.localOnly')}</span>
+      </p>
+    </div>
+  );
+}
 
 export function App() {
   const [settings, setSettings] = useState<AffordiSettings | null>(() => loadSettings());
@@ -82,7 +127,7 @@ export function App() {
         </main>
       ) : (
         <main className="app-shell calculator-shell">
-          <Calculator
+          <PageShell
             onOpenSettings={() => setShowSettings(true)}
             settings={settings}
             settingsButtonRef={settingsButtonRef}

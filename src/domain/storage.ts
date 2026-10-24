@@ -2,16 +2,38 @@ import { isValidIncomeSettings, type IncomeSettings } from './calculations';
 import { detectLocale, isLocale, type Locale } from './i18n';
 import { detectCurrency, isCurrencyCode, type CurrencyCode } from './locale';
 import { readRecord, removeRecord, writeRecord } from './localStore';
+import {
+  isWorkSchedule,
+  scheduleFromWeeklyHours,
+  scheduleHours,
+  type WorkSchedule,
+} from './schedule';
 import { isThemePreference, type ThemePreference } from './theme';
 
 export const SETTINGS_STORAGE_KEY = 'affordi.settings.v1';
 /** Saved items from earlier releases. Nothing reads them now, but a reset still erases them. */
 const LEGACY_CHECKS_STORAGE_KEY = 'affordi.checks.v1';
 
-export interface AffordiSettings extends IncomeSettings {
+/**
+ * Weekly hours and work days come from the schedule. They are saved beside it,
+ * so an older installed version that has not updated yet still reads them.
+ */
+export interface AffordiSettings extends IncomeSettings, WorkSchedule {
   currency: CurrencyCode;
   language: Locale;
   theme: ThemePreference;
+}
+
+/** A schedule with the weekly hours and work days it implies. */
+export function withScheduleHours(
+  schedule: WorkSchedule,
+): WorkSchedule & Pick<IncomeSettings, 'weeklyHours' | 'workingDaysPerWeek'> {
+  return {
+    workStart: schedule.workStart,
+    workEnd: schedule.workEnd,
+    workDays: schedule.workDays,
+    ...scheduleHours(schedule),
+  };
 }
 
 export function isValidAffordiSettings(value: unknown): value is AffordiSettings {
@@ -25,11 +47,14 @@ export function isValidAffordiSettings(value: unknown): value is AffordiSettings
     return false;
   }
 
+  if (!isWorkSchedule(value) || !isValidIncomeSettings(value)) return false;
+  const implied = scheduleHours(value);
   return (
     isCurrencyCode(value.currency) &&
     isLocale(value.language) &&
     isThemePreference(value.theme) &&
-    isValidIncomeSettings(value)
+    value.weeklyHours === implied.weeklyHours &&
+    value.workingDaysPerWeek === implied.workingDaysPerWeek
   );
 }
 
@@ -46,25 +71,28 @@ function optionalSettings(value: object): OptionalSettings {
   };
 }
 
-function normalizeSettings(value: unknown): AffordiSettings | null {
-  if (
-    typeof value !== 'object' ||
-    value === null ||
-    !('currency' in value) ||
-    !isCurrencyCode(value.currency) ||
-    !isValidIncomeSettings(value)
-  ) {
-    return null;
-  }
+/** The saved schedule, or one built from the weekly hours of a save from before work times. */
+function savedSchedule(value: object): WorkSchedule | null {
+  if (isWorkSchedule(value)) return value;
+  return scheduleFromWeeklyHours(
+    'weeklyHours' in value ? value.weeklyHours : undefined,
+    'workingDaysPerWeek' in value ? value.workingDaysPerWeek : undefined,
+  );
+}
 
-  return {
-    netIncome: value.netIncome,
-    payFrequency: value.payFrequency,
-    weeklyHours: value.weeklyHours,
-    workingDaysPerWeek: value.workingDaysPerWeek,
-    currency: value.currency,
+function normalizeSettings(value: unknown): AffordiSettings | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const schedule = savedSchedule(value);
+  if (schedule === null) return null;
+
+  const settings = {
+    netIncome: 'netIncome' in value ? value.netIncome : undefined,
+    payFrequency: 'payFrequency' in value ? value.payFrequency : undefined,
+    ...withScheduleHours(schedule),
+    currency: 'currency' in value ? value.currency : undefined,
     ...optionalSettings(value),
   };
+  return isValidAffordiSettings(settings) ? settings : null;
 }
 
 /** Reads settings defensively. Any malformed value is treated as a first visit. */
@@ -86,8 +114,7 @@ export function defaultSettings(): AffordiSettings {
   return {
     netIncome: 3_000,
     payFrequency: 'monthly',
-    weeklyHours: 40,
-    workingDaysPerWeek: 5,
+    ...withScheduleHours({ workStart: 9 * 60, workEnd: 17 * 60, workDays: [1, 2, 3, 4, 5] }),
     currency: detectCurrency(),
     language: detectLocale(),
     theme: 'system',

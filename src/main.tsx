@@ -5,6 +5,7 @@ import { App } from './App';
 import './styles/foundation.css';
 import './styles/forms.css';
 import './styles/calculator.css';
+import './styles/earnings.css';
 import './styles/overlays.css';
 import './styles/responsive-theme.css';
 

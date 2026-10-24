@@ -133,6 +133,56 @@
   opacity: 1;
 }
 
+.field > input[type='time'] {
+  display: block;
+  appearance: none;
+  text-align: start;
+}
+
+/* iOS centers the value of a time field unless told otherwise. */
+.field > input[type='time']::-webkit-date-and-time-value {
+  text-align: start;
+}
+
+.time-range {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem 1rem;
+}
+
+.day-picker {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.375rem;
+}
+
+.day-chip span {
+  display: grid;
+  place-items: center;
+  min-block-size: 2.75rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 0.625rem;
+  padding: 0.5rem 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.day-chip:hover span {
+  border-color: var(--color-muted);
+  color: var(--color-ink);
+}
+
+.day-chip input:checked + span {
+  border-color: transparent;
+  background: var(--color-highlight);
+  color: var(--color-on-highlight);
+}
+
 .income-visibility-button {
   display: grid;
   flex: none;
@@ -160,12 +210,15 @@
   padding: 0.25rem;
 }
 
-.segment {
+/* Segments and day chips draw a styled span under a transparent native input. */
+.segment,
+.day-chip {
   position: relative;
   display: grid;
 }
 
-.segment input {
+.segment input,
+.day-chip input {
   position: absolute;
   inset: 0;
   z-index: 1;
@@ -203,7 +256,8 @@
     0 0 0 1px var(--color-line);
 }
 
-.segment input:focus-visible + span {
+.segment input:focus-visible + span,
+.day-chip input:focus-visible + span {
   outline: 0.1875rem solid var(--color-focus);
   outline-offset: 0.125rem;
 }
@@ -215,7 +269,8 @@
   line-height: 1.35;
 }
 
-.local-only-note {
+.local-only-note,
+.schedule-summary {
   margin: -0.5rem 0 0;
   color: var(--color-muted);
   font-size: 0.8125rem;
@@ -277,6 +332,13 @@
 
 .button-danger:hover {
   background: color-mix(in oklab, var(--color-danger-action) 88%, black);
+}
+
+/* Side by side once each field fits a 12 hour time with its picker button. */
+@container (min-width: 24rem) {
+  .time-range {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @container (min-width: 30rem) {

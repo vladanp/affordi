@@ -5,7 +5,7 @@
   padding-block-start: max(1.25rem, env(safe-area-inset-top));
 }
 
-.calculator {
+.page {
   width: min(100%, 40rem);
   margin-inline: auto;
 }
@@ -15,7 +15,48 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: clamp(1.75rem, 6vw, 3rem);
+  margin-bottom: 1.25rem;
+}
+
+.page-nav {
+  display: inline-grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 0.25rem;
+  margin-bottom: clamp(1.5rem, 5vw, 2.5rem);
+  border-radius: 999px;
+  background: var(--color-sunken);
+  padding: 0.25rem;
+}
+
+.page-nav a {
+  display: grid;
+  place-items: center;
+  min-inline-size: 6.5rem;
+  min-block-size: 2.75rem;
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  color: var(--color-muted);
+  font-size: 0.9375rem;
+  font-weight: 650;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.page-nav a:hover {
+  color: var(--color-ink);
+}
+
+.page-nav a[aria-current='page'] {
+  background: var(--color-raised);
+  color: var(--color-ink);
+  box-shadow:
+    0 1px 2px var(--color-shadow),
+    0 0 0 1px var(--color-line);
 }
 
 .pill-button {
@@ -39,7 +80,7 @@
   background: var(--color-sunken);
 }
 
-.calculator h1 {
+.page h1 {
   font-size: clamp(2rem, 7vw, 3rem);
 }
 
