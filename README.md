@@ -78,6 +78,7 @@ With pnpm 12, bare `pnpm ci` is the package manager's frozen install alias. Use 
 - Versioned settings are validated from `unknown` at the storage boundary; malformed or older data recovers safely. Saves from before work times get a Monday-first schedule from 9:00 built from their weekly hours, and new saves keep weekly hours beside the schedule so an installed version that has not updated yet still reads them.
 - English, German, French, Italian, and Serbian are built in without a runtime i18n dependency. Until a language has loaded, the app shows English rather than a mix of both.
 - Light, dark, and system appearance preferences use CSS custom properties.
+- Small animations show what changed: a page or row settles into place, meters and bars grow, a sheet rises on a phone, and buttons give a little when pressed. They use transforms and fade only what holds no text, live in `motion.css`, and do not run when reduced motion is requested.
 - Hourly pay is compared with a full working week, because a share of one hour of pay is not a useful reference.
 - Screen readers hear the result once typing pauses, instead of after every keystroke.
 - There is no router, state library, request library, schema library, or backend.

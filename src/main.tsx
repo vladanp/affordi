@@ -13,6 +13,7 @@ import './styles/earnings.css';
 import './styles/lists.css';
 import './styles/bills.css';
 import './styles/overlays.css';
+import './styles/motion.css';
 import './styles/responsive-theme.css';
 
 const root = document.querySelector('#root');

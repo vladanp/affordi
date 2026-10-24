@@ -166,7 +166,8 @@
   transition:
     background-color 160ms ease,
     border-color 160ms ease,
-    color 160ms ease;
+    color 160ms ease,
+    scale 120ms var(--ease-out);
 }
 
 @media (hover: hover) {
@@ -191,6 +192,7 @@
   border-radius: 0.625rem;
   background: transparent;
   color: var(--color-muted);
+  transition: scale 120ms var(--ease-out);
 }
 
 @media (hover: hover) {
@@ -242,7 +244,8 @@
   transition:
     background-color 160ms ease,
     color 160ms ease,
-    box-shadow 160ms ease;
+    box-shadow 160ms ease,
+    scale 120ms var(--ease-out);
 }
 
 @media (hover: hover) {
