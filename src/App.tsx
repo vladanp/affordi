@@ -12,7 +12,10 @@ import { createTranslator, detectLocale, type Locale } from './domain/i18n';
 import { clearSettings, loadSettings, saveSettings, type AffordiSettings } from './domain/storage';
 import { applyTheme } from './domain/theme';
 
+const APP_NAME = 'Affordi';
+
 interface PageShellProps {
+  onHideAmountsChange: (hideAmounts: boolean) => void;
   onOpenSettings: () => void;
   settings: AffordiSettings;
   settingsButtonRef: RefObject<HTMLButtonElement | null>;
@@ -22,29 +25,44 @@ interface PageShellProps {
  * The top bar and page navigation around both pages. Hidden pages keep their
  * state, so a typed price survives a visit to earnings, and their timers stop.
  */
-function PageShell({ onOpenSettings, settings, settingsButtonRef }: PageShellProps) {
+function PageShell({
+  onHideAmountsChange,
+  onOpenSettings,
+  settings,
+  settingsButtonRef,
+}: PageShellProps) {
   const page = usePage();
   const copy = createTranslator(settings.language);
+  const earningsTitle = `${copy.t('nav.earnings')} · ${APP_NAME}`;
+
+  // Each page names itself in the tab, the history list, and to screen readers.
+  useEffect(() => {
+    document.title = page === 'earnings' ? earningsTitle : APP_NAME;
+    return () => {
+      document.title = APP_NAME;
+    };
+  }, [page, earningsTitle]);
+
   return (
     <div className="page">
       <header className="topbar">
         <Brand />
+        <PageNav copy={copy} page={page} />
         <button
-          className="pill-button"
+          className="pill-button settings-button"
           onClick={onOpenSettings}
           ref={settingsButtonRef}
           type="button"
         >
           <Settings2 aria-hidden="true" size={18} strokeWidth={2} />
-          <span>{copy.t('calculator.settings')}</span>
+          <span className="settings-button-label">{copy.t('calculator.settings')}</span>
         </button>
       </header>
-      <PageNav copy={copy} page={page} />
       <Activity mode={page === 'cost' ? 'visible' : 'hidden'}>
         <Calculator settings={settings} />
       </Activity>
       <Activity mode={page === 'earnings' ? 'visible' : 'hidden'}>
-        <Earnings settings={settings} />
+        <Earnings onHideAmountsChange={onHideAmountsChange} settings={settings} />
       </Activity>
       <p className="local-only-footer">
         <LockKeyhole aria-hidden="true" size={14} strokeWidth={2} />
@@ -128,6 +146,7 @@ export function App() {
       ) : (
         <main className="app-shell calculator-shell">
           <PageShell
+            onHideAmountsChange={(hideAmounts) => persist({ ...settings, hideAmounts })}
             onOpenSettings={() => setShowSettings(true)}
             settings={settings}
             settingsButtonRef={settingsButtonRef}

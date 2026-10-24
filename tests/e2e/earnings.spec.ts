@@ -28,6 +28,7 @@ test.describe('Affordi earnings', () => {
     await showEarningsAtNoon(page);
 
     await expect(page).toHaveURL(/#earnings$/);
+    await expect(page).toHaveTitle('Earnings · Affordi');
     await expect(page.getByRole('heading', { name: 'How much do you earn?' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Earnings' })).toHaveAttribute(
       'aria-current',
@@ -73,6 +74,10 @@ test.describe('Affordi earnings', () => {
     await expect(page.getByRole('heading', { name: 'How much does it cost?' })).toBeVisible();
     await page.goBack();
     await expect(page.getByRole('heading', { name: 'How much do you earn?' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Show amounts' })).toBeVisible();
+    await expect(earnings.getByText(/€/)).toHaveCount(0);
+
+    await page.reload();
     await expect(page.getByRole('button', { name: 'Show amounts' })).toBeVisible();
     await expect(earnings.getByText(/€/)).toHaveCount(0);
   });

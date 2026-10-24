@@ -35,6 +35,7 @@ test.describe('UI screenshot audit', () => {
   test('captures the phone result and verifies Done dismisses the input', async ({
     page,
   }, testInfo) => {
+    await page.clock.setFixedTime(new Date('2026-10-21T14:15:00Z'));
     await page.setViewportSize({ width: 390, height: 844 });
     await completeSetup(page);
     await page.setViewportSize({ width: 390, height: 500 });
@@ -63,6 +64,7 @@ test.describe('UI screenshot audit', () => {
   });
 
   test('captures the reduced-motion dark theme on a phone', async ({ page }, testInfo) => {
+    await page.clock.setFixedTime(new Date('2026-10-21T14:15:00Z'));
     await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
     await page.setViewportSize({ width: 390, height: 844 });
     await completeSetup(page);
@@ -70,6 +72,7 @@ test.describe('UI screenshot audit', () => {
     await page.getByRole('textbox', { name: 'Enter a price' }).fill('750');
     await page.getByRole('button', { name: 'Done' }).click();
     await expect(page.locator('.result-primary')).toBeInViewport();
+    await expect(page.locator('.result-earned-by')).toHaveText('Earned by October 29');
 
     await attachScreenshot(page, testInfo, 'phone-calculator-dark');
   });

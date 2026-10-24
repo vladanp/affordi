@@ -3,6 +3,10 @@ import { isWorkingDayCount, MAX_HOURS_PER_WORKDAY, MAX_WEEKLY_HOURS } from './ca
 const MINUTES_PER_DAY = 24 * 60;
 const MINUTES_PER_HOUR = 60;
 const MS_PER_MINUTE = 60_000;
+/** Work done later than this many weeks from now is too far ahead to name a date for. */
+const MAX_WORK_WEEKS_AHEAD = 52 * 100;
+/** Enough days to finish the under two weeks of work left after whole weeks are skipped. */
+const MAX_DAYS_TO_WALK = 22;
 /** Older saves only knew weekly hours, so their workday is placed from 9:00. */
 const LEGACY_WORK_START = 9 * MINUTES_PER_HOUR;
 
@@ -198,6 +202,35 @@ export function monthWorkProgress(schedule: WorkSchedule, now: Date): MonthWorkP
     if (time >= end) progress.workdaysDone += 1;
   }
   return progress;
+}
+
+/**
+ * When `workMs` of work, counted from `now` through the schedule, will be done.
+ * Every whole week holds the same work, so all but the last are skipped at once.
+ * Returns null for no work or for work too far ahead to name a date for.
+ */
+export function workDoneAt(schedule: WorkSchedule, workMs: number, now: Date): Date | null {
+  if (!Number.isFinite(workMs) || workMs <= 0) return null;
+
+  const workDays = new Set<number>(schedule.workDays);
+  const weekMs = (schedule.workEnd - schedule.workStart) * MS_PER_MINUTE * workDays.size;
+  const skippedWeeks = Math.max(0, Math.floor(workMs / weekMs) - 1);
+  if (skippedWeeks > MAX_WORK_WEEKS_AHEAD) return null;
+
+  let remaining = workMs - skippedWeeks * weekMs;
+  const from = new Date(now);
+  from.setDate(from.getDate() + skippedWeeks * 7);
+  for (let offset = 0; offset < MAX_DAYS_TO_WALK; offset += 1) {
+    const day = new Date(from.getFullYear(), from.getMonth(), from.getDate() + offset);
+    if (!workDays.has(day.getDay())) continue;
+
+    const start = Math.max(sameDayAt(day, schedule.workStart).getTime(), from.getTime());
+    const end = sameDayAt(day, schedule.workEnd).getTime();
+    if (end <= start) continue;
+    if (end - start >= remaining) return new Date(start + remaining);
+    remaining -= end - start;
+  }
+  return null;
 }
 
 /** Whole minutes left, rounded up so the last seconds still read as one minute. */

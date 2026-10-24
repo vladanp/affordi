@@ -9,6 +9,7 @@ import {
   scheduleFromWeeklyHours,
   scheduleHours,
   timeInputValue,
+  workDoneAt,
   workProgress,
   type WorkSchedule,
 } from './schedule';
@@ -16,6 +17,7 @@ import {
 const officeHours: WorkSchedule = { workStart: 540, workEnd: 1020, workDays: [1, 2, 3, 4, 5] };
 /** Wednesday 21 October 2026 at a local time. */
 const wednesday = (hours: number, minutes = 0) => new Date(2026, 9, 21, hours, minutes);
+const hours = (count: number) => count * 3_600_000;
 
 describe('work schedules', () => {
   it('accepts a schedule within one day with ascending work days', () => {
@@ -186,6 +188,30 @@ describe('work progress', () => {
       workdaysDone: 7,
       workdaysTotal: 9,
     });
+  });
+
+  it('finds when work counted from now will be done', () => {
+    expect(workDoneAt(officeHours, hours(2), wednesday(12))).toEqual(wednesday(14));
+    expect(workDoneAt(officeHours, hours(5), wednesday(12))).toEqual(wednesday(17));
+    expect(workDoneAt(officeHours, hours(6), wednesday(12))).toEqual(new Date(2026, 9, 22, 10));
+    expect(workDoneAt(officeHours, hours(1), wednesday(20))).toEqual(new Date(2026, 9, 22, 10));
+    expect(workDoneAt(officeHours, hours(1), new Date(2026, 9, 24, 12))).toEqual(
+      new Date(2026, 9, 26, 10),
+    );
+    expect(workDoneAt(officeHours, hours(3), new Date(2026, 9, 23, 16))).toEqual(
+      new Date(2026, 9, 26, 11),
+    );
+  });
+
+  it('skips whole weeks of work for large amounts', () => {
+    expect(workDoneAt(officeHours, hours(43), wednesday(12))).toEqual(new Date(2026, 9, 28, 15));
+    expect(workDoneAt(officeHours, hours(400), wednesday(12))).toEqual(new Date(2026, 11, 30, 12));
+  });
+
+  it('names no time for no work or work beyond a century', () => {
+    expect(workDoneAt(officeHours, 0, wednesday(12))).toBeNull();
+    expect(workDoneAt(officeHours, Number.NaN, wednesday(12))).toBeNull();
+    expect(workDoneAt(officeHours, 1e12 * 3_600_000, wednesday(12))).toBeNull();
   });
 
   it('rounds the time left up to whole minutes', () => {

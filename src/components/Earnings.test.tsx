@@ -1,4 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { AffordiSettings } from '../domain/storage';
@@ -15,7 +16,19 @@ const settings: AffordiSettings = {
   currency: 'EUR',
   language: 'en',
   theme: 'system',
+  hideAmounts: false,
 };
+
+/** Holds settings the way the app does, so hiding amounts updates the page. */
+function EarningsPage({ initial = settings }: { initial?: AffordiSettings }) {
+  const [current, setCurrent] = useState(initial);
+  return (
+    <Earnings
+      onHideAmountsChange={(hideAmounts) => setCurrent({ ...current, hideAmounts })}
+      settings={current}
+    />
+  );
+}
 
 function liveAmounts() {
   return [...document.querySelectorAll('.live-amount')].map((amount) => amount.textContent);
@@ -37,7 +50,7 @@ describe('Earnings', () => {
   });
 
   it('counts today around the clock and at work while time passes', () => {
-    render(<Earnings settings={settings} />);
+    render(<EarningsPage />);
 
     expect(screen.getByRole('heading', { name: 'How much do you earn?' })).toBeInTheDocument();
     expect(liveAmounts()).toEqual(['€49.4505', '€51.9231', '€1,960.2273']);
@@ -55,7 +68,7 @@ describe('Earnings', () => {
   });
 
   it('updates ten times a second, or once a second with reduced motion', () => {
-    const first = render(<Earnings settings={settings} />);
+    const first = render(<EarningsPage />);
     act(() => {
       vi.advanceTimersByTime(100);
     });
@@ -64,7 +77,7 @@ describe('Earnings', () => {
 
     stubReducedMotion(true);
     vi.setSystemTime(new Date(2026, 9, 21, 12));
-    render(<Earnings settings={settings} />);
+    render(<EarningsPage />);
     act(() => {
       vi.advanceTimersByTime(900);
     });
@@ -76,7 +89,7 @@ describe('Earnings', () => {
   });
 
   it('breaks pay down around the clock and at work with shared totals', () => {
-    render(<Earnings settings={settings} />);
+    render(<EarningsPage />);
     const table = screen.getByRole('table', { name: 'Your take home pay, broken down' });
     const cells = (name: string) =>
       within(within(table).getByRole('row', { name: new RegExp(`^${name}`) }))
@@ -94,7 +107,7 @@ describe('Earnings', () => {
   });
 
   it('hides every amount on request and shows them again', () => {
-    render(<Earnings settings={settings} />);
+    render(<EarningsPage />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Hide amounts' }));
     expect(liveAmounts()).toEqual(['••••Hidden', '••••Hidden', '••••Hidden']);
@@ -109,13 +122,13 @@ describe('Earnings', () => {
 
   it('says when work starts, when it ended, and when there is none', () => {
     vi.setSystemTime(new Date(2026, 9, 21, 7, 30));
-    const morning = render(<Earnings settings={settings} />);
+    const morning = render(<EarningsPage />);
     expect(screen.getByText('Starts at 9:00 AM')).toBeInTheDocument();
     expect(liveAmounts()[1]).toBe('€0.0000');
     morning.unmount();
 
     vi.setSystemTime(new Date(2026, 9, 21, 18));
-    const evening = render(<Earnings settings={settings} />);
+    const evening = render(<EarningsPage />);
     expect(screen.getByText('Finished at 5:00 PM')).toBeInTheDocument();
     expect(liveAmounts()[1]).toBe('€138.4615');
     expect(liveAmounts()[2]).toBe('€2,045.4545');
@@ -125,7 +138,7 @@ describe('Earnings', () => {
     evening.unmount();
 
     vi.setSystemTime(new Date(2026, 9, 24, 18));
-    render(<Earnings settings={{ ...settings, language: 'sr', currency: 'RSD' }} />);
+    render(<EarningsPage initial={{ ...settings, language: 'sr', currency: 'RSD' }} />);
     expect(screen.getByText('Danas je slobodan dan')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Koliko zarađujete?' })).toBeInTheDocument();
   });

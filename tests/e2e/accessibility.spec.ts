@@ -23,7 +23,7 @@ test.describe('Affordi accessibility', () => {
     await page.getByRole('textbox', { name: 'Enter a price' }).fill('750');
     await expectAccessible(page);
     await page.getByRole('combobox', { name: 'How often you pay' }).selectOption('monthly');
-    await expect(page.locator('.result-note')).toBeVisible();
+    await expect(page.locator('.result-repeat')).toBeVisible();
     await expectAccessible(page);
 
     await page.getByRole('button', { name: 'Settings' }).click();

@@ -42,30 +42,43 @@ test.describe('Affordi calculator', () => {
     await expect(page.locator('.result-primary')).toHaveText('2 hours and 7 minutes of work');
   });
 
+  test('says when a price will have been earned, working from now', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-10-21T12:00:00Z'));
+    await completeSetup(page);
+    const price = page.getByRole('textbox', { name: 'Enter a price' });
+
+    await price.fill('100');
+    await expect(page.locator('.result-earned-by')).toHaveText('Earned by 9:46 AM tomorrow');
+    await price.fill('750');
+    await expect(page.locator('.result-earned-by')).toHaveText('Earned by October 28');
+    await page.getByRole('combobox', { name: 'How often you pay' }).selectOption('monthly');
+    await expect(page.locator('.result-earned-by')).toHaveCount(0);
+  });
+
   test('shows recurring prices with the other period as context', async ({ page }) => {
     await completeSetup(page);
     const price = page.getByRole('textbox', { name: 'Enter a price' });
     const repeat = page.getByRole('combobox', { name: 'How often you pay' });
 
     await price.fill('900');
-    await expect(page.locator('.result-note')).toHaveCount(0);
+    await expect(page.locator('.result-repeat')).toHaveCount(0);
 
     await repeat.selectOption('monthly');
     await price.fill('12.99');
     await expect(page.locator('.result-label')).toHaveText('€12.99 a month is');
     await expect(page.locator('.result-primary')).toHaveText('45 minutes of work');
-    await expect(page.locator('.result-note')).toHaveText('Over a year: 9 hours');
+    await expect(page.locator('.result-repeat')).toHaveText('Over a year: 9 hours');
     await expect(page.locator('.result-share p')).toHaveText('<1% of your monthly take home pay');
 
     await repeat.selectOption('yearly');
     await expect(page.locator('.result-label')).toHaveText('€12.99 a year is');
-    await expect(page.locator('.result-note')).toHaveText('Each month: 4 minutes');
+    await expect(page.locator('.result-repeat')).toHaveText('Each month: 4 minutes');
     await expect(page.locator('.result-share p')).toHaveText('<1% of your yearly take home pay');
 
     await price.fill('4.50');
     await repeat.selectOption('workday');
     await expect(page.locator('.result-label')).toHaveText('€4.50 every workday is');
-    await expect(page.locator('.result-note')).toHaveText('Over a year: 68 hours');
+    await expect(page.locator('.result-repeat')).toHaveText('Over a year: 68 hours');
   });
 
   test('keeps every field at 16px or more so iOS never zooms in on focus', async ({ page }) => {
@@ -109,6 +122,17 @@ test.describe('Affordi calculator', () => {
     // Compare rendered pixels, because WebKit can keep drawing discs after the style changes.
     expect(masked.equals(shown)).toBe(false);
     expect(revealed.equals(masked)).toBe(false);
+  });
+
+  test('keeps the settings actions in reach on a phone', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 700 });
+    await completeSetup(page);
+    await page.getByRole('button', { name: 'Settings' }).click();
+
+    await expect(page.getByRole('button', { name: 'Save settings' })).toBeInViewport();
+    await expect(page.getByRole('button', { name: 'Cancel' })).toBeInViewport();
+    await page.getByLabel('Take home income').focus();
+    await expect(page.getByRole('button', { name: 'Save settings' })).toBeInViewport();
   });
 
   test('keeps saved income masked when settings open', async ({ page }) => {

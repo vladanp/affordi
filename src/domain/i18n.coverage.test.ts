@@ -16,6 +16,8 @@ describe('translation catalog completeness', () => {
       weekly: '40 hours',
       done: 14,
       total: 22,
+      day: 'Thursday',
+      date: 'November 9',
     } as const;
 
     for (const locale of supportedLocales) {

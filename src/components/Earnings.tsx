@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
 import {
@@ -19,6 +19,7 @@ import {
 } from '../domain/earningsText';
 import { createTranslator, type Translator } from '../domain/i18n';
 import type { AffordiSettings } from '../domain/storage';
+import { useNow } from './useNow';
 
 /** Live totals move several times a second, and once a second for reduced motion or hidden amounts. */
 const TICK_MS = 100;
@@ -34,22 +35,6 @@ function subscribeToReducedMotion(onChange: () => void) {
 
 function prefersReducedMotion(): boolean {
   return typeof window.matchMedia === 'function' && window.matchMedia(REDUCED_MOTION_QUERY).matches;
-}
-
-/** The current time, refreshed on an interval while the page is shown. */
-function useNow(intervalMs: number): Date {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const tick = () => setNow(Date.now());
-    // A page shown again starts from the current time instead of when it was hidden.
-    const first = window.setTimeout(tick, 0);
-    const timer = window.setInterval(tick, intervalMs);
-    return () => {
-      window.clearTimeout(first);
-      window.clearInterval(timer);
-    };
-  }, [intervalMs]);
-  return new Date(now);
 }
 
 function HiddenAmount({ copy }: { copy: Translator }) {
@@ -111,10 +96,11 @@ function MonthProgress({ copy, hidden, month, parts }: MonthProgressProps) {
 
 interface EarningsProps {
   settings: AffordiSettings;
+  onHideAmountsChange: (hideAmounts: boolean) => void;
 }
 
-export function Earnings({ settings }: EarningsProps) {
-  const [amountsHidden, setAmountsHidden] = useState(false);
+export function Earnings({ settings, onHideAmountsChange }: EarningsProps) {
+  const amountsHidden = settings.hideAmounts;
   const reducedMotion = useSyncExternalStore(
     subscribeToReducedMotion,
     prefersReducedMotion,
@@ -139,7 +125,8 @@ export function Earnings({ settings }: EarningsProps) {
         <button
           aria-label={copy.t(amountsHidden ? 'earnings.showAmounts' : 'earnings.hideAmounts')}
           className="icon-button"
-          onClick={() => setAmountsHidden((hidden) => !hidden)}
+          title={copy.t(amountsHidden ? 'earnings.showAmounts' : 'earnings.hideAmounts')}
+          onClick={() => onHideAmountsChange(!amountsHidden)}
           type="button"
         >
           {amountsHidden ? (

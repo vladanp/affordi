@@ -19,6 +19,7 @@ const settings: AffordiSettings = {
   currency: 'USD',
   language: 'en',
   theme: 'system',
+  hideAmounts: false,
 };
 
 describe('settings persistence', () => {

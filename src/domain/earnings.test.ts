@@ -14,6 +14,7 @@ const settings: AffordiSettings = {
   currency: 'EUR',
   language: 'en',
   theme: 'system',
+  hideAmounts: false,
 };
 const weeklyPay = (3_000 * 12) / 52;
 /** Wednesday 21 October 2026 at a local time. */

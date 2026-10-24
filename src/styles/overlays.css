@@ -22,8 +22,10 @@
 }
 
 .dialog-inner {
+  --dialog-padding: clamp(1.25rem, 4vw, 1.75rem);
+
   container-type: inline-size;
-  padding: clamp(1.25rem, 4vw, 1.75rem);
+  padding: var(--dialog-padding);
 }
 
 .dialog-header {
@@ -69,6 +71,17 @@
 .reset-copy {
   margin: 0;
   color: var(--color-muted);
+}
+
+/* Cancel and save stay in reach while a long settings sheet scrolls. */
+.settings-dialog .income-form .form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin-inline: calc(-1 * var(--dialog-padding));
+  border-top: 1px solid var(--color-line);
+  background: var(--color-surface);
+  padding: 0.75rem var(--dialog-padding) max(0.75rem, env(safe-area-inset-bottom));
 }
 
 .reset-view .form-actions {
