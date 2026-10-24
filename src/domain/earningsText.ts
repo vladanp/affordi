@@ -92,6 +92,14 @@ export function formatRate(value: number, currency: string, locale: string): str
   return fixedFormat(currency, locale, digits).format(value);
 }
 
+/** A total earned so far in the currency's usual precision, rounded down so it never runs ahead. */
+export function formatEarned(value: number, currency: string, locale: string): string {
+  const standard = standardDigits(currency, locale);
+  const scale = 10 ** standard;
+  // A small allowance keeps exact totals such as 0.29 from dropping a cent to float error.
+  return fixedFormat(currency, locale, standard).format(Math.floor(value * scale + 1e-9) / scale);
+}
+
 const progressFormats = new Map<string, Intl.NumberFormat>();
 
 /** A whole percentage rounded down, so it reads 100% only once the work is complete. */
@@ -105,17 +113,25 @@ export function formatProgress(share: number, locale: string): string {
   return format.format(Math.floor(share * 100 + 1e-9) / 100);
 }
 
-/** Where today stands in the workday, such as "Working until 5:00 PM · 2 hours left". */
-export function describeWorkStatus(progress: WorkProgress, copy: Translator): string {
-  if (progress.state === 'off') return copy.t('earnings.dayOff');
+/**
+ * Where today stands in the workday, such as "Working until 5:00 PM", with
+ * the time left as a separate part during work, such as "2 hours left".
+ */
+export function describeWorkStatus(
+  progress: WorkProgress,
+  copy: Translator,
+): [status: string, timeLeft?: string] {
+  if (progress.state === 'off') return [copy.t('earnings.dayOff')];
   if (progress.state === 'before') {
-    return copy.t('earnings.startsAt', { time: copy.time(progress.start) });
+    return [copy.t('earnings.startsAt', { time: copy.time(progress.start) })];
   }
   if (progress.state === 'done') {
-    return copy.t('earnings.finishedAt', { time: copy.time(progress.end) });
+    return [copy.t('earnings.finishedAt', { time: copy.time(progress.end) })];
   }
 
-  const until = copy.t('earnings.workingUntil', { time: copy.time(progress.end) });
   const duration = formatHoursAndMinutes(minutesLeft(progress.remainingMs), copy);
-  return `${until} · ${copy.t('earnings.timeLeft', { duration })}`;
+  return [
+    copy.t('earnings.workingUntil', { time: copy.time(progress.end) }),
+    copy.t('earnings.timeLeft', { duration }),
+  ];
 }
