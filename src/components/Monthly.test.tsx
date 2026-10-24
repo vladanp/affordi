@@ -235,6 +235,8 @@ describe('Monthly fixed costs', () => {
     const loans = screen.getByText('Left to pay on loans').closest('div')!;
     expect(within(loans).getByText('€256,500.00')).toBeInTheDocument();
     expect(within(loans).getByText('€31,350.00 of €287,850.00 paid')).toBeInTheDocument();
+    // Insurance keeps going without a last payment, so it is no loan; the car loan has ended.
+    expect(within(loans).getByText('For Mortgage')).toBeInTheDocument();
     expect(within(loans).getByText('Last payment: March 2049')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Hide amounts' }));
@@ -437,6 +439,40 @@ describe('Monthly bills', () => {
     fireEvent.blur(amount('Water'));
     expect(amount('Water')).toHaveValue('29.50');
     expect(monthTotal()).toBe('Total €29.50');
+  });
+
+  it('picks any of the last twelve months from the list under the month’s name', () => {
+    render(<MonthlyPage initialBills={[electricity, water]} />);
+    const picker = screen.getByRole('combobox', { name: 'Choose a month' });
+    const options = within(picker).getAllByRole('option');
+    expect(options).toHaveLength(12);
+    expect(options[0]).toHaveTextContent('October 2026');
+    expect(options[1]).toHaveTextContent('September 2026');
+    expect(options[2]).toHaveTextContent('August 2026 · no amounts');
+    expect(options[11]).toHaveTextContent('November 2025');
+
+    fireEvent.change(picker, { target: { value: '2026-01' } });
+    expect(monthTitle()).toBe('January 2026');
+    expect(amount('Electricity')).toHaveValue('120.00');
+    fireEvent.click(screen.getByRole('button', { name: 'Next month' }));
+    expect(picker).toHaveValue('2026-02');
+  });
+
+  it('points out an amount forgotten last month and opens that month to enter it', () => {
+    const gas: Bill = { id: 'g', name: 'Gas', entries: [{ month: '2026-08', amount: 40 }] };
+    render(<MonthlyPage initialBills={[electricity, water, gas]} />);
+    expect(screen.getByText('No amount for September yet: Gas.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enter amounts' }));
+    expect(monthTitle()).toBe('September 2026');
+    expect(amount('Gas')).toHaveFocus();
+    expect(screen.queryByText(/No amount for September/)).not.toBeInTheDocument();
+    fireEvent.change(amount('Gas'), { target: { value: '38' } });
+    fireEvent.blur(amount('Gas'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next month' }));
+    expect(monthTitle()).toBe('October 2026');
+    expect(screen.queryByText(/No amount for/)).not.toBeInTheDocument();
   });
 
   it('enters an amount for an earlier month, clears one, and rejects one that is not a number', () => {
