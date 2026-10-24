@@ -82,11 +82,18 @@ test.describe('UI screenshot audit', () => {
     await attachScreenshot(page, testInfo, 'phone-earnings', true);
   });
 
-  test('captures fixed costs on a phone at a fixed time', async ({ page }, testInfo) => {
+  test('captures the monthly page on a phone at a fixed time', async ({ page }, testInfo) => {
     await page.clock.setFixedTime(new Date('2026-10-21T14:15:00Z'));
     await page.setViewportSize({ width: 390, height: 844 });
     await completeSetup(page);
-    await page.evaluate(() =>
+    await page.evaluate(() => {
+      const months = Array.from({ length: 12 }, (_, index) =>
+        new Date(Date.UTC(2025, 10 + index, 1)).toISOString().slice(0, 7),
+      );
+      const entries = (amounts: (number | null)[]) =>
+        amounts.flatMap((amount, index) =>
+          amount === null ? [] : [{ month: months[index], amount }],
+        );
       localStorage.setItem(
         'affordi.fixedCosts.v1',
         JSON.stringify({
@@ -108,7 +115,7 @@ test.describe('UI screenshot audit', () => {
             },
             // Saved before first payments existed.
             { id: 'c', name: 'Home insurance', amount: 45.5, lastPayment: null },
-            { id: 'd', name: 'Phone and internet', amount: 59.99, lastPayment: null },
+            { id: 'd', name: 'Netflix', amount: 13.99, firstPayment: null, lastPayment: null },
             {
               id: 'e',
               name: 'Old loan',
@@ -117,38 +124,6 @@ test.describe('UI screenshot audit', () => {
               lastPayment: '2026-08',
             },
           ],
-        }),
-      ),
-    );
-    await page.goto('/#fixed-costs');
-    await page.reload();
-
-    await expect(page.getByRole('heading', { name: 'What do you pay each month?' })).toBeVisible();
-    await expect(page.locator('.fixed-costs-total .stat-amount')).toHaveText('€1,335.49');
-    await expect(page.locator('.fixed-costs-loans')).toContainText(
-      '€96,420.00 of €358,800.00 paid',
-    );
-    await attachScreenshot(page, testInfo, 'phone-fixed-costs', true);
-  });
-
-  test('captures bills on a phone at a fixed time', async ({ page }, testInfo) => {
-    await page.clock.setFixedTime(new Date('2026-10-21T14:15:00Z'));
-    await page.setViewportSize({ width: 390, height: 844 });
-    await completeSetup(page);
-    await page.evaluate(() => {
-      const months = Array.from({ length: 12 }, (_, index) => {
-        const date = new Date(Date.UTC(2025, 10 + index, 1));
-        return date.toISOString().slice(0, 7);
-      });
-      const entries = (amounts: (number | null)[]) =>
-        amounts.flatMap((amount, index) =>
-          amount === null ? [] : [{ month: months[index], amount }],
-        );
-      localStorage.setItem(
-        'affordi.fixedCosts.v1',
-        JSON.stringify({
-          version: 1,
-          fixedCosts: [{ id: 'a', name: 'Mortgage', amount: 950, lastPayment: '2049-03' }],
         }),
       );
       localStorage.setItem(
@@ -175,12 +150,15 @@ test.describe('UI screenshot audit', () => {
         }),
       );
     });
-    await page.goto('/#bills');
+    await page.goto('/#monthly');
     await page.reload();
 
-    await expect(page.getByRole('heading', { name: 'What do your bills cost?' })).toBeVisible();
-    await expect(page.locator('.bills-readout')).toHaveText('October 2026: €136.00');
-    await attachScreenshot(page, testInfo, 'phone-bills', true);
+    await expect(page.getByRole('heading', { name: 'What do you pay each month?' })).toBeVisible();
+    await expect(page.locator('.bill-month-total')).toHaveText('Total €136.00');
+    await expect(page.locator('.fixed-costs-loans')).toContainText(
+      '€96,420.00 of €358,800.00 paid',
+    );
+    await attachScreenshot(page, testInfo, 'phone-monthly', true);
   });
 
   test('captures the reduced-motion dark theme on a phone', async ({ page }, testInfo) => {

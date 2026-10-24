@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 
 import type { FixedCost } from '../domain/fixedCosts';
 import type { Translator } from '../domain/i18n';
-import { parseDecimalInput } from '../domain/input';
+import { formatDecimalInput, parseDecimalInput } from '../domain/input';
 import { createItemId, isItemName } from '../domain/items';
 import type { CurrencyCode } from '../domain/locale';
 import {
@@ -56,11 +56,6 @@ const errorControls = [
   ['lastPayment', 'lastMonth'],
 ] as const satisfies readonly (readonly [keyof FormErrors, keyof FormValues])[];
 
-/** A saved amount in the user's locale, without grouping so it reads back the same way. */
-function amountInputValue(amount: number, locale: string): string {
-  return amount.toLocaleString(locale, { maximumFractionDigits: 6, useGrouping: false });
-}
-
 /** A saved month as the values of its month and year lists. */
 function monthParts(value: string | null): [month: string, year: string] {
   const month = value === null ? null : parseMonth(value);
@@ -72,7 +67,7 @@ function initialValues(cost: FixedCost | null, locale: string): FormValues {
   const [lastMonth, lastYear] = monthParts(cost?.lastPayment ?? null);
   return {
     name: cost?.name ?? '',
-    amount: cost === null ? '' : amountInputValue(cost.amount, locale),
+    amount: cost === null ? '' : formatDecimalInput(cost.amount, locale),
     firstMonth,
     firstYear,
     lastMonth,

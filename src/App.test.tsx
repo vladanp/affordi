@@ -74,18 +74,16 @@ describe('App', () => {
     });
   });
 
-  it('keeps fixed costs on their own page, saves them, and counts them on earnings', async () => {
+  it('keeps fixed costs on the monthly page, saves them, and counts them on earnings', async () => {
     localStorage.setItem('affordi.settings.v1', savedSettings);
+    // The fixed costs page had its own link before it joined the monthly page.
     window.history.replaceState(null, '', '/#fixed-costs');
     render(<App />);
     expect(
       screen.getByRole('heading', { name: 'What do you pay each month?' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Fixed costs' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    );
-    expect(document.title).toBe('Fixed costs · Affordi');
+    expect(screen.getByRole('link', { name: 'Monthly' })).toHaveAttribute('aria-current', 'page');
+    expect(document.title).toBe('Monthly · Affordi');
 
     fireEvent.click(screen.getByRole('button', { name: 'Add fixed cost' }));
     const dialog = within(screen.getByRole('dialog'));
@@ -104,7 +102,7 @@ describe('App', () => {
 
   it('says when fixed costs could not be saved', () => {
     localStorage.setItem('affordi.settings.v1', savedSettings);
-    window.history.replaceState(null, '', '/#fixed-costs');
+    window.history.replaceState(null, '', '/#bills');
     render(<App />);
     const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('Quota exceeded');

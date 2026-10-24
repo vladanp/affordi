@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent, type PointerEvent } from 'react';
+import type { KeyboardEvent, PointerEvent } from 'react';
 
 import type { BillsSummary } from '../domain/bills';
 import type { Translator } from '../domain/i18n';
@@ -16,17 +16,28 @@ interface BillsChartProps {
   copy: Translator;
   currency: CurrencyCode;
   hidden: boolean;
+  /** The id of the heading that names the selected month. */
+  monthTitleId: string;
+  onSelect: (index: number) => void;
+  /** The index of the selected month in the summary's totals. */
+  selected: number;
   summary: BillsSummary;
 }
 
 /**
- * Bills per month over the last year as columns, with the average as a hairline.
- * The selected month reads out below; pointer, touch, and arrow keys move it.
+ * Bills per month over the last year as columns, with the average as a hairline. It picks
+ * the month whose amounts show below: a tap, a drag, or the arrow keys move the selection.
  */
-export function BillsChart({ copy, currency, hidden, summary }: BillsChartProps) {
+export function BillsChart({
+  copy,
+  currency,
+  hidden,
+  monthTitleId,
+  onSelect,
+  selected,
+  summary,
+}: BillsChartProps) {
   const { average, highest, lowest, totals } = summary;
-  const latest = totals.findLastIndex((month) => month.total !== null);
-  const [selected, setSelected] = useState(latest === -1 ? totals.length - 1 : latest);
   const scale = Math.max(average, ...totals.map((month) => month.total ?? 0)) || 1;
   const money = (value: number) =>
     hidden ? HIDDEN_DOTS : formatCurrency(value, currency, copy.locale);
@@ -35,15 +46,19 @@ export function BillsChart({ copy, currency, hidden, summary }: BillsChartProps)
     if (value === null) return '–';
     return hidden ? copy.t('earnings.hiddenAmount') : formatCurrency(value, currency, copy.locale);
   };
-  const current = totals[selected] ?? totals.at(-1)!;
 
   function select(index: number) {
-    setSelected(Math.min(Math.max(index, 0), totals.length - 1));
+    onSelect(Math.min(Math.max(index, 0), totals.length - 1));
   }
 
   function selectFromPointer(event: PointerEvent<HTMLDivElement>) {
     const box = event.currentTarget.getBoundingClientRect();
     select(Math.floor(((event.clientX - box.left) / box.width) * totals.length));
+  }
+
+  /** Only a pressed pointer drags the selection, so hovering does not change the month. */
+  function dragFromPointer(event: PointerEvent<HTMLDivElement>) {
+    if (event.buttons === 1) selectFromPointer(event);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -69,12 +84,12 @@ export function BillsChart({ copy, currency, hidden, summary }: BillsChartProps)
         </p>
       </div>
       <div
-        aria-describedby="bills-readout"
+        aria-describedby={monthTitleId}
         aria-label={copy.t('bills.chartTitle')}
         className="bills-chart"
         onKeyDown={handleKeyDown}
         onPointerDown={selectFromPointer}
-        onPointerMove={selectFromPointer}
+        onPointerMove={dragFromPointer}
         role="group"
         tabIndex={0}
       >
@@ -105,14 +120,6 @@ export function BillsChart({ copy, currency, hidden, summary }: BillsChartProps)
           ))}
         </div>
       </div>
-      <p aria-live="polite" className="bills-readout" id="bills-readout">
-        {current.total === null
-          ? copy.t('bills.readoutEmpty', { month: longMonth(current.month) })
-          : copy.t('bills.readout', {
-              month: longMonth(current.month),
-              amount: money(current.total),
-            })}
-      </p>
       {highest !== null && lowest !== null && (
         <p className="stat-note">
           {copy.t('bills.highest', {
