@@ -1,4 +1,5 @@
 import { isValidIncomeSettings, type IncomeSettings } from './calculations';
+import { BILLS_STORAGE_KEY } from './bills';
 import { FIXED_COSTS_STORAGE_KEY } from './fixedCosts';
 import { detectLocale, isLocale, type Locale } from './i18n';
 import { detectCurrency, isCurrencyCode, type CurrencyCode } from './locale';
@@ -112,11 +113,12 @@ export function saveSettings(settings: AffordiSettings): boolean {
   );
 }
 
-/** Erases everything Affordi saved on this device: settings, fixed costs, and old items. */
+/** Erases everything Affordi saved on this device: settings, fixed costs, bills, and old items. */
 export function clearSettings(): boolean {
   return (
     removeRecord(LEGACY_CHECKS_STORAGE_KEY) &&
     removeRecord(FIXED_COSTS_STORAGE_KEY) &&
+    removeRecord(BILLS_STORAGE_KEY) &&
     removeRecord(SETTINGS_STORAGE_KEY)
   );
 }

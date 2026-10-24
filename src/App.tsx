@@ -4,12 +4,14 @@ import { LockKeyhole, Settings2 } from 'lucide-react';
 import { Brand } from './components/Brand';
 import { Calculator } from './components/Calculator';
 import { Earnings } from './components/Earnings';
+import { Bills } from './components/Bills';
 import { FixedCosts } from './components/FixedCosts';
 import { IncomeForm } from './components/IncomeForm';
 import { PageNav } from './components/PageNav';
 import { pageNames, usePage } from './components/pages';
 import { SettingsDialog } from './components/SettingsDialog';
 import { UpdatePrompt } from './components/UpdatePrompt';
+import { loadBills, saveBills, type Bill } from './domain/bills';
 import { loadFixedCosts, saveFixedCosts, type FixedCost } from './domain/fixedCosts';
 import {
   createTranslator,
@@ -24,7 +26,9 @@ import { applyTheme } from './domain/theme';
 const APP_NAME = 'Affordi';
 
 interface PageShellProps {
+  bills: readonly Bill[];
   fixedCosts: readonly FixedCost[];
+  onBillsChange: (bills: Bill[]) => void;
   onFixedCostsChange: (fixedCosts: FixedCost[]) => void;
   onHideAmountsChange: (hideAmounts: boolean) => void;
   onOpenSettings: () => void;
@@ -37,7 +41,9 @@ interface PageShellProps {
  * state, so a typed price survives a visit to earnings, and their timers stop.
  */
 function PageShell({
+  bills,
   fixedCosts,
+  onBillsChange,
   onFixedCostsChange,
   onHideAmountsChange,
   onOpenSettings,
@@ -62,13 +68,14 @@ function PageShell({
         <Brand />
         <PageNav copy={copy} page={page} />
         <button
+          aria-label={copy.t('calculator.settings')}
           className="pill-button settings-button"
           onClick={onOpenSettings}
           ref={settingsButtonRef}
+          title={copy.t('calculator.settings')}
           type="button"
         >
           <Settings2 aria-hidden="true" size={18} strokeWidth={2} />
-          <span className="settings-button-label">{copy.t('calculator.settings')}</span>
         </button>
       </header>
       <Activity mode={page === 'cost' ? 'visible' : 'hidden'}>
@@ -76,6 +83,7 @@ function PageShell({
       </Activity>
       <Activity mode={page === 'earnings' ? 'visible' : 'hidden'}>
         <Earnings
+          bills={bills}
           fixedCosts={fixedCosts}
           onHideAmountsChange={onHideAmountsChange}
           settings={settings}
@@ -85,6 +93,15 @@ function PageShell({
         <FixedCosts
           fixedCosts={fixedCosts}
           onFixedCostsChange={onFixedCostsChange}
+          onHideAmountsChange={onHideAmountsChange}
+          settings={settings}
+        />
+      </Activity>
+      <Activity mode={page === 'bills' ? 'visible' : 'hidden'}>
+        <Bills
+          bills={bills}
+          fixedCosts={fixedCosts}
+          onBillsChange={onBillsChange}
           onHideAmountsChange={onHideAmountsChange}
           settings={settings}
         />
@@ -113,28 +130,29 @@ function StorageNotice({ copy, message, visible }: StorageNoticeProps) {
   );
 }
 
-/** Saved fixed costs, with whether the last change could be saved. */
-function useFixedCosts() {
-  const [fixedCosts, setFixedCosts] = useState<FixedCost[]>(() => loadFixedCosts());
+/** A saved list, such as fixed costs or bills, with whether the last change could be saved. */
+function useSavedList<T>(load: () => T[], save: (items: readonly T[]) => boolean) {
+  const [items, setItems] = useState<T[]>(load);
   const [saveFailed, setSaveFailed] = useState(false);
 
-  function persist(nextFixedCosts: FixedCost[]) {
-    setFixedCosts(nextFixedCosts);
-    setSaveFailed(!saveFixedCosts(nextFixedCosts));
+  function persist(nextItems: T[]) {
+    setItems(nextItems);
+    setSaveFailed(!save(nextItems));
   }
 
-  /** Forgets them after a reset has already erased them from the device. */
+  /** Forgets the list after a reset has already erased it from the device. */
   function forget() {
-    setFixedCosts([]);
+    setItems([]);
     setSaveFailed(false);
   }
 
-  return { fixedCosts, forget, persist, saveFailed };
+  return { forget, items, persist, saveFailed };
 }
 
 export function App() {
   const [settings, setSettings] = useState<AffordiSettings | null>(() => loadSettings());
-  const fixedCosts = useFixedCosts();
+  const fixedCosts = useSavedList(loadFixedCosts, saveFixedCosts);
+  const bills = useSavedList(loadBills, saveBills);
   const [showSettings, setShowSettings] = useState(false);
   const [storageNotice, setStorageNotice] = useState(false);
   const [previewLanguage, setPreviewLanguage] = useState<Locale | null>(null);
@@ -183,6 +201,7 @@ export function App() {
     setPreviewTheme(null);
     setSettings(null);
     fixedCosts.forget();
+    bills.forget();
     setShowSettings(false);
     setStorageNotice(false);
     return true;
@@ -204,7 +223,9 @@ export function App() {
       ) : (
         <main className="app-shell calculator-shell">
           <PageShell
-            fixedCosts={fixedCosts.fixedCosts}
+            bills={bills.items}
+            fixedCosts={fixedCosts.items}
+            onBillsChange={bills.persist}
             onFixedCostsChange={fixedCosts.persist}
             onHideAmountsChange={(hideAmounts) => persist({ ...settings, hideAmounts })}
             onOpenSettings={() => setShowSettings(true)}
@@ -217,6 +238,7 @@ export function App() {
             message="fixedCosts.couldNotSave"
             visible={fixedCosts.saveFailed}
           />
+          <StorageNotice copy={copy} message="bills.couldNotSave" visible={bills.saveFailed} />
           {showSettings && (
             <SettingsDialog
               onClose={closeSettings}

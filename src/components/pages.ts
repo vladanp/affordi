@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 
 import type { TranslationKey } from '../domain/i18n';
 
-export const pages = ['cost', 'earnings', 'fixed-costs'] as const;
+export const pages = ['cost', 'earnings', 'fixed-costs', 'bills'] as const;
 
 export type Page = (typeof pages)[number];
 
@@ -11,6 +11,7 @@ export const pageNames: Record<Page, TranslationKey> = {
   cost: 'nav.cost',
   earnings: 'nav.earnings',
   'fixed-costs': 'nav.fixedCosts',
+  bills: 'nav.bills',
 };
 
 function pageFromHash(hash: string): Page {

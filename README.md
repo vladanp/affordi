@@ -6,9 +6,11 @@ The Earnings page turns the same question around and counts what you earn as it 
 
 The Fixed costs page keeps what you pay every month, such as rent, a mortgage, loans, or insurance. Each cost has a name, a monthly amount, and for loans an optional month of the last payment, after which it no longer counts. The page adds up the costs still paid this month and shows them in work time and as a share of take home pay, along with what is left each month and per workday, or the shortfall when fixed costs are more than pay. Each cost shows its own work time and share. The Earnings page then shows how much of this month's fixed costs the pay earned so far covers.
 
+The Bills page keeps bills that change from month to month, such as electricity, water, or heating. Each bill has a name and an amount for each month, entered when the bill arrives, for this month or one of the two years before it; a new amount for the same month replaces the old one. An average month adds up each bill's average over the months with amounts in the last year, and shows it in work time, as a share of take home pay, and as a yearly total, along with what is left after fixed costs and bills. A column chart shows the last twelve months against the average, with the highest and lowest month; tapping or using the arrow keys reads out a month, and a hidden table gives screen readers every month. Each bill shows its average, its work time and share, and how its latest amount compares with its average. Once bills are added, the Earnings page shows how much of this month's fixed costs and average bills the pay earned so far covers.
+
 Settings describe work as a start time, an end time, and the work days of the week. Weekly hours and work days follow from them, so the calculator and the earnings page use one schedule.
 
-Affordi has no account, backend, analytics, advertising, or tracking. Income settings and fixed costs stay in `localStorage` on the device, a reset erases both, and the installed app works offline.
+Affordi has no account, backend, analytics, advertising, or tracking. Income settings, fixed costs, and bills stay in `localStorage` on the device, a reset erases all of them, and the installed app works offline.
 
 ## Stack
 
@@ -67,9 +69,9 @@ With pnpm 12, bare `pnpm ci` is the package manager's frozen install alias. Use 
 ## Architecture
 
 - Pure functions calculate hourly income, work duration, earning rates, today's progress through the workday, and localized presentation.
-- One React state owner coordinates setup, the three pages, fixed costs, and the native settings dialog.
-- The Cost, Earnings, and Fixed costs pages are linked by URL hash (`#cost`, `#earnings`, `#fixed-costs`), so each has its own address, title, and history entry without a router. Their tabs sit in the top bar, or in a full row under it on a phone, where the settings button shows only its icon. React `Activity` keeps a hidden page's state, such as a typed price, and stops its timers.
-- Fixed costs are added and edited in a native dialog. Each one is validated at its own versioned storage boundary, and malformed or repeated entries are dropped one by one instead of losing the whole list.
+- One React state owner coordinates setup, the four pages, fixed costs, bills, and the native settings dialog.
+- The Cost, Earnings, Fixed costs, and Bills pages are linked by URL hash (`#cost`, `#earnings`, `#fixed-costs`, `#bills`), so each has its own address, title, and history entry without a router. Their tabs sit in the top bar, or in a tab bar fixed to the bottom of the screen on a phone, with an icon over each label within reach of a thumb. The settings button shows only its icon. React `Activity` keeps a hidden page's state, such as a typed price, and stops its timers.
+- Fixed costs and bills are added and edited in a native dialog that rises from the bottom on a phone. Each list is validated at its own versioned storage boundary, and malformed or repeated entries are dropped one by one instead of losing the whole list. A bill keeps at most its 120 newest monthly amounts.
 - Live totals refresh ten times a second, or once a second with reduced motion or hidden amounts. They are never announced by screen readers on each change.
 - Versioned settings are validated from `unknown` at the storage boundary; malformed or older data recovers safely. Saves from before work times get a Monday-first schedule from 9:00 built from their weekly hours, and new saves keep weekly hours beside the schedule so an installed version that has not updated yet still reads them.
 - English, German, French, Italian, and Serbian are built in without a runtime i18n dependency.
@@ -86,7 +88,7 @@ Pull requests and pushes to `main` run the same gates in GitHub Actions. A pull 
 
 Advisories are published at any time, so the gates are split to keep them from failing unrelated work. Every run audits production dependencies, and a change to `package.json`, `pnpm-lock.yaml`, or `pnpm-workspace.yaml` must pass a full audit of all dependencies. A daily dependency audit workflow runs the full audit on `main` and fails when a new advisory appears, and weekly Renovate lockfile maintenance pulls in patched transitive versions once they pass the seven day release age. Packages that pin a vulnerable version exactly are raised with a scoped override in `pnpm-workspace.yaml`.
 
-Lighthouse must score 100 for performance, accessibility, best practices, SEO, and agentic browsing across three runs. The built app also validates its `llms.txt` agent summary before deployment.
+Lighthouse must score 100 for performance, accessibility, best practices, SEO, and agentic browsing across three runs, with the largest paint under 2 seconds, total blocking time under 200 ms, and layout shift under 0.1. The app ships as one HTML file with its scripts and styles inlined, and a bundle check fails the build when gzipped JavaScript passes 120 KiB or CSS passes 20 KiB. These budgets are a tripwire for accidental weight, such as a new dependency: React and React DOM take about 60 KiB, and the rest leaves room for the pages and their copy in five languages. The built app also validates its `llms.txt` agent summary before deployment.
 
 After all `main` checks pass, semantic-release creates the appropriate tag and GitHub Release from Conventional Commits. The final job downloads the exact artifact produced by validation, deploys it to the protected Cloudflare Pages environment, and verifies every published file plus critical security headers. A daily production smoke workflow detects later drift or availability failures.
 

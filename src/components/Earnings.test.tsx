@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { Bill } from '../domain/bills';
 import type { FixedCost } from '../domain/fixedCosts';
 import type { AffordiSettings } from '../domain/storage';
 import { Earnings } from './Earnings';
@@ -22,14 +23,20 @@ const settings: AffordiSettings = {
 
 /** Holds settings the way the app does, so hiding amounts updates the page. */
 interface EarningsPageProps {
+  bills?: readonly Bill[];
   fixedCosts?: readonly FixedCost[];
   initial?: AffordiSettings;
 }
 
-function EarningsPage({ fixedCosts = noFixedCosts, initial = settings }: EarningsPageProps) {
+function EarningsPage({
+  bills = noBills,
+  fixedCosts = noFixedCosts,
+  initial = settings,
+}: EarningsPageProps) {
   const [current, setCurrent] = useState(initial);
   return (
     <Earnings
+      bills={bills}
       fixedCosts={fixedCosts}
       onHideAmountsChange={(hideAmounts) => setCurrent({ ...current, hideAmounts })}
       settings={current}
@@ -38,6 +45,7 @@ function EarningsPage({ fixedCosts = noFixedCosts, initial = settings }: Earning
 }
 
 const noFixedCosts: readonly FixedCost[] = [];
+const noBills: readonly Bill[] = [];
 
 function rent(amount: number): FixedCost {
   return { id: 'rent', name: 'Rent', amount, lastPayment: null };

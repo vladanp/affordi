@@ -10,7 +10,7 @@
   margin-inline: auto;
 }
 
-/* Brand, page tabs, and settings share one row where the tabs fit beside the brand. */
+/* Brand, page tabs, and settings share one row; on a phone the tabs move to the bottom. */
 .topbar {
   display: flex;
   align-items: center;
@@ -53,6 +53,10 @@
   color: var(--color-ink);
 }
 
+.page-nav-icon {
+  display: none;
+}
+
 .page-nav a[aria-current='page'] {
   background: var(--color-raised);
   color: var(--color-ink);
@@ -80,6 +84,15 @@
 .pill-button:hover {
   border-color: var(--color-line-strong);
   background: var(--color-sunken);
+}
+
+/* Settings shows only its icon, so four page tabs fit beside the brand. */
+.settings-button {
+  flex: none;
+  justify-content: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  padding: 0;
 }
 
 .page h1 {

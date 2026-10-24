@@ -2,8 +2,21 @@ import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
 import { completeSetup } from './helpers';
 
+/**
+ * A full page is captured in a viewport as tall as the page, so the tab bar, which is fixed to
+ * the bottom of the screen on a phone, shows below the content instead of across it.
+ */
 async function attachScreenshot(page: Page, testInfo: TestInfo, name: string, fullPage = false) {
-  const screenshot = await page.screenshot({ animations: 'disabled', fullPage });
+  const viewport = page.viewportSize()!;
+  if (fullPage) {
+    const height = await page.evaluate(() => document.documentElement.scrollHeight);
+    await page.setViewportSize({
+      width: viewport.width,
+      height: Math.max(height, viewport.height),
+    });
+  }
+  const screenshot = await page.screenshot({ animations: 'disabled' });
+  await page.setViewportSize(viewport);
   expect(screenshot).toMatchSnapshot(`${name}.png`, { maxDiffPixelRatio: 0.01 });
   await testInfo.attach(name, { body: screenshot, contentType: 'image/png' });
 }
@@ -94,6 +107,58 @@ test.describe('UI screenshot audit', () => {
     await expect(page.getByRole('heading', { name: 'What do you pay each month?' })).toBeVisible();
     await expect(page.locator('.fixed-costs-total .stat-amount')).toHaveText('€1,335.49');
     await attachScreenshot(page, testInfo, 'phone-fixed-costs', true);
+  });
+
+  test('captures bills on a phone at a fixed time', async ({ page }, testInfo) => {
+    await page.clock.setFixedTime(new Date('2026-10-21T14:15:00Z'));
+    await page.setViewportSize({ width: 390, height: 844 });
+    await completeSetup(page);
+    await page.evaluate(() => {
+      const months = Array.from({ length: 12 }, (_, index) => {
+        const date = new Date(Date.UTC(2025, 10 + index, 1));
+        return date.toISOString().slice(0, 7);
+      });
+      const entries = (amounts: (number | null)[]) =>
+        amounts.flatMap((amount, index) =>
+          amount === null ? [] : [{ month: months[index], amount }],
+        );
+      localStorage.setItem(
+        'affordi.fixedCosts.v1',
+        JSON.stringify({
+          version: 1,
+          fixedCosts: [{ id: 'a', name: 'Mortgage', amount: 950, lastPayment: '2049-03' }],
+        }),
+      );
+      localStorage.setItem(
+        'affordi.bills.v1',
+        JSON.stringify({
+          version: 1,
+          bills: [
+            {
+              id: 'e',
+              name: 'Electricity',
+              entries: entries([92, 118, 135, 128, 104, 88, 71, 66, 74, 79, 83, 91]),
+            },
+            {
+              id: 'h',
+              name: 'Heating',
+              entries: entries([60, 95, 120, 110, 80, null, null, null, null, null, null, 45]),
+            },
+            {
+              id: 'w',
+              name: 'Water',
+              entries: entries([31, 30, 33, 29, 32, 34, 36, 41, 44, 39, 35, null]),
+            },
+          ],
+        }),
+      );
+    });
+    await page.goto('/#bills');
+    await page.reload();
+
+    await expect(page.getByRole('heading', { name: 'What do your bills cost?' })).toBeVisible();
+    await expect(page.locator('.bills-readout')).toHaveText('October 2026: €136.00');
+    await attachScreenshot(page, testInfo, 'phone-bills', true);
   });
 
   test('captures the reduced-motion dark theme on a phone', async ({ page }, testInfo) => {

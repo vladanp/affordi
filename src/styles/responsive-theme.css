@@ -35,49 +35,62 @@
   }
 }
 
-/* On a phone the three page tabs take a full row under the brand and settings. */
-@media (max-width: 36rem) {
-  .topbar {
-    flex-wrap: wrap;
-    row-gap: 0.5rem;
-    margin-bottom: 1rem;
+/* On a phone the page tabs become a bar along the bottom, in reach of a thumb. */
+@media (max-width: 44rem) {
+  .calculator-shell {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
   }
 
   .page-nav {
-    display: flex;
-    flex: 1 0 100%;
-    order: 1;
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 5;
+    display: grid;
+    grid-auto-columns: minmax(min-content, 1fr);
+    gap: 0;
+    border-top: 1px solid var(--color-line);
+    border-radius: 0;
+    background: color-mix(in oklab, var(--color-surface) 92%, transparent);
+    padding: 0.375rem max(0.25rem, env(safe-area-inset-right))
+      max(0.375rem, env(safe-area-inset-bottom)) max(0.25rem, env(safe-area-inset-left));
+    backdrop-filter: blur(0.75rem);
   }
 
   .page-nav a {
-    flex: 1 1 auto;
-  }
-}
-
-/* Until the tabs and the settings label fit beside the brand, settings shows only its icon. */
-@media (max-width: 42rem) {
-  .settings-button {
-    flex: none;
-    padding: 0;
-    inline-size: 2.75rem;
-    justify-content: center;
-  }
-
-  .settings-button-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
+    gap: 0.2rem;
+    min-block-size: 3.25rem;
+    border-radius: 0.875rem;
+    padding: 0.25rem 0.125rem;
+    font-size: 0.75rem;
     white-space: nowrap;
   }
+
+  .page-nav a[aria-current='page'] {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .page-nav-icon {
+    display: block;
+    box-sizing: content-box;
+    border-radius: 999px;
+    padding: 0.2rem 0.9rem;
+  }
+
+  .page-nav a[aria-current='page'] .page-nav-icon {
+    background: var(--color-highlight);
+    color: var(--color-on-highlight);
+  }
+
+  .update-prompt {
+    bottom: calc(5.25rem + env(safe-area-inset-bottom));
+  }
 }
 
-/* The narrowest phones tighten the tabs so each label fits on one line. */
-@media (max-width: 27rem) {
+/* Labels stay on one line on the narrowest phones, at the size iOS uses for tab bars. */
+@media (max-width: 22.5rem) {
   .page-nav a {
-    padding-inline: 0.375rem;
-    font-size: 0.875rem;
+    font-size: 0.6875rem;
   }
 }
 

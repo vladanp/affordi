@@ -1,21 +1,20 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  costsCoverage,
   FIXED_COSTS_STORAGE_KEY,
-  fixedCostsCoverage,
   isFixedCost,
   isPaidOff,
   loadFixedCosts,
   monthlyCostFigures,
   monthlyFixedCosts,
-  monthValue,
-  parseMonth,
   saveFixedCosts,
   sortFixedCosts,
   summarizeFixedCosts,
   type FixedCost,
 } from './fixedCosts';
 import type { IncomeSettings } from './calculations';
+import { monthValue, parseMonth, recentMonths } from './months';
 
 const settings: IncomeSettings = {
   netIncome: 3_000,
@@ -40,6 +39,15 @@ describe('months', () => {
     expect(parseMonth('2049-13')).toBeNull();
     expect(parseMonth('2049-00')).toBeNull();
     expect(parseMonth('March 2049')).toBeNull();
+  });
+
+  it('lists the months that end with this one, across a new year', () => {
+    expect(recentMonths(new Date(2027, 1, 10), 3)).toEqual([
+      { year: 2026, month: 12 },
+      { year: 2027, month: 1 },
+      { year: 2027, month: 2 },
+    ]);
+    expect(recentMonths(october, 12)[0]).toEqual({ year: 2025, month: 11 });
   });
 
   it('counts a cost as paid off only after the month of its last payment', () => {
@@ -150,13 +158,13 @@ describe('fixed cost figures', () => {
 
 describe('fixed costs coverage', () => {
   it('covers fixed costs with the pay earned so far, up to all of them', () => {
-    expect(fixedCostsCoverage(725, 1_450)).toEqual({ covered: 725, total: 1_450, share: 0.5 });
-    expect(fixedCostsCoverage(2_000, 1_450)).toEqual({ covered: 1_450, total: 1_450, share: 1 });
-    expect(fixedCostsCoverage(0, 1_450)).toEqual({ covered: 0, total: 1_450, share: 0 });
+    expect(costsCoverage(725, 1_450)).toEqual({ covered: 725, total: 1_450, share: 0.5 });
+    expect(costsCoverage(2_000, 1_450)).toEqual({ covered: 1_450, total: 1_450, share: 1 });
+    expect(costsCoverage(0, 1_450)).toEqual({ covered: 0, total: 1_450, share: 0 });
   });
 
   it('has nothing to cover without fixed costs', () => {
-    expect(fixedCostsCoverage(500, 0)).toBeNull();
-    expect(fixedCostsCoverage(Number.NaN, 100)).toBeNull();
+    expect(costsCoverage(500, 0)).toBeNull();
+    expect(costsCoverage(Number.NaN, 100)).toBeNull();
   });
 });

@@ -71,13 +71,21 @@ test.describe('Affordi fixed costs', () => {
   test('fits the tabs, the list, and the form on the narrowest phone', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 640 });
     await completeSetup(page);
-    // Each tab label stays on one line.
-    const tabs = await Promise.all(
-      ['Cost', 'Earnings', 'Fixed costs'].map((name) =>
-        page.getByRole('link', { name, exact: true }).boundingBox(),
-      ),
-    );
-    for (const box of tabs) expect(box?.height).toBeLessThan(48);
+    // Each tab label stays on one line and inside its tab.
+    const labels = await page
+      .getByRole('navigation')
+      .getByRole('link')
+      .evaluateAll((links) =>
+        links.map((link) => {
+          const label = link.querySelector('span')!;
+          const fontSize = Number.parseFloat(getComputedStyle(label).fontSize);
+          return {
+            oneLine: label.getBoundingClientRect().height < 2 * fontSize,
+            inside: label.scrollWidth <= link.clientWidth,
+          };
+        }),
+      );
+    expect(labels).toEqual(Array.from({ length: 4 }, () => ({ oneLine: true, inside: true })));
 
     await page.getByRole('link', { name: 'Fixed costs' }).click();
     await addFixedCost(page, 'Home and contents insurance', '1234.56', ['December', '2075']);

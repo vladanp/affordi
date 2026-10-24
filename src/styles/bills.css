@@ -1,0 +1,148 @@
+.bills-chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+}
+
+.bills-chart-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A short sample of the average line, beside its label. */
+.bills-average-key {
+  inline-size: 1rem;
+  block-size: 0;
+  border-top: 1px solid var(--color-ink-soft);
+}
+
+.bills-chart {
+  margin-top: 0.75rem;
+  border-radius: 0.5rem;
+  touch-action: pan-y;
+}
+
+.bills-chart:focus-visible {
+  outline: 0.1875rem solid var(--color-focus);
+  outline-offset: 0.375rem;
+}
+
+/* Columns grow from one baseline; the average is a hairline across them. */
+.bills-plot {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: end;
+  gap: 2px;
+  block-size: 8rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.bills-average-line {
+  position: absolute;
+  inset-inline: 0;
+  z-index: 1;
+  border-top: 1px solid var(--color-ink-soft);
+  pointer-events: none;
+}
+
+.bills-column {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  block-size: 100%;
+}
+
+.bills-bar {
+  display: block;
+  inline-size: min(100%, 1.5rem);
+  min-block-size: 2px;
+  border-radius: 4px 4px 0 0;
+  background: color-mix(in oklab, var(--color-accent) 38%, var(--color-surface));
+  transition: background-color 120ms ease;
+}
+
+.bills-column[data-selected] .bills-bar {
+  background: var(--color-accent);
+}
+
+/* A month without amounts shows a small mark on the baseline instead of a column. */
+.bills-bar-empty {
+  display: block;
+  inline-size: 0.375rem;
+  block-size: 0.375rem;
+  margin-bottom: 0.25rem;
+  border-radius: 50%;
+  background: var(--color-line-strong);
+}
+
+.bills-months {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 2px;
+  margin-top: 0.375rem;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.bills-months [data-selected] {
+  color: var(--color-ink);
+  font-weight: 700;
+}
+
+.bills-readout {
+  margin-top: 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.bill-history h3 {
+  margin: 0 0 0.25rem;
+  color: var(--color-ink-soft);
+  font-size: 0.875rem;
+}
+
+.bill-history ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bill-history li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--color-line);
+  padding-block: 0.25rem;
+}
+
+.bill-history-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.bill-history .bill-history-remove {
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  min-height: 0;
+  background: transparent;
+}
+
+@media (forced-colors: active) {
+  .bills-bar,
+  .bills-column[data-selected] .bills-bar,
+  .bills-bar-empty {
+    background: CanvasText;
+  }
+
+  .bills-column[data-selected] .bills-bar {
+    outline: 2px solid Highlight;
+  }
+}

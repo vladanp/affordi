@@ -540,6 +540,13 @@ describe('App', () => {
         fixedCosts: [{ id: 'rent', name: 'Rent', amount: 900, lastPayment: null }],
       }),
     );
+    localStorage.setItem(
+      'affordi.bills.v1',
+      JSON.stringify({
+        version: 1,
+        bills: [{ id: 'power', name: 'Power', entries: [{ month: '2026-09', amount: 80 }] }],
+      }),
+    );
     render(<App />);
     fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
       target: { value: '750' },
@@ -569,11 +576,14 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     fireEvent.click(screen.getByRole('button', { name: 'Reset saved settings' }));
     expect(
-      screen.getByText('This removes your income details and fixed costs from this device.'),
+      screen.getByText(
+        'This removes your income details, fixed costs, and bills from this device.',
+      ),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
     expect(localStorage.getItem('affordi.checks.v1')).toBeNull();
     expect(localStorage.getItem('affordi.fixedCosts.v1')).toBeNull();
+    expect(localStorage.getItem('affordi.bills.v1')).toBeNull();
     expect(localStorage.getItem('affordi.settings.v1')).toBeNull();
     expect(screen.getByRole('button', { name: 'Start calculating' })).toBeInTheDocument();
   });
