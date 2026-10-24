@@ -20,17 +20,6 @@ function standardDigits(currency: string, locale: string): number {
   return digits;
 }
 
-/**
- * Fraction digits for a live total, so its last digit visibly moves several
- * times a second at the given rate, but never fewer than the currency uses.
- */
-export function tickerDigits(perSecond: number, currency: string, locale: string): number {
-  const standard = standardDigits(currency, locale);
-  if (!Number.isFinite(perSecond) || perSecond <= 0) return standard;
-  const digits = Math.ceil(-Math.log10(perSecond)) + 1;
-  return Math.min(Math.max(digits, standard), MAX_FRACTION_DIGITS);
-}
-
 const fixedFormats = new Map<string, Intl.NumberFormat>();
 
 function fixedFormat(currency: string, locale: string, digits: number): Intl.NumberFormat {
@@ -46,39 +35,6 @@ function fixedFormat(currency: string, locale: string, digits: number): Intl.Num
     fixedFormats.set(key, format);
   }
   return format;
-}
-
-/** A live total split so the digits beyond the currency's usual precision can be styled apart. */
-export interface TickerParts {
-  lead: string;
-  extra: string;
-  trail: string;
-}
-
-export function formatTicker(
-  value: number,
-  currency: string,
-  locale: string,
-  digits: number,
-): TickerParts {
-  const standard = standardDigits(currency, locale);
-  const parts: TickerParts = { lead: '', extra: '', trail: '' };
-  let afterFraction = false;
-  for (const part of fixedFormat(currency, locale, digits).formatToParts(value)) {
-    if (part.type === 'fraction') {
-      parts.lead += part.value.slice(0, standard);
-      parts.extra += part.value.slice(standard);
-      afterFraction = true;
-    } else if (afterFraction) {
-      parts.trail += part.value;
-    } else if (part.type === 'decimal' && standard === 0) {
-      // Without usual fraction digits, the separator belongs with the extra digits.
-      parts.extra += part.value;
-    } else {
-      parts.lead += part.value;
-    }
-  }
-  return parts;
 }
 
 /**

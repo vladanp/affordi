@@ -8,9 +8,12 @@ import {
   loadFixedCosts,
   monthlyCostFigures,
   monthlyFixedCosts,
+  paidShare,
+  paymentProgress,
   saveFixedCosts,
   sortFixedCosts,
   summarizeFixedCosts,
+  summarizeLoans,
   type FixedCost,
 } from './fixedCosts';
 import type { IncomeSettings } from './calculations';
@@ -26,10 +29,34 @@ const hourlyRate = (3_000 * 12) / (52 * 40);
 /** Wednesday 21 October 2026. */
 const october = new Date(2026, 9, 21, 12);
 
-const mortgage: FixedCost = { id: 'a', name: 'Mortgage', amount: 950, lastPayment: '2049-03' };
-const insurance: FixedCost = { id: 'b', name: 'Insurance', amount: 120, lastPayment: null };
-const carLoan: FixedCost = { id: 'c', name: 'Car loan', amount: 380, lastPayment: '2026-09' };
-const phone: FixedCost = { id: 'd', name: 'Phone', amount: 25, lastPayment: '2026-10' };
+const mortgage: FixedCost = {
+  id: 'a',
+  name: 'Mortgage',
+  amount: 950,
+  firstPayment: null,
+  lastPayment: '2049-03',
+};
+const insurance: FixedCost = {
+  id: 'b',
+  name: 'Insurance',
+  amount: 120,
+  firstPayment: null,
+  lastPayment: null,
+};
+const carLoan: FixedCost = {
+  id: 'c',
+  name: 'Car loan',
+  amount: 380,
+  firstPayment: null,
+  lastPayment: '2026-09',
+};
+const phone: FixedCost = {
+  id: 'd',
+  name: 'Phone',
+  amount: 25,
+  firstPayment: null,
+  lastPayment: '2026-10',
+};
 
 describe('months', () => {
   it('reads and writes months as YYYY-MM', () => {
@@ -60,9 +87,11 @@ describe('months', () => {
 });
 
 describe('fixed cost values', () => {
-  it('accepts a named positive monthly amount with an optional last payment', () => {
+  it('accepts a named positive monthly amount with an optional first and last payment', () => {
     expect(isFixedCost(mortgage)).toBe(true);
     expect(isFixedCost(insurance)).toBe(true);
+    expect(isFixedCost({ ...mortgage, firstPayment: '2024-01' })).toBe(true);
+    expect(isFixedCost({ ...mortgage, firstPayment: '2049-03' })).toBe(true);
   });
 
   it.each([
@@ -77,7 +106,9 @@ describe('fixed cost values', () => {
     { ...insurance, amount: Number.POSITIVE_INFINITY },
     { ...insurance, amount: '120' },
     { ...insurance, lastPayment: '2049' },
-    { id: 'b', name: 'Insurance', amount: 120 },
+    { ...insurance, firstPayment: '2024' },
+    { ...mortgage, firstPayment: '2049-04' },
+    { id: 'b', name: 'Insurance', amount: 120, lastPayment: null },
   ])('rejects invalid cost %#', (value) => {
     expect(isFixedCost(value)).toBe(false);
   });
@@ -104,6 +135,17 @@ describe('saved fixed costs', () => {
     expect(loadFixedCosts()).toEqual([mortgage]);
     localStorage.setItem(FIXED_COSTS_STORAGE_KEY, '{"version":1,"fixedCosts":{}}');
     expect(loadFixedCosts()).toEqual([]);
+  });
+
+  it('loads costs saved before first payments with none', () => {
+    localStorage.setItem(
+      FIXED_COSTS_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        fixedCosts: [{ id: 'a', name: 'Mortgage', amount: 950, lastPayment: '2049-03' }],
+      }),
+    );
+    expect(loadFixedCosts()).toEqual([mortgage]);
   });
 
   it('refuses to save an invalid list', () => {
@@ -146,7 +188,7 @@ describe('fixed cost figures', () => {
     expect(summary!.workHours).toBeCloseTo(1_095 / hourlyRate, 10);
     expect(summary!.percentage).toBeCloseTo(36.5, 10);
     expect(summary!.left).toBe(1_905);
-    expect(summary!.leftPerWorkday).toBeCloseTo(1_905 / ((5 * 52) / 12), 10);
+    expect(summary!.leftPerDay).toBeCloseTo((1_905 * 12) / 364, 10);
   });
 
   it('shows a shortfall when fixed costs are more than take home pay', () => {
@@ -166,5 +208,47 @@ describe('fixed costs coverage', () => {
   it('has nothing to cover without fixed costs', () => {
     expect(costsCoverage(500, 0)).toBeNull();
     expect(costsCoverage(Number.NaN, 100)).toBeNull();
+  });
+});
+
+describe('loan progress', () => {
+  // By October 2026, the payments from January 2024 through September 2026 are made.
+  const loan: FixedCost = { ...mortgage, firstPayment: '2024-01' };
+
+  it('counts payments before this month as paid and the rest, from this month, as left', () => {
+    expect(paymentProgress(loan, october)).toEqual({ paid: 33 * 950, left: 270 * 950 });
+    expect(paidShare(paymentProgress(loan, october))).toBeCloseTo(33 / 303, 10);
+  });
+
+  it('knows what is left only with a last payment and what is paid only with a first', () => {
+    expect(paymentProgress(mortgage, october)).toEqual({ paid: null, left: 270 * 950 });
+    expect(paymentProgress({ ...insurance, firstPayment: '2026-01' }, october)).toEqual({
+      paid: 9 * 120,
+      left: null,
+    });
+    expect(paymentProgress(insurance, october)).toEqual({ paid: null, left: null });
+    expect(paidShare(paymentProgress(mortgage, october))).toBeNull();
+  });
+
+  it('counts nothing paid before a later first payment and all of it after the last', () => {
+    const future = { ...mortgage, firstPayment: '2027-01', lastPayment: '2027-12' };
+    expect(paymentProgress(future, october)).toEqual({ paid: 0, left: 12 * 950 });
+    const ended = { ...carLoan, firstPayment: '2024-10' };
+    expect(paymentProgress(ended, october)).toEqual({ paid: 24 * 380, left: 0 });
+    expect(paidShare(paymentProgress(ended, october))).toBeNull();
+  });
+
+  it('adds up loans still paid, with what is paid once every first payment is known', () => {
+    expect(summarizeLoans([insurance, carLoan], october)).toBeNull();
+    expect(summarizeLoans([phone, loan, carLoan, insurance], october)).toEqual({
+      left: 270 * 950 + 25,
+      paid: null,
+      lastPayment: '2049-03',
+    });
+    expect(summarizeLoans([loan, { ...phone, firstPayment: '2026-07' }], october)).toEqual({
+      left: 270 * 950 + 25,
+      paid: 33 * 950 + 3 * 25,
+      lastPayment: '2049-03',
+    });
   });
 });

@@ -19,9 +19,27 @@ const settings: AffordiSettings = {
   theme: 'system',
   hideAmounts: false,
 };
-const mortgage: FixedCost = { id: 'a', name: 'Mortgage', amount: 950, lastPayment: '2049-03' };
-const insurance: FixedCost = { id: 'b', name: 'Insurance', amount: 120, lastPayment: null };
-const carLoan: FixedCost = { id: 'c', name: 'Car loan', amount: 380, lastPayment: '2026-09' };
+const mortgage: FixedCost = {
+  id: 'a',
+  name: 'Mortgage',
+  amount: 950,
+  firstPayment: null,
+  lastPayment: '2049-03',
+};
+const insurance: FixedCost = {
+  id: 'b',
+  name: 'Insurance',
+  amount: 120,
+  firstPayment: null,
+  lastPayment: null,
+};
+const carLoan: FixedCost = {
+  id: 'c',
+  name: 'Car loan',
+  amount: 380,
+  firstPayment: null,
+  lastPayment: '2026-09',
+};
 
 const noFixedCosts: FixedCost[] = [];
 
@@ -46,6 +64,11 @@ function FixedCostsPage({ initialCosts = noFixedCosts, initialSettings = setting
 
 function dialog() {
   return within(screen.getByRole('dialog'));
+}
+
+/** The month and year lists of the first or last payment. */
+function payment(which: 'First payment' | 'Last payment') {
+  return within(dialog().getByRole('group', { name: which }));
 }
 
 function rows() {
@@ -79,23 +102,25 @@ describe('FixedCosts', () => {
     fireEvent.change(dialog().getByRole('textbox', { name: 'Amount each month' }), {
       target: { value: '950' },
     });
-    fireEvent.change(dialog().getByRole('combobox', { name: 'Month' }), { target: { value: '3' } });
+    fireEvent.change(payment('Last payment').getByRole('combobox', { name: 'Month' }), {
+      target: { value: '3' },
+    });
     fireEvent.click(dialog().getByRole('button', { name: 'Add fixed cost' }));
     expect(
       dialog().getByText('Choose a month and a year, or leave both empty.'),
     ).toBeInTheDocument();
-    expect(dialog().getByRole('combobox', { name: 'Month' })).toHaveFocus();
+    expect(payment('Last payment').getByRole('combobox', { name: 'Month' })).toHaveFocus();
 
-    fireEvent.change(dialog().getByRole('combobox', { name: 'Year' }), {
+    fireEvent.change(payment('Last payment').getByRole('combobox', { name: 'Year' }), {
       target: { value: '2049' },
     });
     fireEvent.click(dialog().getByRole('button', { name: 'Add fixed cost' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(rows()).toEqual([
-      'Mortgage€950.006 days and 7 hours of work32%32% of your payLast payment: March 2049',
+      'Mortgage€950.006 days and 7 hours of work32%32% of your pay€256,500.00 left to payLast payment: March 2049',
     ]);
     expect(screen.getByText('€2,050.00')).toBeInTheDocument();
-    expect(screen.getByText('€94.62 per workday')).toBeInTheDocument();
+    expect(screen.getByText('€67.58 per day')).toBeInTheDocument();
     expect(screen.getByText('32% of your monthly take home pay')).toBeInTheDocument();
     // The empty state's button is gone, so focus moves to the add button above the list.
     expect(screen.getByRole('button', { name: 'Add fixed cost' })).toHaveFocus();
@@ -110,7 +135,7 @@ describe('FixedCosts', () => {
     expect(screen.getByText('Left each month')).toBeInTheDocument();
     expect(screen.getByText('€1,930.00')).toBeInTheDocument();
     expect(rows()).toEqual([
-      'Mortgage€950.006 days and 7 hours of work32%32% of your payLast payment: March 2049',
+      'Mortgage€950.006 days and 7 hours of work32%32% of your pay€256,500.00 left to payLast payment: March 2049',
       'Insurance€120.006 hours and 56 minutes of work4%4% of your pay',
       'Car loan€380.00EndedLast payment: September 2026',
     ]);
@@ -123,18 +148,81 @@ describe('FixedCosts', () => {
     expect(dialog().getByRole('heading', { name: 'Edit fixed cost' })).toBeInTheDocument();
     expect(dialog().getByRole('textbox', { name: 'Name' })).toHaveValue('Mortgage');
     expect(dialog().getByRole('textbox', { name: 'Amount each month' })).toHaveValue('950');
-    expect(dialog().getByRole('combobox', { name: 'Month' })).toHaveValue('3');
-    expect(dialog().getByRole('combobox', { name: 'Year' })).toHaveValue('2049');
+    expect(payment('Last payment').getByRole('combobox', { name: 'Month' })).toHaveValue('3');
+    expect(payment('Last payment').getByRole('combobox', { name: 'Year' })).toHaveValue('2049');
 
     fireEvent.change(dialog().getByRole('textbox', { name: 'Amount each month' }), {
       target: { value: '900.5' },
     });
-    fireEvent.change(dialog().getByRole('combobox', { name: 'Month' }), { target: { value: '' } });
-    fireEvent.change(dialog().getByRole('combobox', { name: 'Year' }), { target: { value: '' } });
+    fireEvent.change(payment('Last payment').getByRole('combobox', { name: 'Month' }), {
+      target: { value: '' },
+    });
+    fireEvent.change(payment('Last payment').getByRole('combobox', { name: 'Year' }), {
+      target: { value: '' },
+    });
     fireEvent.click(dialog().getByRole('button', { name: 'Save' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(rows()[0]).toBe('Mortgage€900.506 days and 4 hours of work30%30% of your pay');
     expect(edit).toHaveFocus();
+  });
+
+  it('shows what is paid and left on loans with a first payment', () => {
+    render(
+      <FixedCostsPage
+        initialCosts={[
+          { ...mortgage, firstPayment: '2024-01' },
+          { ...insurance, firstPayment: '2026-01' },
+          { ...carLoan, firstPayment: '2024-10' },
+        ]}
+      />,
+    );
+    // January 2024 through September 2026 are paid; October 2026 through March 2049 are left.
+    expect(rows()).toEqual([
+      'Mortgage€950.006 days and 7 hours of work32%32% of your pay€31,350.00 paid · €256,500.00 leftLast payment: March 2049',
+      'Insurance€120.006 hours and 56 minutes of work4%4% of your pay€1,080.00 paid so far',
+      'Car loan€380.00Ended€9,120.00 paid in totalLast payment: September 2026',
+    ]);
+    const meter = screen.getAllByRole('listitem')[0]!.querySelector<HTMLElement>('.meter > span');
+    expect(meter?.style.inlineSize).toMatch(/^10\.89/);
+
+    const loans = screen.getByText('Left to pay on loans').closest('div')!;
+    expect(within(loans).getByText('€256,500.00')).toBeInTheDocument();
+    expect(within(loans).getByText('€31,350.00 of €287,850.00 paid')).toBeInTheDocument();
+    expect(within(loans).getByText('Last payment: March 2049')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hide amounts' }));
+    expect(within(loans).getByText('10% paid')).toBeInTheDocument();
+    expect(rows()[0]).toContain('10% paidLast payment: March 2049');
+  });
+
+  it('checks that the first payment comes no later than the last', () => {
+    render(<FixedCostsPage initialCosts={[{ ...mortgage, firstPayment: '2024-01' }]} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Mortgage' }));
+    expect(payment('First payment').getByRole('combobox', { name: 'Month' })).toHaveValue('1');
+    expect(payment('First payment').getByRole('combobox', { name: 'Year' })).toHaveValue('2024');
+
+    fireEvent.change(payment('First payment').getByRole('combobox', { name: 'Year' }), {
+      target: { value: '2027' },
+    });
+    fireEvent.change(payment('Last payment').getByRole('combobox', { name: 'Year' }), {
+      target: { value: '2026' },
+    });
+    fireEvent.change(payment('Last payment').getByRole('combobox', { name: 'Month' }), {
+      target: { value: '12' },
+    });
+    fireEvent.click(dialog().getByRole('button', { name: 'Save' }));
+    expect(
+      dialog().getByText('Choose a month no later than the last payment.'),
+    ).toBeInTheDocument();
+    expect(payment('First payment').getByRole('combobox', { name: 'Month' })).toHaveFocus();
+
+    fireEvent.change(payment('First payment').getByRole('combobox', { name: 'Year' }), {
+      target: { value: '2026' },
+    });
+    fireEvent.click(dialog().getByRole('button', { name: 'Save' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    // January to September 2026 are paid, October to December are left.
+    expect(rows()[0]).toContain('€8,550.00 paid · €2,850.00 leftLast payment: December 2026');
   });
 
   it('asks before deleting a cost', () => {
@@ -156,11 +244,15 @@ describe('FixedCosts', () => {
   it('keeps an ended cost unless its last payment moves to another past month', () => {
     render(<FixedCostsPage initialCosts={[carLoan]} />);
     fireEvent.click(screen.getByRole('button', { name: 'Edit Car loan' }));
-    fireEvent.change(dialog().getByRole('combobox', { name: 'Month' }), { target: { value: '8' } });
+    fireEvent.change(payment('Last payment').getByRole('combobox', { name: 'Month' }), {
+      target: { value: '8' },
+    });
     fireEvent.click(dialog().getByRole('button', { name: 'Save' }));
     expect(dialog().getByText('Choose this month or later.')).toBeInTheDocument();
 
-    fireEvent.change(dialog().getByRole('combobox', { name: 'Month' }), { target: { value: '9' } });
+    fireEvent.change(payment('Last payment').getByRole('combobox', { name: 'Month' }), {
+      target: { value: '9' },
+    });
     fireEvent.change(dialog().getByRole('textbox', { name: 'Name' }), {
       target: { value: 'First car' },
     });
@@ -182,7 +274,8 @@ describe('FixedCosts', () => {
     render(<FixedCostsPage initialCosts={[mortgage, insurance]} />);
     fireEvent.click(screen.getByRole('button', { name: 'Hide amounts' }));
     expect(screen.queryByText(/€/)).not.toBeInTheDocument();
-    expect(screen.getAllByText('Hidden')).toHaveLength(2 + 2);
+    // Three cards and two rows.
+    expect(screen.getAllByText('Hidden')).toHaveLength(3 + 2);
     expect(screen.getByText('7 days and 6 hours of work')).toBeInTheDocument();
     expect(screen.getByText('36% of your monthly take home pay')).toBeInTheDocument();
   });

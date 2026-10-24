@@ -120,7 +120,9 @@ describe('settings persistence', () => {
 
   it('clears saved settings, fixed costs, and saved items from earlier releases', () => {
     saveSettings(settings);
-    saveFixedCosts([{ id: 'rent', name: 'Rent', amount: 900, lastPayment: null }]);
+    saveFixedCosts([
+      { id: 'rent', name: 'Rent', amount: 900, firstPayment: null, lastPayment: null },
+    ]);
     localStorage.setItem('affordi.checks.v1', JSON.stringify({ version: 1, checks: [] }));
     expect(clearSettings()).toBe(true);
     expect(loadSettings()).toBeNull();

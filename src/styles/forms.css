@@ -102,11 +102,6 @@
   padding-inline: 0.95rem 0.3rem;
 }
 
-.input-with-prefix:has(input:focus-visible) {
-  outline: 0.1875rem solid var(--color-focus);
-  outline-offset: 0.1875rem;
-}
-
 .input-prefix {
   flex: none;
   color: var(--color-muted);

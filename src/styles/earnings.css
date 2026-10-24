@@ -1,9 +1,3 @@
-.live-amount-extra {
-  font-size: 0.6em;
-  letter-spacing: -0.02em;
-  opacity: 0.72;
-}
-
 .earnings-work[data-state='working'] .earnings-status::before {
   content: '';
   display: inline-block;

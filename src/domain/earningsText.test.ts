@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  describeWorkStatus,
-  formatEarned,
-  formatProgress,
-  formatRate,
-  formatTicker,
-  tickerDigits,
-} from './earningsText';
+import { describeWorkStatus, formatEarned, formatProgress, formatRate } from './earningsText';
 import { createTranslator } from './i18n';
 import { workProgress, type WorkSchedule } from './schedule';
 
@@ -15,41 +8,7 @@ const officeHours: WorkSchedule = { workStart: 540, workEnd: 1020, workDays: [1,
 /** Wednesday 21 October 2026 at a local time. */
 const wednesday = (hours: number, minutes = 0) => new Date(2026, 9, 21, hours, minutes);
 
-describe('live totals', () => {
-  it('adds digits until the last one moves several times a second', () => {
-    expect(tickerDigits(0.001_144_7, 'EUR', 'en')).toBe(4);
-    expect(tickerDigits(0.038, 'RSD', 'sr')).toBe(3);
-    expect(tickerDigits(0.5, 'USD', 'en')).toBe(2);
-    expect(tickerDigits(12, 'USD', 'en')).toBe(2);
-    expect(tickerDigits(1e-9, 'EUR', 'en')).toBe(6);
-    expect(tickerDigits(0, 'EUR', 'en')).toBe(2);
-  });
-
-  it('splits the extra digits from the usual currency precision', () => {
-    expect(formatTicker(49.450_549, 'EUR', 'en', 4)).toEqual({
-      lead: '€49.45',
-      extra: '05',
-      trail: '',
-    });
-    expect(formatTicker(12_345.678_9, 'EUR', 'de', 4)).toEqual({
-      lead: '12.345,67',
-      extra: '89',
-      trail: ' €',
-    });
-    expect(formatTicker(3.5, 'USD', 'en', 2)).toEqual({ lead: '$3.50', extra: '', trail: '' });
-  });
-
-  it('keeps the separator with the extra digits of a currency without fraction digits', () => {
-    expect(formatTicker(29_052.2, 'JPY', 'en', 2)).toEqual({
-      lead: '¥29,052',
-      extra: '.20',
-      trail: '',
-    });
-    expect(tickerDigits(0.34, 'JPY', 'en')).toBe(2);
-    expect(tickerDigits(3, 'JPY', 'en')).toBe(1);
-    expect(tickerDigits(30, 'JPY', 'en')).toBe(0);
-  });
-
+describe('rates', () => {
   it('formats rates with two significant digits and at least the usual precision', () => {
     expect(formatRate(1.44, 'JPY', 'en')).toBe('¥1.4');
     expect(formatRate(0.34, 'JPY', 'en')).toBe('¥0.34');

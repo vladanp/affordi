@@ -21,6 +21,8 @@ describe('translation catalog completeness', () => {
       amount: '€10',
       month: 'March 2049',
       name: 'Rent',
+      paid: '€5',
+      left: '€5',
     } as const;
 
     for (const locale of supportedLocales) {

@@ -137,8 +137,13 @@
   font-variant-numeric: tabular-nums;
 }
 
-.item-note {
+.item-note,
+.item-meter {
   grid-column: 1 / 3;
+}
+
+.item-meter {
+  margin-block: 0.5rem 0.25rem;
 }
 
 .item-chevron {

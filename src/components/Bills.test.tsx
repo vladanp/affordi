@@ -108,7 +108,9 @@ describe('Bills', () => {
   it('shows an average month in money, work time, share of pay, and what is left', () => {
     render(
       <BillsPage
-        fixedCosts={[{ id: 'r', name: 'Rent', amount: 1_000, lastPayment: null }]}
+        fixedCosts={[
+          { id: 'r', name: 'Rent', amount: 1_000, firstPayment: null, lastPayment: null },
+        ]}
         initialBills={[water, electricity]}
       />,
     );
@@ -119,7 +121,7 @@ describe('Bills', () => {
     expect(within(average).getByText('About €1,527.00 a year')).toBeInTheDocument();
     const left = screen.getByText('Left after fixed costs and bills').closest('div')!;
     expect(within(left).getByText('€1,872.75')).toBeInTheDocument();
-    expect(within(left).getByText('€86.43 per workday')).toBeInTheDocument();
+    expect(within(left).getByText('€61.74 per day')).toBeInTheDocument();
     expect(rows()).toEqual([
       'Electricity€95.255 hours and 30 minutes of work3%3% of your payOctober: €91.00 · 4% below average',
       'Water€32.001 hour and 51 minutes of work1%1% of your payOctober: €34.00 · 6% above average',

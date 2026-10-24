@@ -48,7 +48,7 @@ const noFixedCosts: readonly FixedCost[] = [];
 const noBills: readonly Bill[] = [];
 
 function rent(amount: number): FixedCost {
-  return { id: 'rent', name: 'Rent', amount, lastPayment: null };
+  return { id: 'rent', name: 'Rent', amount, firstPayment: null, lastPayment: null };
 }
 
 function fixedCostsCard() {
@@ -63,26 +63,18 @@ function workStatus() {
   return document.querySelector('.earnings-status');
 }
 
-function stubReducedMotion(matches: boolean) {
-  vi.stubGlobal(
-    'matchMedia',
-    vi.fn(() => ({ matches, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
-  );
-}
-
 describe('Earnings', () => {
   beforeEach(() => vi.useFakeTimers({ now: new Date(2026, 9, 21, 12) }));
   afterEach(() => {
     cleanup();
     vi.useRealTimers();
-    vi.unstubAllGlobals();
   });
 
   it('counts today around the clock and at work while time passes', () => {
     render(<EarningsPage />);
 
     expect(screen.getByRole('heading', { name: 'How much do you earn?' })).toBeInTheDocument();
-    expect(liveAmounts()).toEqual(['€49.4505', '€51.9231', '€1,960.22 of €3,000.00']);
+    expect(liveAmounts()).toEqual(['€49.45', '€51.92', '€1,960.22 of €3,000.00']);
     expect(screen.getByText('Around the clock since midnight')).toBeInTheDocument();
     expect(workStatus()).toHaveTextContent('Working until 5:00 PM · 5 hours left');
     expect(screen.getByText('Workdays: 14 of 22')).toBeInTheDocument();
@@ -92,29 +84,21 @@ describe('Earnings', () => {
     act(() => {
       vi.advanceTimersByTime(60_000);
     });
-    expect(liveAmounts()).toEqual(['€49.5192', '€52.2115', '€1,960.51 of €3,000.00']);
+    expect(liveAmounts()).toEqual(['€49.51', '€52.21', '€1,960.51 of €3,000.00']);
     expect(workStatus()).toHaveTextContent('Working until 5:00 PM · 4 hours and 59 minutes left');
   });
 
-  it('updates ten times a second, or once a second with reduced motion', () => {
-    const first = render(<EarningsPage />);
-    act(() => {
-      vi.advanceTimersByTime(100);
-    });
-    expect(liveAmounts()[0]).toBe('€49.4507');
-    first.unmount();
-
-    stubReducedMotion(true);
-    vi.setSystemTime(new Date(2026, 9, 21, 12));
+  it('moves on to the next cent once a second, never ahead of what is earned', () => {
     render(<EarningsPage />);
+    // At work earns about €0.0048 a second, so the next cent arrives after two seconds.
     act(() => {
-      vi.advanceTimersByTime(900);
+      vi.advanceTimersByTime(1_000);
     });
-    expect(liveAmounts()[0]).toBe('€49.4505');
+    expect(liveAmounts()[1]).toBe('€51.92');
     act(() => {
-      vi.advanceTimersByTime(100);
+      vi.advanceTimersByTime(1_000);
     });
-    expect(liveAmounts()[0]).toBe('€49.4517');
+    expect(liveAmounts()[1]).toBe('€51.93');
   });
 
   it('breaks pay down around the clock and at work with shared totals', () => {
@@ -146,7 +130,7 @@ describe('Earnings', () => {
     expect(workStatus()).toHaveTextContent('Working until 5:00 PM · 5 hours left');
 
     fireEvent.click(screen.getByRole('button', { name: 'Show amounts' }));
-    expect(liveAmounts()).toEqual(['€49.4505', '€51.9231', '€1,960.22 of €3,000.00']);
+    expect(liveAmounts()).toEqual(['€49.45', '€51.92', '€1,960.22 of €3,000.00']);
   });
 
   it('shows how much of this month’s fixed costs the pay covers so far', () => {
@@ -176,13 +160,13 @@ describe('Earnings', () => {
     vi.setSystemTime(new Date(2026, 9, 21, 7, 30));
     const morning = render(<EarningsPage />);
     expect(screen.getByText('Starts at 9:00 AM')).toBeInTheDocument();
-    expect(liveAmounts()[1]).toBe('€0.0000');
+    expect(liveAmounts()[1]).toBe('€0.00');
     morning.unmount();
 
     vi.setSystemTime(new Date(2026, 9, 21, 18));
     const evening = render(<EarningsPage />);
     expect(screen.getByText('Finished at 5:00 PM')).toBeInTheDocument();
-    expect(liveAmounts()[1]).toBe('€138.4615');
+    expect(liveAmounts()[1]).toBe('€138.46');
     expect(liveAmounts()[2]).toBe('€2,045.45 of €3,000.00');
     expect(
       document.querySelector<HTMLElement>('.earnings-month .meter > span')?.style.inlineSize,

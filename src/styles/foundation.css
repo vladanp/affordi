@@ -134,6 +134,11 @@ button {
   outline-offset: 0.1875rem;
 }
 
+/* The caret shows where typing goes, so fields skip the ring that buttons and links keep. */
+input:not([type='checkbox'], [type='radio']):focus-visible {
+  outline: none;
+}
+
 ::selection {
   background: var(--color-highlight);
   color: var(--color-on-highlight);

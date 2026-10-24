@@ -1,19 +1,31 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { completeSetup } from './helpers';
 
 test.use({ timezoneId: 'UTC' });
 
-async function addFixedCost(page: Page, name: string, amount: string, lastPayment?: string[]) {
+type MonthAndYear = [month: string, year: string];
+
+interface Payments {
+  first?: MonthAndYear;
+  last?: MonthAndYear;
+}
+
+async function choosePayment(dialog: Locator, group: string, value?: MonthAndYear) {
+  if (value === undefined) return;
+  const fields = dialog.getByRole('group', { name: group });
+  await fields.getByRole('combobox', { name: 'Month' }).selectOption(value[0]);
+  await fields.getByRole('combobox', { name: 'Year' }).selectOption(value[1]);
+}
+
+async function addFixedCost(page: Page, name: string, amount: string, payments: Payments = {}) {
   await page.getByRole('button', { name: 'Add fixed cost' }).click();
   const dialog = page.getByRole('dialog', { name: 'Add a fixed cost' });
   await dialog.getByRole('textbox', { name: 'Name' }).fill(name);
   await dialog.getByRole('textbox', { name: 'Amount each month' }).fill(amount);
-  if (lastPayment !== undefined) {
-    await dialog.getByRole('combobox', { name: 'Month' }).selectOption(lastPayment[0]!);
-    await dialog.getByRole('combobox', { name: 'Year' }).selectOption(lastPayment[1]!);
-  }
+  await choosePayment(dialog, 'First payment', payments.first);
+  await choosePayment(dialog, 'Last payment', payments.last);
   await dialog.getByRole('button', { name: 'Add fixed cost' }).click();
   await expect(dialog).toBeHidden();
 }
@@ -32,13 +44,19 @@ test.describe('Affordi fixed costs', () => {
     await expect(page).toHaveTitle('Fixed costs · Affordi');
     await expect(page.getByRole('heading', { name: 'What do you pay each month?' })).toBeVisible();
 
-    await addFixedCost(page, 'Mortgage', '950', ['March', '2049']);
+    await addFixedCost(page, 'Mortgage', '950', {
+      first: ['January', '2024'],
+      last: ['March', '2049'],
+    });
     await addFixedCost(page, 'Phone', '45');
     const list = page.getByRole('list', { name: 'Your fixed costs' });
     await expect(list.getByRole('listitem')).toHaveText([
-      /^Mortgage€950\.006 days and 7 hours of work32%.*Last payment: March 2049$/,
+      /^Mortgage€950\.006 days and 7 hours of work32%.*€31,350\.00 paid · €256,500\.00 leftLast payment: March 2049$/,
       /^Phone€45\.002 hours and 36 minutes of work2%/,
     ]);
+    const loans = page.locator('.fixed-costs-loans');
+    await expect(loans).toContainText('€256,500.00');
+    await expect(loans).toContainText('€31,350.00 of €287,850.00 paid');
     await expect(page.locator('.fixed-costs-total')).toContainText('€995.00');
     await expect(page.locator('.fixed-costs-total')).toContainText('7 days and 1 hour of work');
     await expect(page.locator('.fixed-costs-left')).toContainText('€2,005.00');
@@ -88,7 +106,10 @@ test.describe('Affordi fixed costs', () => {
     expect(labels).toEqual(Array.from({ length: 4 }, () => ({ oneLine: true, inside: true })));
 
     await page.getByRole('link', { name: 'Fixed costs' }).click();
-    await addFixedCost(page, 'Home and contents insurance', '1234.56', ['December', '2075']);
+    await addFixedCost(page, 'Home and contents insurance', '1234.56', {
+      first: ['December', '1976'],
+      last: ['December', '2075'],
+    });
     await page.getByRole('button', { name: 'Edit Home and contents insurance' }).click();
     await expect(page.getByRole('button', { name: 'Save' })).toBeInViewport();
     await page.getByRole('button', { name: 'Cancel' }).click();

@@ -1,5 +1,3 @@
-import { useSyncExternalStore } from 'react';
-
 import {
   calculateEarnedThisMonth,
   calculateEarnedToday,
@@ -12,9 +10,6 @@ import {
   formatEarned,
   formatProgress,
   formatRate,
-  formatTicker,
-  tickerDigits,
-  type TickerParts,
 } from '../domain/earningsText';
 import { averageMonthlyBills, type Bill } from '../domain/bills';
 import { costsCoverage, monthlyFixedCosts, type FixedCost } from '../domain/fixedCosts';
@@ -24,42 +19,20 @@ import type { AffordiSettings } from '../domain/storage';
 import { HiddenAmount, HideAmountsButton } from './HiddenAmount';
 import { useNow } from './useNow';
 
-/** Live totals move several times a second, and once a second for reduced motion or hidden amounts. */
-const TICK_MS = 100;
-const SLOW_TICK_MS = 1_000;
-const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
-
-function subscribeToReducedMotion(onChange: () => void) {
-  if (typeof window.matchMedia !== 'function') return () => undefined;
-  const query = window.matchMedia(REDUCED_MOTION_QUERY);
-  query.addEventListener('change', onChange);
-  return () => query.removeEventListener('change', onChange);
-}
-
-function prefersReducedMotion(): boolean {
-  return typeof window.matchMedia === 'function' && window.matchMedia(REDUCED_MOTION_QUERY).matches;
-}
+/** Totals show the currency's usual decimals, so checking once a second keeps them current. */
+const TICK_MS = 1_000;
 
 interface LiveAmountProps {
+  /** The total so far, formatted. */
+  amount: string;
   copy: Translator;
   hidden: boolean;
-  parts: TickerParts;
 }
 
-/** A live total for today, with the digits beyond the currency's usual precision set smaller. */
-function LiveAmount({ copy, hidden, parts }: LiveAmountProps) {
+/** A total for today that moves on as it is earned. */
+function LiveAmount({ amount, copy, hidden }: LiveAmountProps) {
   return (
-    <p className="stat-amount live-amount">
-      {hidden ? (
-        <HiddenAmount copy={copy} />
-      ) : (
-        <>
-          {parts.lead}
-          <span className="live-amount-extra">{parts.extra}</span>
-          {parts.trail}
-        </>
-      )}
-    </p>
+    <p className="stat-amount live-amount">{hidden ? <HiddenAmount copy={copy} /> : amount}</p>
   );
 }
 
@@ -79,10 +52,7 @@ interface ProgressCardProps {
   total: string | null;
 }
 
-/**
- * Progress toward a monthly amount, in the currency's usual precision since it
- * needs no live digits. The share stays visible when amounts hide.
- */
+/** Progress toward a monthly amount. The share stays visible when amounts hide. */
 function ProgressCard({
   amount,
   caption,
@@ -155,12 +125,7 @@ interface EarningsProps {
 
 export function Earnings({ bills, fixedCosts, settings, onHideAmountsChange }: EarningsProps) {
   const amountsHidden = settings.hideAmounts;
-  const reducedMotion = useSyncExternalStore(
-    subscribeToReducedMotion,
-    prefersReducedMotion,
-    () => false,
-  );
-  const now = useNow(amountsHidden || reducedMotion ? SLOW_TICK_MS : TICK_MS);
+  const now = useNow(TICK_MS);
   const copy = createTranslator(settings.language);
   const rates = calculateEarningRates(settings);
   if (rates === null) return null;
@@ -172,7 +137,6 @@ export function Earnings({ bills, fixedCosts, settings, onHideAmountsChange }: E
   const billsAverage = averageMonthlyBills(bills, now);
   const coverage = costsCoverage(month.amount, monthlyFixedCosts(fixedCosts, now) + billsAverage);
   const withBills = billsAverage > 0;
-  const digits = tickerDigits(rates.aroundTheClock.second, currency, language);
   const rate = (value: number) =>
     amountsHidden ? <HiddenAmount copy={copy} /> : formatRate(value, currency, language);
 
@@ -187,18 +151,18 @@ export function Earnings({ bills, fixedCosts, settings, onHideAmountsChange }: E
         <div className="stat-card stat-card-highlight earnings-today">
           <p className="stat-label">{copy.t('earnings.today')}</p>
           <LiveAmount
+            amount={formatEarned(today.aroundTheClock, currency, language)}
             copy={copy}
             hidden={amountsHidden}
-            parts={formatTicker(today.aroundTheClock, currency, language, digits)}
           />
           <p className="stat-note">{copy.t('earnings.todayNote')}</p>
         </div>
         <div className="stat-card earnings-work" data-state={today.progress.state}>
           <p className="stat-label">{copy.t('earnings.atWork')}</p>
           <LiveAmount
+            amount={formatEarned(today.atWork, currency, language)}
             copy={copy}
             hidden={amountsHidden}
-            parts={formatTicker(today.atWork, currency, language, digits)}
           />
           <WorkStatus copy={copy} progress={today.progress} />
         </div>

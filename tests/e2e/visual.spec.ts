@@ -74,8 +74,8 @@ test.describe('UI screenshot audit', () => {
     // The hidden page is prerendered with these amounts, so wait until it actually shows.
     await expect(page.getByRole('heading', { name: 'How much do you earn?' })).toBeVisible();
     await expect(page.locator('.live-amount')).toHaveText([
-      '€58.7225',
-      '€90.8654',
+      '€58.72',
+      '€90.86',
       '€1,998.57 of €3,000.00',
     ]);
 
@@ -92,11 +92,30 @@ test.describe('UI screenshot audit', () => {
         JSON.stringify({
           version: 1,
           fixedCosts: [
-            { id: 'a', name: 'Mortgage', amount: 950, lastPayment: '2049-03' },
-            { id: 'b', name: 'Car loan', amount: 280, lastPayment: '2028-06' },
+            {
+              id: 'a',
+              name: 'Mortgage',
+              amount: 950,
+              firstPayment: '2019-04',
+              lastPayment: '2049-03',
+            },
+            {
+              id: 'b',
+              name: 'Car loan',
+              amount: 280,
+              firstPayment: '2023-07',
+              lastPayment: '2028-06',
+            },
+            // Saved before first payments existed.
             { id: 'c', name: 'Home insurance', amount: 45.5, lastPayment: null },
             { id: 'd', name: 'Phone and internet', amount: 59.99, lastPayment: null },
-            { id: 'e', name: 'Old loan', amount: 150, lastPayment: '2026-08' },
+            {
+              id: 'e',
+              name: 'Old loan',
+              amount: 150,
+              firstPayment: '2023-09',
+              lastPayment: '2026-08',
+            },
           ],
         }),
       ),
@@ -106,6 +125,9 @@ test.describe('UI screenshot audit', () => {
 
     await expect(page.getByRole('heading', { name: 'What do you pay each month?' })).toBeVisible();
     await expect(page.locator('.fixed-costs-total .stat-amount')).toHaveText('€1,335.49');
+    await expect(page.locator('.fixed-costs-loans')).toContainText(
+      '€96,420.00 of €358,800.00 paid',
+    );
     await attachScreenshot(page, testInfo, 'phone-fixed-costs', true);
   });
 

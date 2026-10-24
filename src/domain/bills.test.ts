@@ -164,7 +164,7 @@ describe('bill figures', () => {
     expect(summary!.workHours).toBeCloseTo(127.25 / hourlyRate, 10);
     expect(summary!.percentage).toBeCloseTo((127.25 / 3_000) * 100, 10);
     expect(summary!.left).toBeCloseTo(3_000 - 1_127.25, 10);
-    expect(summary!.leftPerWorkday).toBeCloseTo((3_000 - 1_127.25) / ((5 * 52) / 12), 10);
+    expect(summary!.leftPerDay).toBeCloseTo(((3_000 - 1_127.25) * 12) / 364, 10);
     expect(summary!.highest).toEqual({ month: '2026-10', total: 125 });
     expect(summary!.lowest).toEqual({ month: '2025-11', total: 90 });
   });

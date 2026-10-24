@@ -9,11 +9,14 @@ const wednesdayNoon = new Date('2026-10-21T12:00:00Z');
 
 test.use({ timezoneId: 'UTC' });
 
+/** Totals refresh once a second, so the clock runs for one tick to reach a moment. */
+const TICK_MS = 1_000;
+
 /** Opens earnings and stops the clock exactly at noon, after one tick. */
 async function showEarningsAtNoon(page: Page) {
   await page.getByRole('link', { name: 'Earnings' }).click();
-  await page.clock.pauseAt(wednesdayNoon.getTime() - 100);
-  await page.clock.runFor(100);
+  await page.clock.pauseAt(wednesdayNoon.getTime() - TICK_MS);
+  await page.clock.runFor(TICK_MS);
 }
 
 test.describe('Affordi earnings', () => {
@@ -35,14 +38,14 @@ test.describe('Affordi earnings', () => {
       'page',
     );
     const amounts = page.locator('.live-amount');
-    await expect(amounts).toHaveText(['€49.4505', '€51.9231', '€1,960.22 of €3,000.00']);
+    await expect(amounts).toHaveText(['€49.45', '€51.92', '€1,960.22 of €3,000.00']);
     const status = page.locator('.earnings-status');
     await expect(status).toHaveText('Working until 5:00 PM · 5 hours left');
     await expect(page.locator('.earnings-month .stat-caption')).toContainText('Workdays: 14 of 22');
     await expect(page.getByText('65%', { exact: true })).toBeVisible();
 
     await page.clock.runFor(60_000);
-    await expect(amounts).toHaveText(['€49.5192', '€52.2115', '€1,960.51 of €3,000.00']);
+    await expect(amounts).toHaveText(['€49.51', '€52.21', '€1,960.51 of €3,000.00']);
     await expect(status).toHaveText('Working until 5:00 PM · 4 hours and 59 minutes left');
 
     const table = page.getByRole('table', { name: 'Your take home pay, broken down' });
@@ -92,11 +95,11 @@ test.describe('Affordi earnings', () => {
     await page.getByRole('link', { name: 'Earnings' }).click();
 
     await expect(page.getByText('Starts at 1:00 PM')).toBeVisible();
-    await expect(page.locator('.live-amount').nth(1)).toHaveText('€0.0000');
+    await expect(page.locator('.live-amount').nth(1)).toHaveText('€0.00');
     // A narrow card sets the time left on its own line rather than wrapping it mid-phrase.
     const threePm = new Date('2026-10-21T15:00:00Z').getTime();
-    await page.clock.pauseAt(threePm - 100);
-    await page.clock.runFor(100);
+    await page.clock.pauseAt(threePm - TICK_MS);
+    await page.clock.runFor(TICK_MS);
     await expect(page.locator('.status-separator')).toBeHidden();
     await expect(page.locator('.status-time-left')).toHaveText('9 hours left');
     await expect(page.locator('.live-amount').first()).toBeInViewport();
