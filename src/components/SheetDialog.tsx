@@ -195,18 +195,24 @@ interface FormActionsProps {
 
 export function FormActions({ copy, onCancel, onDeleteRequest, submitLabel }: FormActionsProps) {
   return (
-    <div className="form-actions form-wide">
+    <>
       {onDeleteRequest !== null && (
-        <button className="text-button delete-button" onClick={onDeleteRequest} type="button">
+        <button
+          className="text-button danger-button form-wide"
+          onClick={onDeleteRequest}
+          type="button"
+        >
           {copy.t('fixedCosts.delete')}
         </button>
       )}
-      <button className="button button-quiet" onClick={onCancel} type="button">
-        {copy.t('form.cancel')}
-      </button>
-      <button className="button button-primary" type="submit">
-        {submitLabel}
-      </button>
-    </div>
+      <div className="form-actions form-wide">
+        <button className="button button-quiet" onClick={onCancel} type="button">
+          {copy.t('form.cancel')}
+        </button>
+        <button className="button button-primary" type="submit">
+          {submitLabel}
+        </button>
+      </div>
+    </>
   );
 }

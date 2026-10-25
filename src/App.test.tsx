@@ -75,7 +75,7 @@ describe('App', () => {
     render(<App />);
     expect(screen.getByRole('button', { name: 'Show amounts' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(screen.getByRole('button', { name: 'Show amounts' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Show amounts' }));
     expect(JSON.parse(localStorage.getItem('affordi.settings.v1') ?? '{}').settings).toMatchObject({
@@ -100,7 +100,7 @@ describe('App', () => {
     fireEvent.change(dialog.getByRole('textbox', { name: 'Amount each month' }), {
       target: { value: '900' },
     });
-    fireEvent.click(dialog.getByRole('button', { name: 'Add fixed cost' }));
+    fireEvent.click(dialog.getByRole('button', { name: 'Add' }));
     expect(
       JSON.parse(localStorage.getItem('affordi.fixedCosts.v1') ?? '{}').fixedCosts,
     ).toMatchObject([{ name: 'Rent', amount: 900, lastPayment: null }]);
@@ -122,7 +122,7 @@ describe('App', () => {
     fireEvent.change(dialog.getByRole('textbox', { name: 'Amount each month' }), {
       target: { value: '900' },
     });
-    fireEvent.click(dialog.getByRole('button', { name: 'Add fixed cost' }));
+    fireEvent.click(dialog.getByRole('button', { name: 'Add' }));
     setItem.mockRestore();
     expect(
       screen.getByText('Fixed costs are available for this visit, but could not be saved.'),
@@ -200,7 +200,7 @@ describe('App', () => {
     fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
       target: { value: '10' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(screen.getByRole('textbox', { name: 'Enter a price' })).toHaveValue('10');
     expect(screen.getByText(/€10/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
@@ -248,7 +248,7 @@ describe('App', () => {
     fireEvent.change(screen.getByLabelText('Take home income'), {
       target: { value: '6000' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(screen.getByRole('textbox', { name: 'Enter a price' })).toHaveValue('750');
     expect(screen.getByText('22 hours of work')).toBeInTheDocument();
   });
@@ -565,7 +565,7 @@ describe('App', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     expect(screen.queryByRole('textbox', { name: /savings|commute|costs/i })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(JSON.parse(localStorage.getItem('affordi.settings.v1') ?? '{}').settings).toEqual({
       netIncome: 3000,
       payFrequency: 'monthly',

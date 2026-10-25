@@ -169,7 +169,7 @@ function BillForm({
         copy={copy}
         onCancel={onCancel}
         onDeleteRequest={bill === null ? null : onDeleteRequest}
-        submitLabel={copy.t(bill === null ? 'bills.add' : 'fixedCosts.save')}
+        submitLabel={copy.t(bill === null ? 'bills.addShort' : 'fixedCosts.save')}
       />
     </form>
   );

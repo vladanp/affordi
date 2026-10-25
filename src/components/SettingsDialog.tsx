@@ -121,19 +121,19 @@ export function SettingsDialog({
           onLanguagePreview={onLanguagePreview}
           onSubmit={onSave}
           onThemePreview={onThemePreview}
-        />
-        <button
-          className="reset-button"
-          hidden={resetConfirmOpen}
-          onClick={() => {
-            setResetError(false);
-            setResetConfirmOpen(true);
-          }}
-          ref={resetButtonRef}
-          type="button"
         >
-          {copy.t('settings.resetSaved')}
-        </button>
+          <button
+            className="text-button danger-button form-wide"
+            onClick={() => {
+              setResetError(false);
+              setResetConfirmOpen(true);
+            }}
+            ref={resetButtonRef}
+            type="button"
+          >
+            {copy.t('settings.resetSaved')}
+          </button>
+        </IncomeForm>
       </div>
     </dialog>
   );

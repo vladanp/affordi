@@ -31,7 +31,7 @@ async function addFixedCost(page: Page, name: string, amount: string, payments: 
   await dialog.getByRole('textbox', { name: 'Amount each month' }).fill(amount);
   await choosePayment(dialog, 'First payment', payments.first);
   await choosePayment(dialog, 'Last payment', payments.last);
-  await dialog.getByRole('button', { name: 'Add fixed cost' }).click();
+  await dialog.getByRole('button', { name: 'Add', exact: true }).click();
   await expect(dialog).toBeHidden();
 }
 
@@ -42,7 +42,7 @@ async function addBill(page: Page, name: string, amount?: string) {
   if (amount !== undefined) {
     await dialog.getByRole('textbox', { name: 'Amount', exact: true }).fill(amount);
   }
-  await dialog.getByRole('button', { name: 'Add bill' }).click();
+  await dialog.getByRole('button', { name: 'Add', exact: true }).click();
   await expect(dialog).toBeHidden();
 }
 
@@ -159,7 +159,7 @@ test.describe('Affordi monthly page', () => {
 
     await page.getByRole('link', { name: 'Earnings' }).click();
     const coverage = page.locator('.earnings-fixed-costs');
-    await expect(coverage).toContainText('Fixed costs and bills this month');
+    await expect(coverage).toContainText('Bills and fixed costs this month');
     await expect(coverage).toContainText('All covered');
     await expect(coverage.locator('.live-amount')).toHaveText('€119.00');
   });
@@ -232,8 +232,17 @@ test.describe('Affordi monthly page', () => {
     expect(lastRow!.y + lastRow!.height).toBeLessThanOrEqual(nav!.y);
 
     await page.getByRole('button', { name: 'Edit Home and contents insurance' }).click();
-    await expect(page.getByRole('button', { name: 'Save' })).toBeInViewport();
-    await page.getByRole('button', { name: 'Cancel' }).click();
+    const save = page.getByRole('button', { name: 'Save' });
+    const cancel = page.getByRole('button', { name: 'Cancel' });
+    await expect(save).toBeInViewport();
+    // Cancel and Save share one row, and Delete ends the form above them.
+    const [cancelBox, saveBox] = await Promise.all([cancel.boundingBox(), save.boundingBox()]);
+    expect(Math.abs(cancelBox!.y - saveBox!.y)).toBeLessThan(1);
+    const remove = page.getByRole('button', { name: 'Delete' });
+    await remove.focus();
+    const deleteBox = await remove.boundingBox();
+    expect(deleteBox!.y + deleteBox!.height).toBeLessThanOrEqual(saveBox!.y);
+    await cancel.click();
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true);

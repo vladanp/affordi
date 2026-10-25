@@ -177,6 +177,15 @@
   padding-inline: 1.1rem;
   font-size: 0.9375rem;
   font-weight: 650;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+/* Done still closes the keyboard, but stays quiet until there is a price. */
+.price-input-wrap:has(input:placeholder-shown) .price-done-button {
+  background: var(--color-sunken);
+  color: var(--color-ink-soft);
 }
 
 .price-error {

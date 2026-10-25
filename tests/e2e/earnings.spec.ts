@@ -90,7 +90,7 @@ test.describe('Affordi earnings', () => {
     await page.getByLabel('Work ends').fill('00:00');
     await page.getByRole('checkbox', { name: 'Monday' }).uncheck();
     await expect(page.getByText('11 hours a day, 44 hours a week')).toBeVisible();
-    await page.getByRole('button', { name: 'Save settings' }).click();
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
     await page.getByRole('link', { name: 'Earnings' }).click();
 
     await expect(page.getByText('Starts at 1:00 PM')).toBeVisible();
