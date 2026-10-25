@@ -121,6 +121,7 @@ const german: Catalog = {
   'bills.addShort': 'Hinzufügen',
   'bills.chartTitle': 'Rechnungen pro Monat',
   'bills.chartAverage': 'Durchschnitt {{amount}}',
+  'bills.other': 'Weitere',
   'bills.highest': 'Höchster: {{month}}, {{amount}}',
   'bills.lowest': 'Niedrigster: {{month}}, {{amount}}',
   'bills.list': 'Rechnungen',

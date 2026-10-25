@@ -122,6 +122,7 @@ const french: Catalog = {
   'bills.addShort': 'Ajouter',
   'bills.chartTitle': 'Factures par mois',
   'bills.chartAverage': 'Moyenne {{amount}}',
+  'bills.other': 'Autres',
   'bills.highest': 'Le plus élevé : {{month}}, {{amount}}',
   'bills.lowest': 'Le plus bas : {{month}}, {{amount}}',
   'bills.list': 'Factures',

@@ -25,6 +25,15 @@
   --color-on-danger: #fff;
   --color-scrim: rgb(14 15 13 / 45%);
   --color-shadow: rgb(20 20 18 / 7%);
+  /* Bills are told apart by these colors, checked in this order for color blindness. */
+  --color-series-1: #2a78d6;
+  --color-series-2: #eb6834;
+  --color-series-3: #1baf7a;
+  --color-series-4: #eda100;
+  --color-series-5: #e87ba4;
+  --color-series-6: #008300;
+  --color-series-7: #6250d6;
+  --color-series-8: #e34948;
   --shadow-card: 0 1px 2px var(--color-shadow), 0 0.75rem 2rem var(--color-shadow);
   --shadow-raised: 0 1px 2px var(--color-shadow), 0 1rem 3rem var(--color-shadow);
   --radius-field: 0.875rem;
@@ -67,6 +76,14 @@
     --color-danger-action: light-dark(#b42318, #c2381f);
     --color-scrim: light-dark(rgb(14 15 13 / 45%), rgb(0 0 0 / 65%));
     --color-shadow: light-dark(rgb(20 20 18 / 7%), rgb(0 0 0 / 45%));
+    --color-series-1: light-dark(#2a78d6, #3987e5);
+    --color-series-2: light-dark(#eb6834, #d95926);
+    --color-series-3: light-dark(#1baf7a, #199e70);
+    --color-series-4: light-dark(#eda100, #c98500);
+    --color-series-5: light-dark(#e87ba4, #d55181);
+    --color-series-6: light-dark(#008300, #008300);
+    --color-series-7: light-dark(#6250d6, #9085e9);
+    --color-series-8: light-dark(#e34948, #e66767);
   }
 
   :root[data-theme='light'] {

@@ -120,6 +120,7 @@ const italian: Catalog = {
   'bills.addShort': 'Aggiungi',
   'bills.chartTitle': 'Bollette al mese',
   'bills.chartAverage': 'Media {{amount}}',
+  'bills.other': 'Altre',
   'bills.highest': 'Più alto: {{month}}, {{amount}}',
   'bills.lowest': 'Più basso: {{month}}, {{amount}}',
   'bills.list': 'Bollette',

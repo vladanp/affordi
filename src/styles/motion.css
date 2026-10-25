@@ -58,9 +58,11 @@
   .bills-bar {
     transform-origin: center bottom;
     animation: grow-up 480ms var(--ease-out) both;
-    transition:
-      background-color 120ms ease,
-      block-size 320ms var(--ease-out);
+    transition: block-size 320ms var(--ease-out);
+  }
+
+  .bills-segment {
+    transition: flex-grow 320ms var(--ease-out);
   }
 
   /* The open tab's pill swells into place. */

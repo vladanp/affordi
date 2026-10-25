@@ -122,6 +122,21 @@ function monthTotal() {
   return document.querySelector('.bill-month-total')?.textContent;
 }
 
+/** The names in the bills chart's key, or none without a key. */
+function chartKey() {
+  const key = document.querySelector<HTMLElement>('.bills-legend');
+  return key === null
+    ? []
+    : within(key)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent);
+}
+
+/** The parts of this month's column in the bills chart, the first bill at the bottom. */
+function thisMonthParts() {
+  return [...document.querySelectorAll<HTMLElement>('.bills-column:last-child .bills-segment')];
+}
+
 describe('Monthly fixed costs', () => {
   beforeEach(() => vi.useFakeTimers({ now: new Date(2026, 9, 21, 12) }));
   afterEach(() => {
@@ -473,6 +488,58 @@ describe('Monthly bills', () => {
     fireEvent.blur(amount('Water'));
     expect(amount('Water')).toHaveValue('29.50');
     expect(monthTotal()).toBe('Total €29.50');
+  });
+
+  it('colors the chart by bill, names them in a key, and gives every amount in a table', () => {
+    render(<MonthlyPage initialBills={[electricity, water]} />);
+    expect(chartKey()).toEqual(['Electricity', 'Water']);
+    expect(thisMonthParts().map((part) => part.style.getPropertyValue('--bill-color'))).toEqual([
+      'var(--color-series-1)',
+      'var(--color-series-2)',
+    ]);
+
+    const table = within(screen.getByRole('table', { name: 'Bills per month' }));
+    expect(table.getAllByRole('columnheader').map((cell) => cell.textContent)).toEqual([
+      'Month',
+      'Electricity',
+      'Water',
+      'Total',
+    ]);
+    const october = table.getByRole('rowheader', { name: 'October 2026' }).closest('tr')!;
+    expect([...october.cells].map((cell) => cell.textContent)).toEqual([
+      'October 2026',
+      '€91.00',
+      '€34.00',
+      '€125.00',
+    ]);
+    const november = table.getByRole('rowheader', { name: 'November 2025' }).closest('tr')!;
+    expect([...november.cells].map((cell) => cell.textContent)).toEqual([
+      'November 2025',
+      '€90.00',
+      '–',
+      '€90.00',
+    ]);
+  });
+
+  it('keeps the key for two bills or more and folds those past eight into Other', () => {
+    render(<MonthlyPage initialBills={[electricity]} />);
+    expect(chartKey()).toEqual([]);
+    cleanup();
+
+    const many = Array.from({ length: 10 }, (_, index): Bill => ({
+      id: `b${index}`,
+      name: `Bill ${index + 1}`,
+      entries: [{ month: '2026-10', amount: 10 }],
+    }));
+    render(<MonthlyPage initialBills={many} />);
+    const names = chartKey();
+    expect(names).toHaveLength(9);
+    expect(names.slice(-2)).toEqual(['Bill 8', 'Other']);
+    // The ninth and tenth bill share the gray part, which has no color of its own.
+    const parts = thisMonthParts();
+    expect(parts).toHaveLength(9);
+    expect(parts[8]?.style.flexGrow).toBe('20');
+    expect(parts[8]?.style.getPropertyValue('--bill-color')).toBe('');
   });
 
   it('picks any of the last twelve months from the list under the month’s name', () => {

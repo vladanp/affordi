@@ -118,6 +118,7 @@ const serbian: Catalog = {
   'bills.addShort': 'Dodaj',
   'bills.chartTitle': 'Računi po mesecima',
   'bills.chartAverage': 'Prosek {{amount}}',
+  'bills.other': 'Ostali',
   'bills.highest': 'Najviše: {{month}}, {{amount}}',
   'bills.lowest': 'Najmanje: {{month}}, {{amount}}',
   'bills.list': 'Računi',
