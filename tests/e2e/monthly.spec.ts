@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-import { completeSetup, expectAccessible } from './helpers';
+import { completeSetup, expectAccessible, waitForStillness } from './helpers';
 
 test.use({ timezoneId: 'UTC' });
 
@@ -213,7 +213,8 @@ test.describe('Affordi monthly page', () => {
     await addBill(page, 'District heating and hot water', '1234.56');
     // On the narrowest phones a bill's amount takes the line under its name.
     const name = await page
-      .getByText('District heating and hot water', { exact: true })
+      .locator('label')
+      .filter({ hasText: /^District heating and hot water$/ })
       .boundingBox();
     const field = await page
       .getByRole('textbox', { name: 'District heating and hot water' })
@@ -235,6 +236,8 @@ test.describe('Affordi monthly page', () => {
     const save = page.getByRole('button', { name: 'Save' });
     const cancel = page.getByRole('button', { name: 'Cancel' });
     await expect(save).toBeInViewport();
+    // The sheet rises into place first, so its buttons are measured once it has.
+    await waitForStillness(page);
     // Cancel and Save share one row, and Delete ends the form above them.
     const [cancelBox, saveBox] = await Promise.all([cancel.boundingBox(), save.boundingBox()]);
     expect(Math.abs(cancelBox!.y - saveBox!.y)).toBeLessThan(1);

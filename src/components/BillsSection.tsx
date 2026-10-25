@@ -1,4 +1,10 @@
-import { useRef, useState, type AnimationEvent, type KeyboardEvent } from 'react';
+import {
+  useRef,
+  useState,
+  type AnimationEvent,
+  type CSSProperties,
+  type KeyboardEvent,
+} from 'react';
 import { flushSync } from 'react-dom';
 import { ChevronDown, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 
@@ -21,6 +27,7 @@ import { currencyDigits, formatCurrency, getCurrencySymbol } from '../domain/loc
 import { monthStart, parseMonth } from '../domain/months';
 import { formatIncomePercentage } from '../domain/priceText';
 import type { AffordiSettings } from '../domain/storage';
+import { billColor } from './billColor';
 import { BillDialog } from './BillDialog';
 import { BillsChart } from './BillsChart';
 import { FieldError } from './FieldError';
@@ -77,6 +84,8 @@ interface BillAmountRowProps {
   bill: Bill;
   /** Whether the bill was just added or saved, which makes its row glow for a moment. */
   changed: boolean;
+  /** The bill's color in the chart. */
+  color: CSSProperties;
   copy: Translator;
   hidden: boolean;
   month: string;
@@ -90,6 +99,7 @@ interface BillAmountRowProps {
 function BillAmountRow({
   bill,
   changed,
+  color,
   copy,
   hidden,
   month,
@@ -129,6 +139,7 @@ function BillAmountRow({
   return (
     <li className="bill-row" data-changed={changed || undefined}>
       <label className="bill-row-name" htmlFor={id}>
+        <span aria-hidden="true" className="bills-swatch" style={color} />
         {bill.name}
       </label>
       <button
@@ -301,10 +312,11 @@ function BillMonth({
         <MissedNote copy={copy} missed={missed} onEnter={onEnterMissed} />
       )}
       <ul aria-labelledby={MONTH_TITLE_ID} className="bill-rows" onAnimationEnd={onAnimationEnd}>
-        {bills.map((bill) => (
+        {bills.map((bill, billIndex) => (
           <BillAmountRow
             bill={bill}
             changed={bill.id === changedId}
+            color={billColor(billIndex)}
             copy={copy}
             hidden={hidden}
             key={`${bill.id}:${current.month}`}
@@ -409,6 +421,7 @@ export function BillsSection({
       {bills.length > 0 && (
         <>
           <BillsChart
+            bills={bills}
             copy={copy}
             currency={settings.currency}
             hidden={hidden}
