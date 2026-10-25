@@ -275,7 +275,12 @@
   line-height: 1.35;
 }
 
-.local-only-note,
+.field-hint {
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
 .schedule-summary {
   margin: -0.5rem 0 0;
   color: var(--color-muted);

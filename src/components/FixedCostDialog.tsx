@@ -331,7 +331,7 @@ function FixedCostForm({
         copy={copy}
         onCancel={onCancel}
         onDeleteRequest={cost === null ? null : onDeleteRequest}
-        submitLabel={copy.t(cost === null ? 'fixedCosts.add' : 'fixedCosts.save')}
+        submitLabel={copy.t(cost === null ? 'fixedCosts.addShort' : 'fixedCosts.save')}
       />
     </form>
   );

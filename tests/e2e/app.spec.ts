@@ -129,10 +129,14 @@ test.describe('Affordi calculator', () => {
     await completeSetup(page);
     await page.getByRole('button', { name: 'Settings' }).click();
 
-    await expect(page.getByRole('button', { name: 'Save settings' })).toBeInViewport();
-    await expect(page.getByRole('button', { name: 'Cancel' })).toBeInViewport();
+    const save = page.getByRole('button', { name: 'Save', exact: true });
+    const cancel = page.getByRole('button', { name: 'Cancel' });
+    await expect(save).toBeInViewport();
+    await expect(cancel).toBeInViewport();
+    const [cancelBox, saveBox] = await Promise.all([cancel.boundingBox(), save.boundingBox()]);
+    expect(Math.abs(cancelBox!.y - saveBox!.y)).toBeLessThan(1);
     await page.getByLabel('Take home income').focus();
-    await expect(page.getByRole('button', { name: 'Save settings' })).toBeInViewport();
+    await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeInViewport();
   });
 
   test('keeps saved income masked when settings open', async ({ page }) => {
@@ -182,7 +186,7 @@ test.describe('Affordi calculator', () => {
 
     const income = page.getByLabel('Take home income');
     await income.fill('4000');
-    await page.getByRole('button', { name: 'Save settings' }).click();
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByRole('dialog')).toBeHidden();
     await expect(page.getByRole('button', { name: 'Settings' })).toBeFocused();
 
@@ -257,7 +261,7 @@ test.describe('Affordi calculator', () => {
     await completeSetup(page);
     await page.getByRole('button', { name: 'Settings' }).click();
     await page.getByRole('combobox', { name: 'Language' }).selectOption('sr');
-    await page.getByRole('button', { name: 'Sačuvaj podešavanja' }).click();
+    await page.getByRole('button', { name: 'Sačuvaj', exact: true }).click();
 
     const price = page.getByRole('textbox', { name: 'Unesite cenu' });
     await price.fill('36');

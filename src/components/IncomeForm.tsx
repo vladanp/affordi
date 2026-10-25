@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
 import { isPayFrequency, payFrequencies } from '../domain/calculations';
@@ -33,6 +33,8 @@ interface SetupIncomeFormProps extends IncomeFormBaseProps {
 }
 
 interface EditIncomeFormProps extends IncomeFormBaseProps {
+  /** A last action of the form, such as resetting, placed before Cancel and Save. */
+  children?: ReactNode;
   hidden?: boolean;
   initialValues: AffordiSettings;
   mode: 'edit';
@@ -218,6 +220,9 @@ function IncomeField({
       <small className="visually-hidden" id="income-currency-description">
         {copy.t('form.incomeDescription', { currency })}
       </small>
+      <small className="field-hint" id="income-local-note">
+        {copy.t('privacy.localOnly')}
+      </small>
       <FieldError error={error} id="income-error" />
     </div>
   );
@@ -397,9 +402,6 @@ export function IncomeForm(props: IncomeFormProps) {
         }))}
         value={values.payFrequency}
       />
-      <p className="local-only-note form-wide" id="income-local-note">
-        {copy.t('privacy.localOnly')}
-      </p>
       <SegmentedField
         error={errors.currency}
         label={copy.t('form.currencyLabel')}
@@ -436,6 +438,7 @@ export function IncomeForm(props: IncomeFormProps) {
             options={themePreferences.map((theme) => ({ label: copy.theme(theme), value: theme }))}
             value={values.theme}
           />
+          {props.children}
         </>
       )}
 

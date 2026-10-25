@@ -139,7 +139,7 @@ describe('Monthly fixed costs', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Add fixed cost' }));
     expect(dialog().getByRole('heading', { name: 'Add a fixed cost' })).toBeInTheDocument();
-    fireEvent.click(dialog().getByRole('button', { name: 'Add fixed cost' }));
+    fireEvent.click(dialog().getByRole('button', { name: 'Add' }));
     expect(dialog().getByText('Enter a name.')).toBeInTheDocument();
     expect(dialog().getByText('Enter an amount greater than 0.')).toBeInTheDocument();
     expect(dialog().getByRole('textbox', { name: 'Name' })).toHaveFocus();
@@ -153,7 +153,7 @@ describe('Monthly fixed costs', () => {
     fireEvent.change(payment('Last payment').getByRole('combobox', { name: 'Month' }), {
       target: { value: '3' },
     });
-    fireEvent.click(dialog().getByRole('button', { name: 'Add fixed cost' }));
+    fireEvent.click(dialog().getByRole('button', { name: 'Add' }));
     expect(
       dialog().getByText('Choose a month and a year, or leave both empty.'),
     ).toBeInTheDocument();
@@ -162,7 +162,7 @@ describe('Monthly fixed costs', () => {
     fireEvent.change(payment('Last payment').getByRole('combobox', { name: 'Year' }), {
       target: { value: '2049' },
     });
-    fireEvent.click(dialog().getByRole('button', { name: 'Add fixed cost' }));
+    fireEvent.click(dialog().getByRole('button', { name: 'Add' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(rows()).toEqual([
       'Mortgage€950.006 days and 7 hours of work32%32% of your pay€256,500.00 left to payLast payment: March 2049',
@@ -368,7 +368,7 @@ describe('Monthly bills', () => {
     fireEvent.change(dialog().getByRole('textbox', { name: 'Amount' }), {
       target: { value: '0' },
     });
-    fireEvent.click(dialog().getByRole('button', { name: 'Add bill' }));
+    fireEvent.click(dialog().getByRole('button', { name: 'Add' }));
     expect(dialog().getByText('Enter a name.')).toBeInTheDocument();
     expect(dialog().getByText('Enter an amount greater than 0.')).toBeInTheDocument();
 
@@ -378,7 +378,7 @@ describe('Monthly bills', () => {
     fireEvent.change(dialog().getByRole('textbox', { name: 'Amount' }), {
       target: { value: '91' },
     });
-    fireEvent.click(dialog().getByRole('button', { name: 'Add bill' }));
+    fireEvent.click(dialog().getByRole('button', { name: 'Add' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(monthTitle()).toBe('October 2026');
     expect(amount('Electricity')).toHaveValue('91.00');
@@ -390,7 +390,7 @@ describe('Monthly bills', () => {
     fireEvent.change(dialog().getByRole('textbox', { name: 'Name' }), {
       target: { value: 'Water' },
     });
-    fireEvent.click(dialog().getByRole('button', { name: 'Add bill' }));
+    fireEvent.click(dialog().getByRole('button', { name: 'Add' }));
     expect(amount('Water')).toHaveValue('');
     fireEvent.change(amount('Water'), { target: { value: '34' } });
     fireEvent.blur(amount('Water'));
@@ -422,7 +422,7 @@ describe('Monthly bills', () => {
     fireEvent.change(dialog().getByRole('textbox', { name: 'Amount' }), {
       target: { value: '34' },
     });
-    fireEvent.click(dialog().getByRole('button', { name: 'Add bill' }));
+    fireEvent.click(dialog().getByRole('button', { name: 'Add' }));
     expect(monthTitle()).toBe('September 2026');
     expect(amount('Water')).toHaveValue('34.00');
     expect(monthTotal()).toBe('Total €34.00');
@@ -439,7 +439,7 @@ describe('Monthly bills', () => {
     expect(within(total).getByText('€1,127.25')).toBeInTheDocument();
     expect(within(total).getByText('8 days and 1 hour of work')).toBeInTheDocument();
     expect(
-      within(total).getByText('Fixed costs €1,000.00 · Bills €127.25 on average'),
+      within(total).getByText('Bills €127.25 on average · Fixed costs €1,000.00'),
     ).toBeInTheDocument();
     const left = screen.getByText('Left each month').closest('div')!;
     expect(within(left).getByText('€1,872.75')).toBeInTheDocument();

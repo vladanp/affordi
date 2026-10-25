@@ -61,29 +61,16 @@ html:has(.sheet-dialog[open]) {
   }
 }
 
-.reset-button {
-  margin-top: 1.25rem;
-  border: 0;
-  background: transparent;
-  color: var(--color-danger);
-  padding: 0;
-  font-size: 0.875rem;
-  font-weight: 650;
-}
-
-@media (hover: hover) {
-  .reset-button:hover {
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
-  }
-}
-
 .reset-copy {
   margin: 0;
   color: var(--color-muted);
 }
 
-/* Cancel and save stay in reach while a long sheet scrolls. */
+/* Cancel and save stay in reach while a long sheet scrolls, and never cover a focused field. */
+.sheet-dialog:has(.income-form .form-actions) {
+  scroll-padding-block-end: calc(5rem + env(safe-area-inset-bottom));
+}
+
 .sheet-dialog .income-form .form-actions {
   position: sticky;
   bottom: 0;
@@ -92,6 +79,14 @@ html:has(.sheet-dialog[open]) {
   border-top: 1px solid var(--color-line);
   background: var(--color-surface);
   padding: 0.75rem var(--dialog-padding) max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/* On a phone, a sheet's buttons share the row in equal halves, and stack only when their labels can't. */
+@container (max-width: 30rem) {
+  .sheet-dialog .form-actions .button {
+    flex: 1 1 0;
+    white-space: nowrap;
+  }
 }
 
 .reset-view .form-actions {
@@ -114,6 +109,17 @@ html:has(.sheet-dialog[open]) {
     text-decoration: underline;
     text-underline-offset: 0.2em;
   }
+}
+
+/* A destructive action ends a sheet's content, apart from the button that saves, and stays red on hover. */
+.danger-button,
+.danger-button:hover {
+  color: var(--color-danger);
+}
+
+.danger-button {
+  justify-self: start;
+  margin-inline-start: -0.5rem;
 }
 
 .update-prompt {
