@@ -155,21 +155,12 @@ describe('bill figures', () => {
     expect(totals.at(-1)).toEqual({ month: '2026-10', total: 125 });
   });
 
-  it('finds the highest and lowest of the last twelve months', () => {
+  it('sums up the last twelve months for the chart', () => {
     const summary = summarizeBills(bills, october);
     expect(summary.average).toBeCloseTo(127.25, 10);
-    expect(summary.totals).toHaveLength(12);
-    expect(summary.highest).toEqual({ month: '2026-10', total: 125 });
-    expect(summary.lowest).toEqual({ month: '2025-11', total: 90 });
-  });
-
-  it('names no highest or lowest month until two months have amounts', () => {
-    expect(summarizeBills([{ ...water, entries: [water.entries[1]!] }], october)).toMatchObject({
-      average: 34,
-      highest: null,
-      lowest: null,
-    });
-    expect(summarizeBills([], october)).toMatchObject({ average: 0, highest: null });
+    expect(summary.totals).toEqual(monthlyBillTotals(bills, october));
+    expect(summarizeBills([{ ...water, entries: [water.entries[1]!] }], october).average).toBe(34);
+    expect(summarizeBills([], october).average).toBe(0);
   });
 });
 

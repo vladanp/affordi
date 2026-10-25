@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from 'react';
-import { CalendarClock, Hourglass, Repeat } from 'lucide-react';
+import { CalendarClock, Repeat } from 'lucide-react';
 
 import { isPriceRepeat, priceRepeats, type PriceRepeat } from '../domain/calculations';
 import { createTranslator, type Translator } from '../domain/i18n';
@@ -90,26 +90,18 @@ function ResultContext({ result }: { result: PriceResult }) {
 }
 
 interface ResultPanelProps {
-  copy: Translator;
-  result: PriceResult | null;
+  result: PriceResult;
   resultRef: RefObject<HTMLDivElement | null>;
 }
 
-/** The result card, or a quiet placeholder until a valid price is entered. */
-function ResultPanel({ copy, result, resultRef }: ResultPanelProps) {
-  if (result === null) {
-    return (
-      <div className="result-empty" id="calculator-result" ref={resultRef}>
-        <Hourglass aria-hidden="true" size={22} strokeWidth={1.75} />
-        <p>{copy.t('calculator.emptyResult')}</p>
-      </div>
-    );
-  }
-
+/** The time a price costs, read with the price it is for. */
+function ResultPanel({ result, resultRef }: ResultPanelProps) {
   return (
     <div className="result-card" id="calculator-result" ref={resultRef}>
-      <p className="result-label">{result.label}</p>
-      <p className="result-primary">{result.primary}</p>
+      <p className="result-primary">
+        <span className="visually-hidden">{result.label} </span>
+        {result.primary}
+      </p>
       <ResultContext result={result} />
     </div>
   );
@@ -153,9 +145,6 @@ export function Calculator({ settings }: CalculatorProps) {
       <h1 id="calculator-title">{copy.t('calculator.title')}</h1>
 
       <form className="price-field" onSubmit={handlePriceSubmit}>
-        <label className="price-label" htmlFor="item-price">
-          {copy.t('calculator.priceLabel')}
-        </label>
         <span className="price-input-wrap">
           <span aria-hidden="true" className="currency-symbol">
             {getCurrencySymbol(settings.currency, settings.language)}
@@ -165,6 +154,7 @@ export function Calculator({ settings }: CalculatorProps) {
               priceError ? 'price-currency-description price-error' : 'price-currency-description'
             }
             aria-invalid={priceError}
+            aria-labelledby="calculator-title"
             autoComplete="off"
             enterKeyHint="done"
             id="item-price"
@@ -176,7 +166,11 @@ export function Calculator({ settings }: CalculatorProps) {
             type="text"
             value={itemPrice}
           />
-          <button aria-controls="calculator-result" className="price-done-button" type="submit">
+          <button
+            aria-controls={result === null ? undefined : 'calculator-result'}
+            className="price-done-button"
+            type="submit"
+          >
             {copy.t('calculator.done')}
           </button>
         </span>
@@ -193,7 +187,7 @@ export function Calculator({ settings }: CalculatorProps) {
         </small>
       </form>
 
-      <ResultPanel copy={copy} result={result} resultRef={resultRef} />
+      {result !== null && <ResultPanel result={result} resultRef={resultRef} />}
       <p aria-atomic="true" aria-live="polite" className="visually-hidden">
         {spokenResult}
       </p>

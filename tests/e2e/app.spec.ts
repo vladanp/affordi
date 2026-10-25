@@ -11,21 +11,21 @@ test.describe('Affordi calculator', () => {
   test('completes setup and lands on the calculator', async ({ page }) => {
     await completeSetup(page);
 
-    await expect(page.getByText('Enter a price to see its time cost.')).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'Enter a price' })).not.toBeFocused();
+    await expect(page.locator('.result-card')).toHaveCount(0);
+    await expect(page.getByRole('textbox', { name: 'How much does it cost?' })).not.toBeFocused();
     await page.reload();
     await expect(page.getByRole('heading', { name: 'How much does it cost?' })).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'Enter a price' })).not.toBeFocused();
+    await expect(page.getByRole('textbox', { name: 'How much does it cost?' })).not.toBeFocused();
     await expect(page.getByRole('heading', { name: 'Start with your income' })).toHaveCount(0);
   });
 
   test('updates the time result as a price is entered', async ({ page }) => {
     await completeSetup(page);
-    const price = page.getByRole('textbox', { name: 'Enter a price' });
+    const price = page.getByRole('textbox', { name: 'How much does it cost?' });
 
     await price.fill('750');
 
-    await expect(page.locator('.result-primary')).toHaveText('43 hours of work');
+    await expect(page.locator('.result-primary')).toHaveText('€750.00 is 43 hours of work');
     await expect(page.locator('.result-approx')).toHaveText('≈ 5 days and 3 hours');
     await expect(page.locator('.result-share p')).toHaveText('25% of your monthly take home pay');
     await expect(page.locator('.share-segment')).toHaveCount(1);
@@ -37,15 +37,19 @@ test.describe('Affordi calculator', () => {
     await expect(page.locator('#price-error')).toBeVisible();
     await expect(price).toHaveAttribute('aria-invalid', 'true');
     await price.fill('36.5');
-    await expect(page.locator('.result-primary')).toHaveText('2 hours and 7 minutes of work');
+    await expect(page.locator('.result-primary')).toHaveText(
+      '€36.50 is 2 hours and 7 minutes of work',
+    );
     await price.fill('36,5');
-    await expect(page.locator('.result-primary')).toHaveText('2 hours and 7 minutes of work');
+    await expect(page.locator('.result-primary')).toHaveText(
+      '€36.50 is 2 hours and 7 minutes of work',
+    );
   });
 
   test('says when a price will have been earned, working from now', async ({ page }) => {
     await page.clock.setFixedTime(new Date('2026-10-21T12:00:00Z'));
     await completeSetup(page);
-    const price = page.getByRole('textbox', { name: 'Enter a price' });
+    const price = page.getByRole('textbox', { name: 'How much does it cost?' });
 
     await price.fill('100');
     await expect(page.locator('.result-earned-by')).toHaveText('Earned by 9:46 AM tomorrow');
@@ -57,7 +61,7 @@ test.describe('Affordi calculator', () => {
 
   test('shows recurring prices with the other period as context', async ({ page }) => {
     await completeSetup(page);
-    const price = page.getByRole('textbox', { name: 'Enter a price' });
+    const price = page.getByRole('textbox', { name: 'How much does it cost?' });
     const repeat = page.getByRole('combobox', { name: 'How often you pay' });
 
     await price.fill('900');
@@ -65,19 +69,22 @@ test.describe('Affordi calculator', () => {
 
     await repeat.selectOption('monthly');
     await price.fill('12.99');
-    await expect(page.locator('.result-label')).toHaveText('€12.99 a month is');
-    await expect(page.locator('.result-primary')).toHaveText('45 minutes of work');
+    await expect(page.locator('.result-primary')).toHaveText(
+      '€12.99 a month is 45 minutes of work',
+    );
     await expect(page.locator('.result-repeat')).toHaveText('Over a year: 9 hours');
     await expect(page.locator('.result-share p')).toHaveText('<1% of your monthly take home pay');
 
     await repeat.selectOption('yearly');
-    await expect(page.locator('.result-label')).toHaveText('€12.99 a year is');
+    await expect(page.locator('.result-primary')).toHaveText('€12.99 a year is 45 minutes of work');
     await expect(page.locator('.result-repeat')).toHaveText('Each month: 4 minutes');
     await expect(page.locator('.result-share p')).toHaveText('<1% of your yearly take home pay');
 
     await price.fill('4.50');
     await repeat.selectOption('workday');
-    await expect(page.locator('.result-label')).toHaveText('€4.50 every workday is');
+    await expect(page.locator('.result-primary')).toHaveText(
+      '€4.50 every workday is 16 minutes of work',
+    );
     await expect(page.locator('.result-repeat')).toHaveText('Over a year: 68 hours');
   });
 
@@ -106,7 +113,6 @@ test.describe('Affordi calculator', () => {
     await income.pressSequentially('3000.50');
     await expect(income).toHaveAttribute('data-masked', 'false');
     await expect(income).toHaveCSS('-webkit-text-security', 'none');
-    await expect(page.getByText('Saved only on this device.')).toBeVisible();
     const shown = await income.screenshot();
 
     await page.getByRole('button', { name: 'Hide income' }).click();
@@ -163,17 +169,13 @@ test.describe('Affordi calculator', () => {
       .filter({ has: page.getByLabel('Take home income') })
       .boundingBox();
     const frequency = await page.getByLabel('Pay frequency').boundingBox();
-    const note = await page.getByText('Saved only on this device.').boundingBox();
 
-    if (income === null || frequency === null || note === null) {
-      throw new Error('Setup controls and privacy note must have layout boxes.');
+    if (income === null || frequency === null) {
+      throw new Error('Setup controls must have layout boxes.');
     }
 
     expect(Math.abs(income.y - frequency.y)).toBeLessThan(2);
     expect(Math.abs(income.height - frequency.height)).toBeLessThan(2);
-    expect(note.y).toBeGreaterThan(
-      Math.max(income.y + income.height, frequency.y + frequency.height),
-    );
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true);
@@ -193,7 +195,6 @@ test.describe('Affordi calculator', () => {
     await page.reload();
     await page.getByRole('button', { name: 'Settings' }).click();
     await expect(page.getByLabel('Take home income')).toHaveValue('4000');
-    await expect(page.getByRole('dialog').getByText('Saved only on this device.')).toBeVisible();
 
     await page.getByRole('button', { name: 'Reset saved settings' }).click();
     await expect(page.getByRole('heading', { name: 'Reset settings?' })).toBeVisible();
@@ -238,14 +239,14 @@ test.describe('Affordi calculator', () => {
   test('keeps result context stable when the unit changes to weeks', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await completeSetup(page);
-    const price = page.getByRole('textbox', { name: 'Enter a price' });
+    const price = page.getByRole('textbox', { name: 'How much does it cost?' });
 
     await price.fill('1300');
-    await expect(page.locator('.result-primary')).toHaveText('75 hours of work');
+    await expect(page.locator('.result-primary')).toHaveText('€1,300.00 is 75 hours of work');
     await waitForStillness(page);
     const hoursPosition = await page.locator('.result-share').boundingBox();
     await price.fill('1400');
-    await expect(page.locator('.result-primary')).toHaveText('2 weeks');
+    await expect(page.locator('.result-primary')).toHaveText('€1,400.00 is 2 weeks');
     await expect(page.locator('.result-approx')).toHaveText('≈ 81 hours');
     await waitForStillness(page);
     const weeksPosition = await page.locator('.result-share').boundingBox();
@@ -263,7 +264,7 @@ test.describe('Affordi calculator', () => {
     await page.getByRole('combobox', { name: 'Language' }).selectOption('sr');
     await page.getByRole('button', { name: 'Sačuvaj', exact: true }).click();
 
-    const price = page.getByRole('textbox', { name: 'Unesite cenu' });
+    const price = page.getByRole('textbox', { name: 'Koliko to košta u vremenu?' });
     await price.fill('36');
     await waitForStillness(page);
     const firstFontSize = await page

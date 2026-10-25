@@ -36,7 +36,7 @@ describe('App', () => {
     expect(shell()).not.toHaveAttribute('data-motion');
     expect(costLink).toHaveAttribute('aria-current', 'page');
     expect(earningsLink).not.toHaveAttribute('aria-current');
-    fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'How much does it cost?' }), {
       target: { value: '750' },
     });
 
@@ -49,13 +49,12 @@ describe('App', () => {
     expect(earningsLink).toHaveAttribute('aria-current', 'page');
     expect(document.title).toBe('Earnings · Affordi');
     expect(screen.queryByRole('heading', { name: 'How much does it cost?' })).toBeNull();
-    expect(screen.getByText('Saved only on this device.')).toBeInTheDocument();
 
     fireEvent.click(costLink);
     expect(
       await screen.findByRole('heading', { name: 'How much does it cost?' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'Enter a price' })).toHaveValue('750');
+    expect(screen.getByRole('textbox', { name: 'How much does it cost?' })).toHaveValue('750');
     expect(shell()).toHaveAttribute('data-motion', 'back');
     expect(screen.getByText('43 hours of work')).toBeInTheDocument();
     expect(document.title).toBe('Affordi');
@@ -143,14 +142,13 @@ describe('App', () => {
 
     expect(screen.getByText('Affordi')).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: 'See what things really cost in your time.' }),
+      screen.getByRole('heading', { level: 1, name: 'Start with your income' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Start calculating' })).toBeInTheDocument();
     const income = screen.getByLabelText('Take home income');
     expect(income).toHaveAttribute('type', 'text');
     expect(income).toHaveAttribute('data-masked', 'false');
     expect(income).toHaveValue('');
-    expect(screen.getByText('Saved only on this device.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Hide income' })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -173,7 +171,7 @@ describe('App', () => {
       target: { value: '3000' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Start calculating' }));
-    fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'How much does it cost?' }), {
       target: { value: '750,00' },
     });
     expect(screen.getByText('43 hours of work')).toBeInTheDocument();
@@ -197,11 +195,11 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('radio', { name: 'EUR' }));
-    fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'How much does it cost?' }), {
       target: { value: '10' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    expect(screen.getByRole('textbox', { name: 'Enter a price' })).toHaveValue('10');
+    expect(screen.getByRole('textbox', { name: 'How much does it cost?' })).toHaveValue('10');
     expect(screen.getByText(/€10/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     fireEvent.click(screen.getByRole('button', { name: 'Reset saved settings' }));
@@ -234,14 +232,14 @@ describe('App', () => {
     );
     const first = render(<App />);
     expect(screen.getByRole('heading', { name: 'How much does it cost?' })).toBeInTheDocument();
-    fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'How much does it cost?' }), {
       target: { value: '750' },
     });
     expect(screen.getByText('43 hours of work')).toBeInTheDocument();
     first.unmount();
     render(<App />);
     expect(screen.getByRole('heading', { name: 'How much does it cost?' })).toBeInTheDocument();
-    fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'How much does it cost?' }), {
       target: { value: '750' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
@@ -249,7 +247,7 @@ describe('App', () => {
       target: { value: '6000' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    expect(screen.getByRole('textbox', { name: 'Enter a price' })).toHaveValue('750');
+    expect(screen.getByRole('textbox', { name: 'How much does it cost?' })).toHaveValue('750');
     expect(screen.getByText('22 hours of work')).toBeInTheDocument();
   });
 
@@ -379,7 +377,7 @@ describe('App', () => {
       }),
     );
     render(<App />);
-    const price = screen.getByRole('textbox', { name: 'Enter a price' });
+    const price = screen.getByRole('textbox', { name: 'How much does it cost?' });
     fireEvent.change(price, { target: { value: '-1' } });
     expect(screen.getByText(/price of 0 or more/)).toBeInTheDocument();
     fireEvent.change(price, { target: { value: '0' } });
@@ -403,7 +401,7 @@ describe('App', () => {
       }),
     );
     const { container } = render(<App />);
-    const price = screen.getByRole('textbox', { name: 'Enter a price' });
+    const price = screen.getByRole('textbox', { name: 'How much does it cost?' });
     const segments = () => container.querySelectorAll('.share-segment');
     const multiple = () => container.querySelector('.share-multiple');
 
@@ -452,7 +450,7 @@ describe('App', () => {
       }),
     );
     render(<App />);
-    const price = screen.getByRole('textbox', { name: 'Enter a price' });
+    const price = screen.getByRole('textbox', { name: 'How much does it cost?' });
     price.focus();
     fireEvent.change(price, { target: { value: '1' } });
 
@@ -478,7 +476,7 @@ describe('App', () => {
     render(<App />);
     const repeat = screen.getByRole('combobox', { name: 'How often you pay' });
     expect(repeat).toHaveValue('once');
-    fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'How much does it cost?' }), {
       target: { value: '300' },
     });
     expect(screen.getByText('$300.00 is')).toBeInTheDocument();
@@ -500,7 +498,7 @@ describe('App', () => {
     expect(screen.getByText('Over a year: 22 weeks and 3 days')).toBeInTheDocument();
     expect(screen.getByText('43% of your weekly take home pay')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'How much does it cost?' }), {
       target: { value: '4.50' },
     });
     fireEvent.change(repeat, { target: { value: 'workday' } });
@@ -555,7 +553,7 @@ describe('App', () => {
       }),
     );
     render(<App />);
-    fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'How much does it cost?' }), {
       target: { value: '750' },
     });
     expect(screen.getByText('43 hours of work')).toBeInTheDocument();
@@ -598,16 +596,13 @@ describe('App', () => {
   it('rejects impossible work schedules during setup', () => {
     render(<App />);
     fireEvent.change(screen.getByLabelText('Take home income'), { target: { value: '3000' } });
-    expect(screen.getByText('8 hours a day, 40 hours a week')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Work ends'), { target: { value: '08:00' } });
-    expect(screen.queryByText(/a day, .* a week/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Start calculating' }));
     expect(screen.getByText('Choose an end time later the same day.')).toBeInTheDocument();
     expect(screen.getByLabelText('Work ends')).toHaveFocus();
     expect(screen.getByLabelText('Work ends')).toHaveAttribute('aria-invalid', 'true');
 
     fireEvent.change(screen.getByLabelText('Work ends'), { target: { value: '00:00' } });
-    expect(screen.getByText('15 hours a day, 75 hours a week')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Work starts'), { target: { value: '' } });
     for (const day of ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']) {
       fireEvent.click(screen.getByRole('checkbox', { name: day }));
@@ -622,7 +617,6 @@ describe('App', () => {
     expect(screen.getByRole('checkbox', { name: 'Monday' })).toHaveFocus();
     fireEvent.click(screen.getByRole('checkbox', { name: 'Sunday' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Saturday' }));
-    expect(screen.getByText('1 hour and 30 minutes a day, 3 hours a week')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Start calculating' }));
     expect(JSON.parse(localStorage.getItem('affordi.settings.v1') ?? '{}').settings).toMatchObject({
       workStart: 1350,
@@ -682,7 +676,7 @@ describe('App', () => {
       );
       const { container } = render(<App />);
       const liveRegion = container.querySelector('[aria-live="polite"]');
-      fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
+      fireEvent.change(screen.getByRole('textbox', { name: 'How much does it cost?' }), {
         target: { value: '200' },
       });
 
@@ -694,7 +688,7 @@ describe('App', () => {
         '$200.00 is 10 hours of work. ≈ 1 day and 2 hours. 25% of your weekly take home pay',
       );
 
-      fireEvent.change(screen.getByRole('textbox', { name: 'Enter a price' }), {
+      fireEvent.change(screen.getByRole('textbox', { name: 'How much does it cost?' }), {
         target: { value: 'abc' },
       });
       await act(() => vi.advanceTimersByTimeAsync(1_000));

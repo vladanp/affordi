@@ -83,7 +83,6 @@ describe('earned this month', () => {
     const noon = calculateEarnedThisMonth(settings, rates, wednesday(12));
     expect(noon.share).toBeCloseTo(115 / 176, 12);
     expect(noon.amount).toBeCloseTo((3_000 * 115) / 176, 10);
-    expect(noon).toMatchObject({ workdaysDone: 14, workdaysTotal: 22 });
   });
 
   it('holds still outside work and reaches the full month after the last workday', () => {

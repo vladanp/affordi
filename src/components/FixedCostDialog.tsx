@@ -173,8 +173,7 @@ function yearRange(from: number, to: number, savedYear: string): number[] {
 interface MonthYearFieldProps {
   copy: Translator;
   error: string | undefined;
-  hint: string;
-  /** Prefixes the ids of the hint and the error. */
+  /** Prefixes the id of the error. */
   id: string;
   legend: string;
   names: readonly [month: keyof FormValues, year: keyof FormValues];
@@ -188,7 +187,6 @@ interface MonthYearFieldProps {
 function MonthYearField({
   copy,
   error,
-  hint,
   id,
   legend,
   names: [monthName, yearName],
@@ -197,9 +195,11 @@ function MonthYearField({
   values,
   years,
 }: MonthYearFieldProps) {
-  const describedBy = error === undefined ? `${id}-hint` : `${id}-hint ${id}-error`;
   return (
-    <fieldset aria-describedby={describedBy} className="field form-wide">
+    <fieldset
+      aria-describedby={error === undefined ? undefined : `${id}-error`}
+      className="field form-wide"
+    >
       <legend className="field-label">{legend}</legend>
       <div className="month-year">
         <span className="select-wrap">
@@ -237,9 +237,6 @@ function MonthYearField({
           <span aria-hidden="true" className="select-chevron" />
         </span>
       </div>
-      <small className="field-hint" id={`${id}-hint`}>
-        {hint}
-      </small>
       <FieldError error={error} id={`${id}-error`} />
     </fieldset>
   );
@@ -305,7 +302,6 @@ function FixedCostForm({
       <MonthYearField
         copy={copy}
         error={errors.firstPayment}
-        hint={copy.t('fixedCosts.firstPaymentHint')}
         id="first-payment"
         legend={copy.t('fixedCosts.firstPaymentLabel')}
         names={['firstMonth', 'firstYear']}
@@ -318,7 +314,6 @@ function FixedCostForm({
       <MonthYearField
         copy={copy}
         error={errors.lastPayment}
-        hint={copy.t('fixedCosts.lastPaymentHint')}
         id="last-payment"
         legend={copy.t('fixedCosts.lastPaymentLabel')}
         names={['lastMonth', 'lastYear']}

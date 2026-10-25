@@ -75,9 +75,8 @@ describe('Earnings', () => {
 
     expect(screen.getByRole('heading', { name: 'How much do you earn?' })).toBeInTheDocument();
     expect(liveAmounts()).toEqual(['€49.45', '€51.92', '€1,960.22 of €3,000.00']);
-    expect(screen.getByText('Around the clock since midnight')).toBeInTheDocument();
+    expect(screen.getByText('Earned since midnight')).toBeInTheDocument();
     expect(workStatus()).toHaveTextContent('Working until 5:00 PM · 5 hours left');
-    expect(screen.getByText('Workdays: 14 of 22')).toBeInTheDocument();
     expect(screen.getByText('65%')).toBeInTheDocument();
     expect(screen.getByText('65% of this month’s take home pay')).toHaveClass('visually-hidden');
 
@@ -139,7 +138,6 @@ describe('Earnings', () => {
     expect(fixedCostsCard()?.querySelector('.live-amount')).toHaveTextContent(
       '€1,960.22 of €2,500.00',
     );
-    expect(fixedCostsCard()).toHaveTextContent('Covered so far');
     expect(screen.getByText('78% of this month’s fixed costs covered')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Hide amounts' }));
     expect(fixedCostsCard()?.querySelector('.live-amount')).toHaveTextContent('••••Hidden');
@@ -148,7 +146,6 @@ describe('Earnings', () => {
 
     const second = render(<EarningsPage fixedCosts={[rent(1_000)]} />);
     expect(fixedCostsCard()?.querySelector('.live-amount')).toHaveTextContent(/^€1,000\.00$/);
-    expect(fixedCostsCard()).toHaveTextContent('All covered');
     expect(screen.getByText('100% of this month’s fixed costs covered')).toBeInTheDocument();
     second.unmount();
 

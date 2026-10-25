@@ -1,6 +1,5 @@
-import { formatHoursAndMinutes } from '../domain/duration';
 import type { Translator } from '../domain/i18n';
-import { parseTimeInput, weekdays, type Weekday } from '../domain/schedule';
+import { weekdays, type Weekday } from '../domain/schedule';
 import { FieldError } from './FieldError';
 
 export interface ScheduleValues {
@@ -86,19 +85,6 @@ function DayPicker({ copy, error, onChange, value }: DayPickerProps) {
   );
 }
 
-/** Daily and weekly working time for a complete schedule, or null while it is incomplete. */
-function describeSchedule(values: ScheduleValues, copy: Translator): string | null {
-  const start = parseTimeInput(values.workStart, 'start');
-  const end = parseTimeInput(values.workEnd, 'end');
-  if (start === null || end === null || end <= start || values.workDays.length === 0) return null;
-
-  const dailyMinutes = end - start;
-  return copy.t('form.scheduleSummary', {
-    daily: formatHoursAndMinutes(dailyMinutes, copy),
-    weekly: formatHoursAndMinutes(dailyMinutes * values.workDays.length, copy),
-  });
-}
-
 interface WorkScheduleFieldsProps {
   copy: Translator;
   errors: ScheduleErrors;
@@ -115,7 +101,6 @@ export function WorkScheduleFields({
   onWorkDaysChange,
   values,
 }: WorkScheduleFieldsProps) {
-  const summary = describeSchedule(values, copy);
   return (
     <>
       <div className="time-range form-wide">
@@ -140,7 +125,6 @@ export function WorkScheduleFields({
         onChange={onWorkDaysChange}
         value={values.workDays}
       />
-      {summary !== null && <p className="schedule-summary form-wide">{summary}</p>}
     </>
   );
 }

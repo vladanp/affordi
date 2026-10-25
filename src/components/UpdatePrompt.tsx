@@ -24,7 +24,6 @@ export function UpdatePromptView({
     <aside aria-labelledby="update-title" className="update-prompt">
       <div aria-live="polite" role="status">
         <strong id="update-title">{copy.t('update.newReady')}</strong>
-        <p>{copy.t('update.latest')}</p>
       </div>
       <button className="button button-primary" onClick={onUpdate} type="button">
         {copy.t('update.update')}

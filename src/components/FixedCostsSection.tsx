@@ -183,7 +183,6 @@ export function FixedCostsSection({
         addButtonRef={addButtonRef}
         addLabel={copy.t('fixedCosts.add')}
         addShortLabel={copy.t('fixedCosts.addShort')}
-        hint={copy.t('fixedCosts.hint')}
         id="fixed-cost-list-title"
         limitNote={
           fixedCosts.length >= MAX_FIXED_COSTS

@@ -8,8 +8,8 @@ test('installed app shell keeps calculator usable offline', async ({ page }) => 
   test.skip(test.info().project.name !== 'chromium', 'The service worker check runs once.');
 
   await completeSetup(page);
-  await page.getByRole('textbox', { name: 'Enter a price' }).fill('750');
-  await expect(page.locator('.result-primary')).toHaveText('43 hours of work');
+  await page.getByRole('textbox', { name: 'How much does it cost?' }).fill('750');
+  await expect(page.locator('.result-primary')).toHaveText('€750.00 is 43 hours of work');
 
   await page.evaluate(async () => {
     if ('serviceWorker' in navigator) await navigator.serviceWorker.ready;
@@ -18,8 +18,8 @@ test('installed app shell keeps calculator usable offline', async ({ page }) => 
   try {
     await page.reload();
     await expect(page.getByRole('heading', { name: 'How much does it cost?' })).toBeVisible();
-    await page.getByRole('textbox', { name: 'Enter a price' }).fill('750');
-    await expect(page.locator('.result-primary')).toHaveText('43 hours of work');
+    await page.getByRole('textbox', { name: 'How much does it cost?' }).fill('750');
+    await expect(page.locator('.result-primary')).toHaveText('€750.00 is 43 hours of work');
   } finally {
     await page.context().setOffline(false);
   }

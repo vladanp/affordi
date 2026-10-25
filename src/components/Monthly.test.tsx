@@ -149,7 +149,7 @@ describe('Monthly fixed costs', () => {
     expect(
       screen.getByRole('heading', { name: 'What do you pay each month?' }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/like rent, loans, insurance, or subscriptions/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Fixed costs' })).toBeInTheDocument();
     expect(screen.queryByText('Each month')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Add fixed cost' }));
@@ -353,10 +353,9 @@ describe('Monthly fixed costs', () => {
   it('shows the shortfall when fixed costs are more than take home pay', () => {
     render(<MonthlyPage initialCosts={[{ ...insurance, amount: 3_400 }]} />);
     expect(screen.getByText('Short each month')).toBeInTheDocument();
-    expect(screen.getByText('€400.00')).toBeInTheDocument();
-    expect(
-      screen.getByText('What you pay each month is more than your take home pay.'),
-    ).toBeInTheDocument();
+    const short = screen.getByText('Short each month').closest('div')!;
+    expect(within(short).getByText('€400.00')).toBeInTheDocument();
+    expect(within(short).queryByText(/per day/)).not.toBeInTheDocument();
   });
 
   it('stops adding at the limit', () => {
@@ -376,7 +375,7 @@ describe('Monthly bills', () => {
 
   it('adds a bill with this month’s amount and takes the next one in its row', () => {
     render(<MonthlyPage />);
-    expect(screen.getByText(/like electricity, water, or heating/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Bills' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Add bill' }));
     expect(dialog().getByRole('heading', { name: 'Add a bill' })).toBeInTheDocument();
@@ -427,7 +426,7 @@ describe('Monthly bills', () => {
     expect(options[1]).toHaveTextContent('September 2026');
     expect(options[11]).toHaveTextContent('November 2025');
     expect(dialog().getByRole('textbox', { name: 'Amount' })).toHaveAccessibleDescription(
-      /Optional\. Leave it empty if the bill hasn’t arrived yet\./,
+      'Amount in EUR.',
     );
 
     fireEvent.change(dialog().getByRole('textbox', { name: 'Name' }), {

@@ -23,6 +23,7 @@ export interface ShareSegment {
 }
 
 export interface PriceResult {
+  /** The price the result is for, such as "€49.00 is", which only screen readers hear. */
   label: string;
   primary: string;
   secondary: string | null;

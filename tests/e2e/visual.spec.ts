@@ -53,7 +53,7 @@ test.describe('UI screenshot audit', () => {
     await completeSetup(page);
     await page.setViewportSize({ width: 390, height: 500 });
 
-    const price = page.getByRole('textbox', { name: 'Enter a price' });
+    const price = page.getByRole('textbox', { name: 'How much does it cost?' });
     await price.fill('1');
     await expect(page.locator('.result-share p')).toHaveText('<1% of your monthly take home pay');
     await expect(page.getByRole('button', { name: 'Done' })).toBeVisible();
@@ -167,7 +167,7 @@ test.describe('UI screenshot audit', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await completeSetup(page);
 
-    await page.getByRole('textbox', { name: 'Enter a price' }).fill('750');
+    await page.getByRole('textbox', { name: 'How much does it cost?' }).fill('750');
     await page.getByRole('button', { name: 'Done' }).click();
     await expect(page.locator('.result-primary')).toBeInViewport();
     await expect(page.locator('.result-earned-by')).toHaveText('Earned by October 29');

@@ -7,6 +7,7 @@ These instructions apply to the whole repository.
 - Affordi is a private static calculator that works locally. Keep income and settings on the device; do not add accounts, analytics, tracking, ads, a backend, or network persistence.
 - Preserve the versioned storage boundary, offline PWA behavior, and all five bundled locales: English, German, French, Italian, and Serbian.
 - Keep the interface focused and light on dependencies. Add production dependencies only when their benefit is concrete.
+- Let the layout carry meaning: no taglines, helper text, or secondary labels. When a screen needs one to make sense, fix the layout instead. Confirmations that erase data still say what they erase.
 
 ## Working conventions
 

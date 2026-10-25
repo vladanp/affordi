@@ -7,7 +7,7 @@ import {
   useSyncExternalStore,
   type RefObject,
 } from 'react';
-import { LockKeyhole, Settings2 } from 'lucide-react';
+import { Settings2 } from 'lucide-react';
 
 import { Brand } from './components/Brand';
 import { Calculator } from './components/Calculator';
@@ -110,10 +110,6 @@ function PageShell({
           settings={settings}
         />
       </Activity>
-      <p className="local-only-footer">
-        <LockKeyhole aria-hidden="true" size={14} strokeWidth={2} />
-        <span>{copy.t('privacy.localOnly')}</span>
-      </p>
     </div>
   );
 }
@@ -230,7 +226,7 @@ export function App() {
         <main className="app-shell setup-shell">
           <div className="setup-intro">
             <Brand />
-            <h1>{copy.t('app.tagline')}</h1>
+            <h1>{copy.t('form.heading')}</h1>
           </div>
           <div className="setup-panel">
             <IncomeForm onSubmit={persist} />

@@ -12,16 +12,6 @@
   box-shadow: var(--shadow-card);
 }
 
-.form-heading {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.form-heading p {
-  margin: 0;
-  color: var(--color-muted);
-}
-
 .field {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -275,19 +265,6 @@
   line-height: 1.35;
 }
 
-.field-hint {
-  color: var(--color-muted);
-  font-size: 0.8125rem;
-  line-height: 1.4;
-}
-
-.schedule-summary {
-  margin: -0.5rem 0 0;
-  color: var(--color-muted);
-  font-size: 0.8125rem;
-  line-height: 1.4;
-}
-
 .form-actions {
   display: flex;
   flex-wrap: wrap;
@@ -363,7 +340,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .form-heading,
   .form-wide,
   .segmented-field[data-field='currency'] {
     grid-column: 1 / -1;

@@ -39,7 +39,6 @@ function LiveAmount({ amount, copy, hidden }: LiveAmountProps) {
 interface ProgressCardProps {
   /** Formatted amounts so far and in all, shown only while amounts are visible. */
   amount: string;
-  caption: string;
   className: string;
   copy: Translator;
   hidden: boolean;
@@ -55,7 +54,6 @@ interface ProgressCardProps {
 /** Progress toward a monthly amount. The share stays visible when amounts hide. */
 function ProgressCard({
   amount,
-  caption,
   className,
   copy,
   hidden,
@@ -83,11 +81,10 @@ function ProgressCard({
           </>
         )}
       </p>
-      <span aria-hidden="true" className="meter">
-        <span style={{ inlineSize: `${share * 100}%` }} />
-      </span>
-      <p className="stat-note stat-caption">
-        <span>{caption}</span>{' '}
+      <p className="stat-progress">
+        <span aria-hidden="true" className="meter">
+          <span style={{ inlineSize: `${share * 100}%` }} />
+        </span>
         <span className="stat-share">
           <span aria-hidden="true">{percentage}</span>
           <span className="visually-hidden">{spokenShare(percentage)}</span>
@@ -155,7 +152,6 @@ export function Earnings({ bills, fixedCosts, settings, onHideAmountsChange }: E
             copy={copy}
             hidden={amountsHidden}
           />
-          <p className="stat-note">{copy.t('earnings.todayNote')}</p>
         </div>
         <div className="stat-card earnings-work" data-state={today.progress.state}>
           <p className="stat-label">{copy.t('earnings.atWork')}</p>
@@ -168,10 +164,6 @@ export function Earnings({ bills, fixedCosts, settings, onHideAmountsChange }: E
         </div>
         <ProgressCard
           amount={formatEarned(month.amount, currency, language)}
-          caption={copy.t('earnings.workdays', {
-            done: month.workdaysDone,
-            total: month.workdaysTotal,
-          })}
           className="earnings-month"
           copy={copy}
           hidden={amountsHidden}
@@ -183,9 +175,6 @@ export function Earnings({ bills, fixedCosts, settings, onHideAmountsChange }: E
         {coverage !== null && (
           <ProgressCard
             amount={formatEarned(coverage.covered, currency, language)}
-            caption={copy.t(
-              coverage.share >= 1 ? 'earnings.fixedCostsAllCovered' : 'earnings.fixedCostsCovered',
-            )}
             className="earnings-fixed-costs"
             copy={copy}
             hidden={amountsHidden}
