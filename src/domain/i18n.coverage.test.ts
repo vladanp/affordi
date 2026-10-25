@@ -42,7 +42,6 @@ describe('translation catalog completeness', () => {
 
   it('translates setup, calculator, settings, errors, durations, and pay context', () => {
     const requiredKeys = [
-      'app.tagline',
       'calculator.title',
       'calculator.payContext',
       'form.heading',

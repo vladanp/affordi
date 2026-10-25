@@ -133,12 +133,12 @@ interface PayLeftCardProps {
 /** What is left of monthly pay and per day, or the shortfall when nothing is. */
 export function PayLeftCard({ copy, hidden, payLeft, settings }: PayLeftCardProps) {
   const short = payLeft.left < 0;
-  let note: string | null = short ? copy.t('monthly.shortNote') : null;
-  if (!short && !hidden) {
-    note = copy.t('monthly.perDay', {
-      amount: formatRate(payLeft.leftPerDay, settings.currency, copy.locale),
-    });
-  }
+  const note =
+    short || hidden
+      ? null
+      : copy.t('monthly.perDay', {
+          amount: formatRate(payLeft.leftPerDay, settings.currency, copy.locale),
+        });
 
   return (
     <div className="stat-card pay-left monthly-left" data-short={short || undefined}>
@@ -155,8 +155,6 @@ interface ListHeadingProps {
   addButtonRef: RefObject<HTMLButtonElement | null>;
   addLabel: string;
   addShortLabel: string;
-  /** What belongs in the section. */
-  hint: string;
   id: string;
   /** Shown instead of the add button working once the list is full. */
   limitNote: string | null;
@@ -164,12 +162,11 @@ interface ListHeadingProps {
   title: string;
 }
 
-/** A section title with what belongs in it and a button that adds to it. */
+/** A section title with a button that adds to it. */
 export function ListHeading({
   addButtonRef,
   addLabel,
   addShortLabel,
-  hint,
   id,
   limitNote,
   onAdd,
@@ -191,7 +188,6 @@ export function ListHeading({
           {addShortLabel}
         </button>
       </div>
-      <p className="list-hint">{hint}</p>
       {limitNote !== null && <p className="stat-note list-limit">{limitNote}</p>}
     </>
   );

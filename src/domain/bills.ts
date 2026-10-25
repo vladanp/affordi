@@ -185,30 +185,13 @@ export function averageMonthlyBills(bills: readonly Bill[], now: Date): number {
   return bills.reduce((sum, bill) => sum + (billStats(bill, now).average ?? 0), 0);
 }
 
-interface MonthAmount {
-  month: string;
-  total: number;
-}
-
 /** The last twelve months of bills, for the chart. */
 export interface BillsSummary {
   /** What bills cost in a typical month. */
   average: number;
-  /** The highest and lowest recent months, once two months have amounts. */
-  highest: MonthAmount | null;
-  lowest: MonthAmount | null;
   totals: MonthTotal[];
 }
 
 export function summarizeBills(bills: readonly Bill[], now: Date): BillsSummary {
-  const totals = monthlyBillTotals(bills, now);
-  const months = totals.flatMap(({ month, total }) => (total === null ? [] : [{ month, total }]));
-  const byTotal = months.toSorted((first, second) => second.total - first.total);
-  const compared = byTotal.length >= 2;
-  return {
-    average: averageMonthlyBills(bills, now),
-    highest: compared ? byTotal[0]! : null,
-    lowest: compared ? byTotal.at(-1)! : null,
-    totals,
-  };
+  return { average: averageMonthlyBills(bills, now), totals: monthlyBillTotals(bills, now) };
 }

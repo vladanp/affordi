@@ -9,7 +9,6 @@ export async function completeSetup(page: Page) {
   await page.getByLabel('Work starts').fill('09:00');
   await page.getByLabel('Work ends').fill('17:00');
   await expect(page.getByRole('checkbox', { checked: true })).toHaveCount(5);
-  await expect(page.getByText('8 hours a day, 40 hours a week')).toBeVisible();
   await page.getByRole('radio', { name: 'EUR' }).check();
   await page.getByRole('button', { name: 'Start calculating' }).click();
   await expect(page.getByRole('heading', { name: 'How much does it cost?' })).toBeVisible();

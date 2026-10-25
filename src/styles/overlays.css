@@ -149,13 +149,6 @@ html:has(.sheet-dialog[open]) {
   font-size: 0.9375rem;
 }
 
-.update-prompt p {
-  margin: 0.15rem 0 0;
-  color: var(--color-muted);
-  font-size: 0.8125rem;
-  line-height: 1.4;
-}
-
 .update-prompt .button,
 .update-prompt .text-button {
   flex: none;

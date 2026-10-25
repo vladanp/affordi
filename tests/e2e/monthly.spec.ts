@@ -101,7 +101,7 @@ test.describe('Affordi monthly page', () => {
 
     await page.getByRole('link', { name: 'Earnings' }).click();
     // By noon on 21 October the month's pay has covered the mortgage.
-    await expect(page.locator('.earnings-fixed-costs')).toContainText('All covered');
+    await expect(page.locator('.earnings-fixed-costs .stat-share')).toContainText('100%');
     await expect(page.locator('.earnings-fixed-costs .live-amount')).toHaveText('€950.00');
   });
 
@@ -160,7 +160,7 @@ test.describe('Affordi monthly page', () => {
     await page.getByRole('link', { name: 'Earnings' }).click();
     const coverage = page.locator('.earnings-fixed-costs');
     await expect(coverage).toContainText('Bills and fixed costs this month');
-    await expect(coverage).toContainText('All covered');
+    await expect(coverage.locator('.stat-share')).toContainText('100%');
     await expect(coverage.locator('.live-amount')).toHaveText('€119.00');
   });
 

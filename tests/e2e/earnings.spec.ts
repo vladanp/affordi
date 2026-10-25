@@ -40,7 +40,6 @@ test.describe('Affordi earnings', () => {
     await expect(amounts).toHaveText(['€49.45', '€51.92', '€1,960.22 of €3,000.00']);
     const status = page.locator('.earnings-status');
     await expect(status).toHaveText('Working until 5:00 PM · 5 hours left');
-    await expect(page.locator('.earnings-month .stat-caption')).toContainText('Workdays: 14 of 22');
     await expect(page.getByText('65%', { exact: true })).toBeVisible();
 
     await page.clock.runFor(60_000);
@@ -89,7 +88,6 @@ test.describe('Affordi earnings', () => {
     await page.getByLabel('Work starts').fill('13:00');
     await page.getByLabel('Work ends').fill('00:00');
     await page.getByRole('checkbox', { name: 'Monday' }).uncheck();
-    await expect(page.getByText('11 hours a day, 44 hours a week')).toBeVisible();
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await page.getByRole('link', { name: 'Earnings' }).click();
 

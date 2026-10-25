@@ -70,8 +70,6 @@ export interface EarnedThisMonth {
   amount: number;
   /** The share of this month's scheduled work that is done, from 0 to 1. */
   share: number;
-  workdaysDone: number;
-  workdaysTotal: number;
 }
 
 /**
@@ -83,10 +81,10 @@ export function calculateEarnedThisMonth(
   rates: EarningRates,
   now: Date,
 ): EarnedThisMonth {
-  const { workedMs, scheduledMs, workdaysDone, workdaysTotal } = monthWorkProgress(settings, now);
+  const { workedMs, scheduledMs } = monthWorkProgress(settings, now);
   // Every weekday occurs at least four times a month, so some work is always scheduled.
   const share = workedMs / scheduledMs;
-  return { amount: rates.totals.month * share, share, workdaysDone, workdaysTotal };
+  return { amount: rates.totals.month * share, share };
 }
 
 export function calculateEarnedToday(

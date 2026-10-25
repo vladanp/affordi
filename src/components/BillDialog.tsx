@@ -157,7 +157,6 @@ function BillForm({
             copy={copy}
             currency={currency}
             error={errors.amount}
-            hint={copy.t('bills.amountHint')}
             label={copy.t('bills.amountLabel')}
             onChange={(value) => update('amount', value)}
             placeholder="85"

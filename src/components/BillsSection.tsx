@@ -412,7 +412,6 @@ export function BillsSection({
         addButtonRef={addButtonRef}
         addLabel={copy.t('bills.add')}
         addShortLabel={copy.t('bills.addShort')}
-        hint={copy.t('bills.hint')}
         id="bill-list-title"
         limitNote={bills.length >= MAX_BILLS ? copy.t('bills.limit', { count: MAX_BILLS }) : null}
         onAdd={(opener) => dialog.open(null, opener)}

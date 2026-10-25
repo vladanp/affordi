@@ -14,7 +14,7 @@ test.describe('Affordi accessibility', () => {
 
   test('calculator and settings have no critical accessibility violations', async ({ page }) => {
     await completeSetup(page);
-    await page.getByRole('textbox', { name: 'Enter a price' }).fill('750');
+    await page.getByRole('textbox', { name: 'How much does it cost?' }).fill('750');
     await expectAccessible(page);
     await page.getByRole('combobox', { name: 'How often you pay' }).selectOption('monthly');
     await expect(page.locator('.result-repeat')).toBeVisible();

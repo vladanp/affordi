@@ -62,7 +62,7 @@ export function BillsChart({
   selected,
   summary,
 }: BillsChartProps) {
-  const { average, highest, lowest, totals } = summary;
+  const { average, totals } = summary;
   const scale = Math.max(average, ...totals.map((month) => month.total ?? 0)) || 1;
   const money = (value: number) =>
     hidden ? HIDDEN_DOTS : formatCurrency(value, currency, copy.locale);
@@ -176,19 +176,6 @@ export function BillsChart({
           ))}
         </div>
       </div>
-      {highest !== null && lowest !== null && (
-        <p className="stat-note">
-          {copy.t('bills.highest', {
-            month: copy.month(monthDate(highest.month), false),
-            amount: money(highest.total),
-          })}
-          {' · '}
-          {copy.t('bills.lowest', {
-            month: copy.month(monthDate(lowest.month), false),
-            amount: money(lowest.total),
-          })}
-        </p>
-      )}
       <table className="visually-hidden">
         <caption>{copy.t('bills.chartTitle')}</caption>
         <thead>

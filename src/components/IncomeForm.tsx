@@ -182,9 +182,7 @@ function IncomeField({
         </span>
         <input
           aria-describedby={
-            error
-              ? 'income-currency-description income-local-note income-error'
-              : 'income-currency-description income-local-note'
+            error ? 'income-currency-description income-error' : 'income-currency-description'
           }
           aria-invalid={error !== undefined}
           autoCapitalize="off"
@@ -219,9 +217,6 @@ function IncomeField({
       </span>
       <small className="visually-hidden" id="income-currency-description">
         {copy.t('form.incomeDescription', { currency })}
-      </small>
-      <small className="field-hint" id="income-local-note">
-        {copy.t('privacy.localOnly')}
       </small>
       <FieldError error={error} id="income-error" />
     </div>
@@ -375,13 +370,6 @@ export function IncomeForm(props: IncomeFormProps) {
       noValidate
       onSubmit={handleSubmit}
     >
-      {!editMode && (
-        <div className="form-heading">
-          <h2>{copy.t('form.heading')}</h2>
-          <p>{copy.t('form.setupNote')}</p>
-        </div>
-      )}
-
       <IncomeField
         copy={copy}
         currency={values.currency}

@@ -141,8 +141,7 @@
     gap: 0.75rem 1rem;
   }
 
-  .result-card,
-  .result-empty {
+  .result-card {
     min-block-size: 14rem;
   }
 
@@ -183,7 +182,6 @@
 
 @media (forced-colors: active) {
   .result-card,
-  .result-empty,
   .setup-card,
   .price-input-wrap,
   .input-with-prefix,

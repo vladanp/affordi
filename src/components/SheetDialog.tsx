@@ -125,8 +125,6 @@ interface AmountFieldProps {
   copy: Translator;
   currency: CurrencyCode;
   error: string | undefined;
-  /** Extra guidance under the field, such as an amount it replaces. */
-  hint?: string | null;
   label: string;
   placeholder: string;
   onChange: (value: string) => void;
@@ -137,17 +135,11 @@ export function AmountField({
   copy,
   currency,
   error,
-  hint = null,
   label,
   onChange,
   placeholder,
   value,
 }: AmountFieldProps) {
-  const describedBy = [
-    'item-currency',
-    ...(hint === null ? [] : ['item-amount-hint']),
-    ...(error === undefined ? [] : ['item-amount-error']),
-  ].join(' ');
   return (
     <div className="field">
       <label className="field-label" htmlFor="item-amount">
@@ -158,7 +150,9 @@ export function AmountField({
           {getCurrencySymbol(currency, copy.locale)}
         </span>
         <input
-          aria-describedby={describedBy}
+          aria-describedby={
+            error === undefined ? 'item-currency' : 'item-currency item-amount-error'
+          }
           aria-invalid={error !== undefined}
           autoComplete="off"
           enterKeyHint="next"
@@ -175,11 +169,6 @@ export function AmountField({
       <small className="visually-hidden" id="item-currency">
         {copy.t('fixedCosts.amountDescription', { currency })}
       </small>
-      {hint !== null && (
-        <small className="field-hint" id="item-amount-hint">
-          {hint}
-        </small>
-      )}
       <FieldError error={error} id="item-amount-error" />
     </div>
   );
