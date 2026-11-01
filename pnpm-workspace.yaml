@@ -1,12 +1,28 @@
 minimumReleaseAge: 10080
+minimumReleaseAgeExclude:
+  # Exact versions adopted before the seven day cutoff for an advisory fix the owner asked for.
+  # Remove each entry once it ages past the cutoff.
+  - '@isaacs/nonrecursive-glob-match@1.0.3'
+  - 'glob@14.0.3'
+  - 'minimatch@11.0.3'
+  - 'path-scurry@3.0.0'
 trustPolicy: no-downgrade
 trustPolicyIgnoreAfter: 10080
 blockExoticSubdeps: true
 
 overrides:
+  # One version for the Sentry tracing inside lighthouse and react-doctor: the 2.x OpenTelemetry
+  # packages accept the API only below 1.10.0.
+  '@opentelemetry/api': 1.9.1
   basic-ftp: 6.2.3
   handlebars: 4.7.10
   lighthouse: 13.5.0
+  # Only these new majors fix GHSA-3g3m-2fjr-6pw4 and GHSA-g3hv-75wg-m249, and no dependent's range
+  # reaches them yet. Both keep a CommonJS build with the same named exports. glob 7 in rimraf 3,
+  # which Lighthouse CI uses to remove its own temporary profile, only tests that literal path,
+  # which minimatch 11 still handles. Remove both once workbox-build and eslint reach them.
+  glob@>=9.0.0 <14.0.2: 14.0.3
+  minimatch@<11.0.1: 11.0.3
   # miniflare pins undici exactly; 7.30.1 is the patch release that fixes its advisories.
   miniflare>undici: 7.30.1
   proxy-agent: 8.0.2
