@@ -80,7 +80,7 @@ function PageShell({
         <PageNav copy={copy} page={page} />
         <button
           aria-label={copy.t('calculator.settings')}
-          className="pill-button settings-button"
+          className="pill-button round-button settings-button"
           onClick={onOpenSettings}
           ref={settingsButtonRef}
           title={copy.t('calculator.settings')}

@@ -24,7 +24,7 @@ export function HideAmountsButton({ copy, hidden, onChange }: HideAmountsButtonP
   return (
     <button
       aria-label={label}
-      className="icon-button"
+      className="pill-button round-button"
       onClick={() => onChange(!hidden)}
       title={label}
       type="button"

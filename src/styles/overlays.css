@@ -71,6 +71,41 @@ html:has(.sheet-dialog[open]) {
   scroll-padding-block-end: calc(5.25rem + env(safe-area-inset-bottom));
 }
 
+/*
+ * Where the screen is tall enough for both, the title and close button stay at the top too. A
+ * phone on its side keeps its few lines for the form.
+ */
+@media (min-height: 30rem) {
+  .sheet-dialog:has(.income-form .form-actions) {
+    scroll-padding-block-start: 5.5rem;
+  }
+
+  .dialog-inner:has(> .income-form:not([hidden])) > .dialog-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    /* The padding under the title is part of its usual space before the first field. */
+    margin: calc(-1 * var(--dialog-padding)) calc(-1 * var(--dialog-padding)) 0.5rem;
+    background: var(--color-surface);
+    padding: var(--dialog-padding) var(--dialog-padding) 0.75rem;
+  }
+
+  /* A hairline under the title appears once the form scrolls beneath it. */
+  @supports (animation-timeline: scroll()) {
+    .dialog-inner:has(> .income-form:not([hidden])) > .dialog-header {
+      animation: header-divider linear both;
+      animation-timeline: scroll(nearest block);
+      animation-range: 0 1rem;
+    }
+  }
+}
+
+@keyframes header-divider {
+  to {
+    box-shadow: 0 1px 0 var(--color-line);
+  }
+}
+
 /* The buttons end the sheet, so they rest where they stick and do not jump as it scrolls to its end. */
 .dialog-inner:has(> .income-form:not([hidden])) {
   padding-block-end: 0;
