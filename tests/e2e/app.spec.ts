@@ -143,6 +143,13 @@ test.describe('Affordi calculator', () => {
     expect(Math.abs(cancelBox!.y - saveBox!.y)).toBeLessThan(1);
     await page.getByLabel('Take home income').focus();
     await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeInViewport();
+
+    // The actions end the sheet, so they stay where they are when it scrolls to its end.
+    await waitForStillness(page);
+    const resting = (await save.boundingBox())!.y;
+    await page.getByRole('dialog').evaluate((sheet) => sheet.scrollTo(0, sheet.scrollHeight));
+    await expect(page.getByRole('button', { name: 'Reset saved settings' })).toBeInViewport();
+    expect(Math.abs((await save.boundingBox())!.y - resting)).toBeLessThan(1);
   });
 
   test('keeps saved income masked when settings open', async ({ page }) => {

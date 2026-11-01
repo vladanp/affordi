@@ -42,7 +42,8 @@
   font-size: 1.0625rem;
   transition:
     border-color 160ms ease,
-    background-color 160ms ease;
+    background-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .field > input,
@@ -58,10 +59,18 @@
   }
 }
 
+/* The field being typed in stands out from the others; a field with an error stays red. */
+.field > input:focus,
+.input-with-prefix:has(input:focus) {
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 1px var(--color-focus);
+}
+
 .field > input[aria-invalid='true'],
 .select-wrap select[aria-invalid='true'],
 .input-with-prefix:has(input[aria-invalid='true']) {
   border-color: var(--color-danger);
+  box-shadow: none;
 }
 
 .select-wrap {
@@ -91,7 +100,12 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding-inline: 0.95rem 0.3rem;
+  padding-inline: 0.95rem;
+}
+
+/* A button at the end, such as the one that shows income, brings its own room. */
+.input-with-prefix:has(> button) {
+  padding-inline-end: 0.3rem;
 }
 
 .input-prefix {

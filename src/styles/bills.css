@@ -267,13 +267,13 @@
   list-style: none;
 }
 
-/* The name and its edit button, the amount at the end, and the average under the name. */
+/* The name and its edit button with the amount at the end, and the average across the row below. */
 .bill-row {
   display: grid;
   grid-template-columns: minmax(min-content, max-content) auto 1fr minmax(6.5rem, 8.5rem);
   grid-template-areas:
     'name edit . amount'
-    'note note note amount'
+    'note note note note'
     'error error error error';
   align-items: center;
   gap: 0 0.25rem;
@@ -303,20 +303,23 @@
   color: var(--color-muted);
 }
 
+/* The amount reads from its currency symbol like every other amount field, inside its column. */
 .bill-row-input {
   grid-area: amount;
+  width: auto;
   min-height: 2.75rem;
   margin-inline-start: 0.5rem;
+  padding-inline: 0.75rem;
 }
 
 .bill-row-input input {
   min-height: 2.5rem;
   font-variant-numeric: tabular-nums;
-  text-align: end;
 }
 
 .bill-row-note {
   grid-area: note;
+  margin-top: 0.25rem;
   color: var(--color-muted);
   font-size: 0.8125rem;
   line-height: 1.4;
@@ -324,6 +327,7 @@
 
 .bill-row .field-error {
   grid-area: error;
+  margin-top: 0.25rem;
 }
 
 /* On the narrowest phones the amount takes its own line, so names keep whole words. */

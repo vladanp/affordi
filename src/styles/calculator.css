@@ -120,7 +120,9 @@
   background: var(--color-surface);
   padding-inline: 1.25rem 0.5rem;
   box-shadow: 0 1px 2px var(--color-shadow);
-  transition: border-color 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 @media (hover: hover) {
@@ -129,8 +131,16 @@
   }
 }
 
+.price-input-wrap:has(input:focus) {
+  border-color: var(--color-focus);
+  box-shadow:
+    0 0 0 1px var(--color-focus),
+    0 1px 2px var(--color-shadow);
+}
+
 .price-input-wrap:has(input[aria-invalid='true']) {
   border-color: var(--color-danger);
+  box-shadow: 0 1px 2px var(--color-shadow);
 }
 
 .currency-symbol {

@@ -164,6 +164,35 @@ test.describe('Affordi monthly page', () => {
     await expect(coverage.locator('.live-amount')).toHaveText('€119.00');
   });
 
+  test('reads bill amounts from their currency inside each row without widening the page', async ({
+    page,
+  }) => {
+    // Without motion nothing clips the page sideways, so a wide child would scroll it.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await completeSetup(page);
+    await openMonthly(page);
+    await addBill(page, 'Electricity', '91');
+    await addBill(page, 'Heating', '45');
+    await addBill(page, 'Water');
+
+    const rows = await page.locator('.bill-row').evaluateAll((items) =>
+      items.map((row) => {
+        const field = row.querySelector('.bill-row-input')!.getBoundingClientRect();
+        const input = row.querySelector('input')!;
+        const end =
+          row.getBoundingClientRect().right - Number.parseFloat(getComputedStyle(row).paddingRight);
+        return { align: getComputedStyle(input).textAlign, inside: field.right <= end + 0.5 };
+      }),
+    );
+    expect(rows).toEqual(Array.from({ length: 3 }, () => ({ align: 'start', inside: true })));
+    // The chart's table for screen readers is wider than a phone, and stays out of the layout.
+    await expect(page.getByRole('table', { name: 'Bills per month' })).toBeAttached();
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+  });
+
   test('keeps the page still behind an open dialog', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 500 });
     await completeSetup(page);
