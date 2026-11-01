@@ -16,7 +16,8 @@ export async function completeSetup(page: Page) {
 
 /**
  * Waits until every animation that ends has ended, such as a page settling in, so a position is
- * measured where the layout puts it rather than part way through a movement.
+ * measured where the layout puts it rather than part way through a movement. An animation that
+ * follows scrolling, such as the line under a sheet's title, moves only as the page scrolls.
  */
 export async function waitForStillness(page: Page) {
   await page.waitForFunction(() =>
@@ -25,6 +26,7 @@ export async function waitForStillness(page: Page) {
       .every(
         (animation) =>
           animation.playState !== 'running' ||
+          !(animation.timeline instanceof DocumentTimeline) ||
           animation.effect?.getComputedTiming().iterations === Number.POSITIVE_INFINITY,
       ),
   );

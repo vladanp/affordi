@@ -150,6 +150,20 @@ test.describe('Affordi calculator', () => {
     await page.getByRole('dialog').evaluate((sheet) => sheet.scrollTo(0, sheet.scrollHeight));
     await expect(page.getByRole('button', { name: 'Reset saved settings' })).toBeInViewport();
     expect(Math.abs((await save.boundingBox())!.y - resting)).toBeLessThan(1);
+    // The title and close button stay at the top while the sheet scrolls.
+    await expect(page.getByRole('heading', { name: 'Settings' })).toBeInViewport({ ratio: 1 });
+    await expect(page.getByRole('button', { name: 'Close settings' })).toBeInViewport({ ratio: 1 });
+  });
+
+  test('centers the page tabs in the top bar on a wide screen', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await completeSetup(page);
+
+    const [bar, tabs] = await Promise.all([
+      page.locator('.topbar').boundingBox(),
+      page.getByRole('navigation').boundingBox(),
+    ]);
+    expect(Math.abs(tabs!.x + tabs!.width / 2 - (bar!.x + bar!.width / 2))).toBeLessThan(1);
   });
 
   test('keeps saved income masked when settings open', async ({ page }) => {
