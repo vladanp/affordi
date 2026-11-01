@@ -68,7 +68,12 @@ html:has(.sheet-dialog[open]) {
 
 /* Cancel and save stay in reach while a long sheet scrolls, and never cover a focused field. */
 .sheet-dialog:has(.income-form .form-actions) {
-  scroll-padding-block-end: calc(5rem + env(safe-area-inset-bottom));
+  scroll-padding-block-end: calc(5.25rem + env(safe-area-inset-bottom));
+}
+
+/* The buttons end the sheet, so they rest where they stick and do not jump as it scrolls to its end. */
+.dialog-inner:has(> .income-form:not([hidden])) {
+  padding-block-end: 0;
 }
 
 .sheet-dialog .income-form .form-actions {
@@ -78,7 +83,7 @@ html:has(.sheet-dialog[open]) {
   margin-inline: calc(-1 * var(--dialog-padding));
   border-top: 1px solid var(--color-line);
   background: var(--color-surface);
-  padding: 0.75rem var(--dialog-padding) max(0.75rem, env(safe-area-inset-bottom));
+  padding: 1rem var(--dialog-padding) max(1rem, env(safe-area-inset-bottom));
 }
 
 /* On a phone, a sheet's buttons share the row in equal halves, and stack only when their labels can't. */

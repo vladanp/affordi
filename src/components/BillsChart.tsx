@@ -176,31 +176,34 @@ export function BillsChart({
           ))}
         </div>
       </div>
-      <table className="visually-hidden">
-        <caption>{copy.t('bills.chartTitle')}</caption>
-        <thead>
-          <tr>
-            <th scope="col">{copy.t('fixedCosts.month')}</th>
-            {charted.map(({ bill }) => (
-              <th key={bill.id} scope="col">
-                {bill.name}
-              </th>
-            ))}
-            <th scope="col">{copy.t('bills.total')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {totals.map((month) => (
-            <tr key={month.month}>
-              <th scope="row">{longMonth(month.month)}</th>
+      {/* A table is never narrower than its cells, so a box around it hides it without widening the page. */}
+      <div className="visually-hidden">
+        <table>
+          <caption>{copy.t('bills.chartTitle')}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{copy.t('fixedCosts.month')}</th>
               {charted.map(({ bill }) => (
-                <td key={bill.id}>{tableAmount(billAmount(bill, month.month))}</td>
+                <th key={bill.id} scope="col">
+                  {bill.name}
+                </th>
               ))}
-              <td>{tableAmount(month.total)}</td>
+              <th scope="col">{copy.t('bills.total')}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {totals.map((month) => (
+              <tr key={month.month}>
+                <th scope="row">{longMonth(month.month)}</th>
+                {charted.map(({ bill }) => (
+                  <td key={bill.id}>{tableAmount(billAmount(bill, month.month))}</td>
+                ))}
+                <td>{tableAmount(month.total)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
