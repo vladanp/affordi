@@ -310,6 +310,78 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Settings' })).toHaveFocus();
   });
 
+  it('preserves income and a typed price when changing decimal conventions', () => {
+    localStorage.setItem('affordi.settings.v1', savedSettings);
+    render(<App />);
+    fireEvent.change(screen.getByRole('textbox', { name: 'How much does it cost?' }), {
+      target: { value: '1,234.56' },
+    });
+    const workTime = document.querySelector('.result-primary')?.textContent;
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    fireEvent.change(screen.getByLabelText('Take home income'), {
+      target: { value: '3,000.125' },
+    });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Language' }), {
+      target: { value: 'de' },
+    });
+    expect(screen.getByLabelText('Nettoeinkommen')).toHaveValue('3000,125');
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    expect(JSON.parse(localStorage.getItem('affordi.settings.v1') ?? '{}').settings.netIncome).toBe(
+      3000.125,
+    );
+    expect(screen.getByRole('textbox', { name: 'Was kostet es an Zeit?' })).toHaveValue('1234,56');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Einstellungen' }));
+    expect(screen.getByLabelText('Nettoeinkommen')).toHaveValue('3000,125');
+    fireEvent.change(screen.getByRole('combobox', { name: 'Sprache' }), {
+      target: { value: 'en' },
+    });
+    expect(screen.getByLabelText('Take home income')).toHaveValue('3000.125');
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(screen.getByRole('textbox', { name: 'How much does it cost?' })).toHaveValue('1,234.56');
+    expect(document.querySelector('.result-primary')?.textContent).toBe(workTime);
+  });
+
+  it('does not reinterpret a saved fractional income when editing in German', () => {
+    const stored = JSON.parse(savedSettings);
+    stored.settings.netIncome = 3.125;
+    stored.settings.language = 'de';
+    localStorage.setItem('affordi.settings.v1', JSON.stringify(stored));
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Einstellungen' }));
+    expect(screen.getByLabelText('Nettoeinkommen')).toHaveValue('3,125');
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    expect(JSON.parse(localStorage.getItem('affordi.settings.v1') ?? '{}').settings.netIncome).toBe(
+      3.125,
+    );
+  });
+
+  it('keeps a bill’s saved value when a language change is followed by blur', () => {
+    localStorage.setItem('affordi.settings.v1', savedSettings);
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    localStorage.setItem(
+      'affordi.bills.v1',
+      JSON.stringify({
+        version: 1,
+        bills: [{ id: 'water', name: 'Water', entries: [{ month, amount: 34.125 }] }],
+      }),
+    );
+    window.history.replaceState(null, '', '/#monthly');
+    render(<App />);
+    expect(screen.getByRole('textbox', { name: 'Water' })).toHaveValue('34.125');
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Language' }), {
+      target: { value: 'de' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    expect(screen.getByRole('textbox', { name: 'Water' })).toHaveValue('34,125');
+    fireEvent.blur(screen.getByRole('textbox', { name: 'Water' }));
+    expect(
+      JSON.parse(localStorage.getItem('affordi.bills.v1') ?? '{}').bills[0].entries[0].amount,
+    ).toBe(34.125);
+  });
+
   it('restores the system theme after resetting from a theme preview', () => {
     localStorage.setItem(
       'affordi.settings.v1',

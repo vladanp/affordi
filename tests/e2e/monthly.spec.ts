@@ -164,6 +164,29 @@ test.describe('Affordi monthly page', () => {
     await expect(coverage.locator('.live-amount')).toHaveText('€119.00');
   });
 
+  test('counts fixed costs only from their first payment month', async ({ page }) => {
+    await completeSetup(page);
+    await openMonthly(page);
+    await addFixedCost(page, 'Rent', '900');
+    await addFixedCost(page, 'Future loan', '950', {
+      first: ['January', '2027'],
+      last: ['December', '2027'],
+    });
+    await expect(page.locator('.monthly-total .stat-amount')).toHaveText('€900.00');
+    await expect(page.locator('.monthly-left .stat-amount')).toHaveText('€2,100.00');
+    await expect(page.getByRole('listitem').filter({ hasText: 'Future loan' })).toContainText(
+      'Starts January 2027',
+    );
+    await expect(page.locator('.fixed-costs-loans .stat-amount')).toHaveText('€11,400.00');
+    await expectAccessible(page);
+    await page.getByRole('link', { name: 'Earnings' }).click();
+    await expect(page.locator('.earnings-fixed-costs .live-amount')).toHaveText('€900.00');
+    await page.clock.setFixedTime(new Date('2027-01-15T12:00:00Z'));
+    await page.reload();
+    await page.getByRole('link', { name: 'Monthly' }).click();
+    await expect(page.locator('.monthly-total .stat-amount')).toHaveText('€1,850.00');
+  });
+
   test('reads bill amounts from their currency inside each row without widening the page', async ({
     page,
   }) => {

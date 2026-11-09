@@ -69,6 +69,7 @@ const french: Catalog = {
   'fixedCosts.share': '{{percentage}} %',
   'fixedCosts.lastPayment': 'Dernier paiement : {{month}}',
   'fixedCosts.ended': 'Terminée',
+  'fixedCosts.starts': 'Début : {{month}}',
   'fixedCosts.limit': 'Vous pouvez ajouter jusqu’à {{count}} charges fixes.',
   'fixedCosts.couldNotSave':
     'Les charges fixes sont disponibles pour cette visite, mais n’ont pas pu être enregistrées.',

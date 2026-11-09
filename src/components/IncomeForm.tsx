@@ -10,7 +10,7 @@ import {
   type TranslationKey,
   type Translator,
 } from '../domain/i18n';
-import { parseDecimalInput } from '../domain/input';
+import { formatDecimalInput, localizeDecimalInput, parseDecimalInput } from '../domain/input';
 import { currencyOptions, getCurrencySymbol, isCurrencyCode } from '../domain/locale';
 import { isWorkSchedule, parseTimeInput, timeInputValue, type Weekday } from '../domain/schedule';
 import {
@@ -225,7 +225,7 @@ function IncomeField({
 
 function valuesFromSettings(settings: AffordiSettings): FormValues {
   return {
-    netIncome: String(settings.netIncome),
+    netIncome: formatDecimalInput(settings.netIncome, settings.language),
     payFrequency: settings.payFrequency,
     workStart: timeInputValue(settings.workStart),
     workEnd: timeInputValue(settings.workEnd),
@@ -334,7 +334,13 @@ export function IncomeForm(props: IncomeFormProps) {
     if (props.mode === 'edit' && name === 'language' && isLocale(value)) {
       props.onLanguagePreview(value);
     }
-    setValues((current) => ({ ...current, [name]: value }));
+    setValues((current) => ({
+      ...current,
+      ...(name === 'language'
+        ? { netIncome: localizeDecimalInput(current.netIncome, current.language, value) }
+        : {}),
+      [name]: value,
+    }));
     clearError(name);
   }
 

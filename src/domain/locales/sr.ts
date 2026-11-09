@@ -67,6 +67,7 @@ const serbian: Catalog = {
   'fixedCosts.share': '{{percentage}}%',
   'fixedCosts.lastPayment': 'Poslednja uplata: {{month}}',
   'fixedCosts.ended': 'Završeno',
+  'fixedCosts.starts': 'Početak: {{month}}',
   'fixedCosts.limit': 'Možete dodati najviše {{count}} obaveza.',
   'fixedCosts.couldNotSave': 'Obaveze su dostupne za ovu posetu, ali nisu mogle da budu sačuvane.',
   'fixedCosts.addTitle': 'Dodaj obavezu',

@@ -101,10 +101,17 @@ export function isPaidOff(cost: FixedCost, now: Date): boolean {
   return last !== null && isMonthBefore(last, now);
 }
 
-/** Costs still paid this month, largest first, then those already paid off. */
+/** Whether a payment falls in this month, including the first and last payment months. */
+export function isFixedCostDue(cost: FixedCost, now: Date): boolean {
+  const first = cost.firstPayment === null ? null : parseMonth(cost.firstPayment);
+  return !isPaidOff(cost, now) && (first === null || monthsAfter(first, monthOf(now)) <= 0);
+}
+
+/** Current costs first, then future costs and those already paid off, largest first. */
 export function sortFixedCosts(costs: readonly FixedCost[], now: Date): FixedCost[] {
   return costs.toSorted(
     (first, second) =>
+      Number(isFixedCostDue(second, now)) - Number(isFixedCostDue(first, now)) ||
       Number(isPaidOff(first, now)) - Number(isPaidOff(second, now)) ||
       second.amount - first.amount,
   );
@@ -112,7 +119,10 @@ export function sortFixedCosts(costs: readonly FixedCost[], now: Date): FixedCos
 
 /** What the costs still paid this month add up to. */
 export function monthlyFixedCosts(costs: readonly FixedCost[], now: Date): number {
-  return costs.reduce((total, cost) => (isPaidOff(cost, now) ? total : total + cost.amount), 0);
+  return costs.reduce(
+    (total, cost) => (isFixedCostDue(cost, now) ? total + cost.amount : total),
+    0,
+  );
 }
 
 function savedMonth(value: string | null): CalendarMonth | null {

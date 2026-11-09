@@ -112,7 +112,19 @@ export function formatDecimalInput(
 ): string {
   return amount.toLocaleString(locale, {
     minimumFractionDigits,
-    maximumFractionDigits: Math.max(minimumFractionDigits, 6),
+    maximumFractionDigits: Math.max(minimumFractionDigits, 20),
     useGrouping: false,
   });
+}
+
+/** Keeps an entered amount unchanged when its decimal and grouping conventions change. */
+export function localizeDecimalInput(
+  value: string,
+  from: string,
+  to: string,
+  minimumFractionDigits = 0,
+): string {
+  if (from === to) return value;
+  const amount = parseDecimalInput(value, from);
+  return amount === null ? value : formatDecimalInput(amount, to, minimumFractionDigits);
 }

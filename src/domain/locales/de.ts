@@ -69,6 +69,7 @@ const german: Catalog = {
   'fixedCosts.share': '{{percentage}} %',
   'fixedCosts.lastPayment': 'Letzte Zahlung: {{month}}',
   'fixedCosts.ended': 'Beendet',
+  'fixedCosts.starts': 'Beginn: {{month}}',
   'fixedCosts.limit': 'Du kannst bis zu {{count}} Fixkosten hinzufügen.',
   'fixedCosts.couldNotSave':
     'Die Fixkosten sind für diesen Besuch verfügbar, konnten aber nicht gespeichert werden.',

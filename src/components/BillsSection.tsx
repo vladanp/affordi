@@ -22,7 +22,7 @@ import {
   type MonthTotal,
 } from '../domain/bills';
 import type { Translator } from '../domain/i18n';
-import { formatDecimalInput, parseDecimalInput } from '../domain/input';
+import { formatDecimalInput } from '../domain/input';
 import { currencyDigits, formatCurrency, getCurrencySymbol } from '../domain/locale';
 import { monthStart, parseMonth } from '../domain/months';
 import { formatIncomePercentage } from '../domain/priceText';
@@ -32,6 +32,7 @@ import { BillDialog } from './BillDialog';
 import { BillsChart } from './BillsChart';
 import { FieldError } from './FieldError';
 import { ListHeading, Money, useEditDialog } from './MonthlyCosts';
+import { useDecimalInput } from './useDecimalInput';
 
 const MONTH_TITLE_ID = 'bill-month-title';
 
@@ -112,7 +113,11 @@ function BillAmountRow({
   // Amounts read back with the currency's usual decimals, such as 91.00.
   const shown = (amount: number) =>
     formatDecimalInput(amount, copy.locale, currencyDigits(settings.currency, copy.locale));
-  const [draft, setDraft] = useState(() => (saved === null ? '' : shown(saved)));
+  const draft = useDecimalInput(
+    saved === null ? '' : shown(saved),
+    copy.locale,
+    currencyDigits(settings.currency, copy.locale),
+  );
   const [error, setError] = useState(false);
   const id = `bill-amount-${bill.id}`;
   const note = averageNote(billStats(bill, now), saved, hidden, settings, copy);
@@ -121,18 +126,18 @@ function BillAmountRow({
     .join(' ');
 
   function commit() {
-    if (draft.trim() === '') {
+    if (draft.value.trim() === '') {
       setError(false);
       if (saved !== null) onChange(withoutBillAmount(bill, month));
       return;
     }
-    const amount = parseDecimalInput(draft, copy.locale);
+    const amount = draft.amount;
     if (amount === null || amount <= 0) {
       setError(true);
       return;
     }
     setError(false);
-    setDraft(shown(amount));
+    draft.setValue(shown(amount));
     if (amount !== saved) onChange(withBillAmount(bill, month, amount));
   }
 
@@ -164,14 +169,14 @@ function BillAmountRow({
           inputMode="decimal"
           onBlur={commit}
           onChange={(event) => {
-            setDraft(event.target.value);
+            draft.setValue(event.target.value);
             setError(false);
           }}
           onKeyDown={moveToNextAmount}
           placeholder={copy.t('bills.amountLabel')}
           spellCheck={false}
           type="text"
-          value={draft}
+          value={draft.value}
         />
       </span>
       {note !== '' && (

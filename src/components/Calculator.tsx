@@ -3,11 +3,11 @@ import { CalendarClock, Repeat } from 'lucide-react';
 
 import { isPriceRepeat, priceRepeats, type PriceRepeat } from '../domain/calculations';
 import { createTranslator, type Translator } from '../domain/i18n';
-import { parseDecimalInput } from '../domain/input';
 import { getCurrencySymbol } from '../domain/locale';
 import { describeAnnouncement, describeResult, type PriceResult } from '../domain/priceResult';
 import type { AffordiSettings } from '../domain/storage';
 import { useNow } from './useNow';
+import { useDecimalInput } from './useDecimalInput';
 
 /** Screen readers hear the result once typing pauses instead of on every keystroke. */
 const ANNOUNCEMENT_DELAY_MS = 700;
@@ -117,15 +117,14 @@ function useDelayedValue(value: string, delay: number): string {
 }
 
 export function Calculator({ settings }: CalculatorProps) {
-  const [itemPrice, setItemPrice] = useState('');
+  const itemPrice = useDecimalInput('', settings.language);
   const [repeat, setRepeat] = useState<PriceRepeat>('once');
   const priceInputRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const copy = createTranslator(settings.language);
-  const price = parseDecimalInput(itemPrice, settings.language);
   const now = useNow(CLOCK_MS);
-  const result = describeResult(price, repeat, settings, now);
-  const priceError = itemPrice.trim() !== '' && result === null;
+  const result = describeResult(itemPrice.amount, repeat, settings, now);
+  const priceError = itemPrice.value.trim() !== '' && result === null;
   let announcement = result === null ? '' : describeAnnouncement(result);
   if (priceError) announcement = copy.t('calculator.priceError');
   const spokenResult = useDelayedValue(announcement, ANNOUNCEMENT_DELAY_MS);
@@ -159,12 +158,12 @@ export function Calculator({ settings }: CalculatorProps) {
             enterKeyHint="done"
             id="item-price"
             inputMode="decimal"
-            onChange={(event) => setItemPrice(event.target.value)}
+            onChange={(event) => itemPrice.setValue(event.target.value)}
             placeholder="750"
             ref={priceInputRef}
             spellCheck={false}
             type="text"
-            value={itemPrice}
+            value={itemPrice.value}
           />
           <button
             aria-controls={result === null ? undefined : 'calculator-result'}

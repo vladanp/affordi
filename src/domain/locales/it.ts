@@ -68,6 +68,7 @@ const italian: Catalog = {
   'fixedCosts.share': '{{percentage}}%',
   'fixedCosts.lastPayment': 'Ultimo pagamento: {{month}}',
   'fixedCosts.ended': 'Terminata',
+  'fixedCosts.starts': 'Inizio: {{month}}',
   'fixedCosts.limit': 'Puoi aggiungere fino a {{count}} spese fisse.',
   'fixedCosts.couldNotSave':
     'Le spese fisse sono disponibili per questa visita, ma non è stato possibile salvarle.',

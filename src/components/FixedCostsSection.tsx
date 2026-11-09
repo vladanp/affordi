@@ -4,6 +4,7 @@ import { formatWorkDuration } from '../domain/duration';
 import { formatProgress } from '../domain/earningsText';
 import {
   isPaidOff,
+  isFixedCostDue,
   MAX_FIXED_COSTS,
   monthlyCostFigures,
   paidShare,
@@ -60,6 +61,13 @@ function progressNote(
 /** What a row says under its name: its work time and share of pay, or that it ended. */
 function rowFigures(cost: FixedCost, settings: AffordiSettings, now: Date, copy: Translator) {
   if (isPaidOff(cost, now)) return { details: copy.t('fixedCosts.ended'), share: null };
+  if (!isFixedCostDue(cost, now)) {
+    const first = parseMonth(cost.firstPayment!);
+    return {
+      details: copy.t('fixedCosts.starts', { month: copy.month(monthStart(first!), true) }),
+      share: null,
+    };
+  }
   const figures = monthlyCostFigures(cost.amount, settings);
   if (figures === null) return { details: '', share: null };
   const duration = formatWorkDuration(figures.workHours, settings, settings.language);

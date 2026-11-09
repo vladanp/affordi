@@ -233,6 +233,22 @@ describe('Monthly fixed costs', () => {
     expect(other).not.toHaveAttribute('data-changed');
   });
 
+  it('names a future first payment and leaves it out of this month’s costs', () => {
+    render(
+      <MonthlyPage
+        initialCosts={[insurance, { ...mortgage, firstPayment: '2027-01', lastPayment: '2027-12' }]}
+      />,
+    );
+    const total = screen.getByText('Each month').closest('div')!;
+    expect(within(total).getByText('€120.00')).toBeInTheDocument();
+    expect(screen.getByText('€2,880.00')).toBeInTheDocument();
+    expect(rows()[1]).toContain('Starts January 2027');
+    expect(rows()[1]).not.toContain('32%');
+    // Future loan payments still belong to the outstanding balance.
+    const loans = screen.getByText('Left to pay on loans').closest('div')!;
+    expect(within(loans).getByText('€11,400.00')).toBeInTheDocument();
+  });
+
   it('shows what is paid and left on loans with a first payment', () => {
     render(
       <MonthlyPage
