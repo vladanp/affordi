@@ -12,6 +12,7 @@ import {
   billAmount,
   billHistoryMonths,
   monthlyBillTotals,
+  mergeBill,
   billStats,
   MAX_BILLS,
   missedLastMonth,
@@ -415,15 +416,23 @@ export function BillsSection({
   }
 
   function save(bill: Bill) {
-    const exists = bills.some((saved) => saved.id === bill.id);
+    const latest = bills.find((saved) => saved.id === bill.id);
+    const base = dialog.editing ?? null;
+    if (base !== null && latest === undefined) {
+      dialog.close();
+      return;
+    }
+    const updated = base !== null && latest !== undefined ? mergeBill(base, bill, latest) : bill;
     const saving = onBillsChange(
-      exists ? bills.map((saved) => (saved.id === bill.id ? bill : saved)) : [...bills, bill],
+      latest !== undefined
+        ? bills.map((saved) => (saved.id === bill.id ? updated : saved))
+        : [...bills, updated],
     );
     afterStorageSave(saving, () => {
       // A new bill's amount may be for another month, which then shows it in place.
-      const added = exists ? undefined : bill.entries[0]?.month;
+      const added = latest !== undefined ? undefined : updated.entries[0]?.month;
       if (added !== undefined) setChosen(added);
-      dialog.saved(bill);
+      dialog.saved(updated);
     });
   }
 

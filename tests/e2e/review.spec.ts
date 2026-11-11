@@ -73,6 +73,59 @@ test('merges simultaneous additions from two open tabs and propagates reset', as
   await expect(second.getByRole('button', { name: 'Start calculating' })).toBeVisible();
 });
 
+test('merges open dialog drafts with other-tab edits and respects deletion', async ({
+  page,
+  context,
+}) => {
+  await completeSetup(page);
+  await monthly(page);
+  await addCost(page, 'Rent', '950');
+  await page.getByRole('button', { name: 'Add bill', exact: true }).click();
+  await page.getByRole('dialog').getByLabel('Name', { exact: true }).fill('Power');
+  await page.getByRole('dialog').getByLabel('Amount', { exact: true }).fill('100');
+  await page.getByRole('dialog').getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  const second = await context.newPage();
+  await second.goto('/#monthly');
+
+  await page.getByRole('button', { name: 'Edit Rent', exact: true }).click();
+  await page.getByRole('dialog').getByLabel('Name', { exact: true }).fill('Home');
+  await second.getByRole('button', { name: 'Edit Rent', exact: true }).click();
+  await second.getByRole('dialog').getByLabel('Amount each month').fill('1000');
+  await second.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.locator('.fixed-costs .item-amount')).toHaveText('€1,000.00');
+  await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page.evaluate(() => JSON.parse(localStorage.getItem('affordi.fixedCosts.v1')!).fixedCosts[0]),
+    )
+    .toMatchObject({ name: 'Home', amount: 1000 });
+
+  await page.getByRole('button', { name: 'Edit Power', exact: true }).click();
+  await page.getByRole('dialog').getByLabel('Name', { exact: true }).fill('Electricity');
+  await second.getByRole('textbox', { name: 'Power', exact: true }).fill('200');
+  await expect(page.locator('.bill-row-input input')).toHaveValue('200.00');
+  await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('affordi.bills.v1')!).bills[0]))
+    .toMatchObject({ name: 'Electricity', entries: [{ amount: 200 }] });
+
+  await page.getByRole('button', { name: 'Edit Home', exact: true }).click();
+  await second.getByRole('button', { name: 'Edit Home', exact: true }).click();
+  await second.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click();
+  await second.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(page.locator('.fixed-costs .item')).toHaveCount(0);
+  await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => JSON.parse(localStorage.getItem('affordi.fixedCosts.v1')!).fixedCosts,
+    ),
+  ).toEqual([]);
+});
+
 test('persists an inline zero before blur and reload', async ({ page }) => {
   await completeSetup(page);
   await monthly(page);

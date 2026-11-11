@@ -19,7 +19,7 @@ import { formatCurrency } from '../domain/locale';
 import { monthStart, parseMonth } from '../domain/months';
 import { formatIncomePercentage } from '../domain/priceText';
 import type { AffordiSettings } from '../domain/storage';
-import { afterStorageSave } from '../domain/storageSync';
+import { afterStorageSave, mergeChanges } from '../domain/storageSync';
 import { FixedCostDialog } from './FixedCostDialog';
 import { ItemRow, ListHeading, Money, useEditDialog } from './MonthlyCosts';
 
@@ -173,13 +173,19 @@ export function FixedCostsSection({
   const loans = summarizeLoans(fixedCosts, now);
 
   function save(cost: FixedCost) {
-    const exists = fixedCosts.some((saved) => saved.id === cost.id);
+    const latest = fixedCosts.find((saved) => saved.id === cost.id);
+    const base = dialog.editing ?? null;
+    if (base !== null && latest === undefined) {
+      dialog.close();
+      return;
+    }
+    const updated = base !== null && latest !== undefined ? mergeChanges(base, cost, latest) : cost;
     const saving = onFixedCostsChange(
-      exists
-        ? fixedCosts.map((saved) => (saved.id === cost.id ? cost : saved))
-        : [...fixedCosts, cost],
+      latest !== undefined
+        ? fixedCosts.map((saved) => (saved.id === cost.id ? updated : saved))
+        : [...fixedCosts, updated],
     );
-    afterStorageSave(saving, () => dialog.saved(cost));
+    afterStorageSave(saving, () => dialog.saved(updated));
   }
 
   function remove(cost: FixedCost) {

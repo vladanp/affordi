@@ -48,6 +48,85 @@ function holdStorageWrites() {
 }
 
 describe('review interaction regressions', () => {
+  it.each(['fixed cost', 'bill'] as const)(
+    'does not recreate a %s deleted while its dialog was open',
+    async (kind) => {
+      saved();
+      const fixed = kind === 'fixed cost';
+      const name = fixed ? 'Rent' : 'Power';
+      const key = fixed ? 'affordi.fixedCosts.v1' : 'affordi.bills.v1';
+      const field = fixed ? 'fixedCosts' : 'bills';
+      const record = fixed
+        ? { id: 'r', name, amount: 950, firstPayment: null, lastPayment: null }
+        : { id: 'p', name, entries: [] };
+      localStorage.setItem(key, JSON.stringify({ version: 1, [field]: [record] }));
+      render(<App />);
+      fireEvent.click(screen.getByRole('link', { name: 'Monthly' }));
+      await screen.findByRole('button', { name: `Edit ${name}` });
+      fireEvent.click(screen.getByRole('button', { name: `Edit ${name}` }));
+      fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Updated' } });
+      localStorage.setItem(key, JSON.stringify({ version: 1, [field]: [] }));
+      await act(async () => window.dispatchEvent(new StorageEvent('storage', { key })));
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(JSON.parse(localStorage.getItem(key)!)[field]).toEqual([]);
+    },
+  );
+  it('preserves another tab’s amount when an open fixed-cost dialog only renames it', async () => {
+    saved();
+    const cost = { id: 'rent', name: 'Rent', amount: 950, firstPayment: null, lastPayment: null };
+    localStorage.setItem(
+      'affordi.fixedCosts.v1',
+      JSON.stringify({ version: 1, fixedCosts: [cost] }),
+    );
+    render(<App />);
+    fireEvent.click(screen.getByRole('link', { name: 'Monthly' }));
+    await screen.findByRole('button', { name: 'Edit Rent' });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Rent' }));
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Home' } });
+    localStorage.setItem(
+      'affordi.fixedCosts.v1',
+      JSON.stringify({ version: 1, fixedCosts: [{ ...cost, amount: 1000 }] }),
+    );
+    await act(async () =>
+      window.dispatchEvent(new StorageEvent('storage', { key: 'affordi.fixedCosts.v1' })),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(JSON.parse(localStorage.getItem('affordi.fixedCosts.v1')!).fixedCosts).toMatchObject([
+      { name: 'Home', amount: 1000 },
+    ]);
+  });
+  it('preserves another tab’s bill months when an open dialog only renames it', async () => {
+    saved();
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const earlier = `${now.getFullYear() - 1}-01`;
+    const bill = { id: 'power', name: 'Power', entries: [{ month, amount: 100 }] };
+    localStorage.setItem('affordi.bills.v1', JSON.stringify({ version: 1, bills: [bill] }));
+    render(<App />);
+    fireEvent.click(screen.getByRole('link', { name: 'Monthly' }));
+    await screen.findByRole('button', { name: 'Edit Power' });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Power' }));
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Electricity' } });
+    localStorage.setItem(
+      'affordi.bills.v1',
+      JSON.stringify({
+        version: 1,
+        bills: [{ ...bill, entries: [{ month: earlier, amount: 80 }, ...bill.entries] }],
+      }),
+    );
+    await act(async () =>
+      window.dispatchEvent(new StorageEvent('storage', { key: 'affordi.bills.v1' })),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(JSON.parse(localStorage.getItem('affordi.bills.v1')!).bills[0]).toMatchObject({
+      name: 'Electricity',
+      entries: expect.arrayContaining([
+        { month, amount: 100 },
+        { month: earlier, amount: 80 },
+      ]),
+    });
+  });
   it.each([
     ['fixed cost', 'Add fixed cost', 'Amount each month', 'Rent', 'affordi.fixedCosts.v1'],
     ['bill', 'Add bill', 'Amount', 'Power', 'affordi.bills.v1'],

@@ -34,3 +34,5 @@ The release keeps the app private, static, offline-capable, and available in all
 | F28     | Desktop Earnings uses a card grid, and Monthly places bills beside fixed costs. Cost retains its focused column.                                                                                                                                                                                                     |
 
 Structural risk checks use measured Istanbul coverage after verification rather than estimating test coverage from references. Existing coverage and complexity thresholds remain in place. Screenshot tests use the installed DejaVu Sans as a Linux test fixture; the application continues to use each device's system font.
+
+Concurrent edits retain untouched fields; the later save wins when the same field changes. Stale dialogs cannot recreate a deleted record, and resets take precedence over queued saves.
