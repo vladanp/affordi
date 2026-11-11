@@ -117,8 +117,8 @@ export function formatDecimalInput(
   });
 }
 
-/** Keeps an entered amount unchanged when its decimal and grouping conventions change. */
-export function localizeDecimalInput(
+/** Change presentation language without changing a valid draft's numeric meaning. */
+export function translateDecimalInput(
   value: string,
   from: string,
   to: string,

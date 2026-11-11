@@ -1,4 +1,4 @@
-import type { Translator } from '../domain/i18n';
+import type { TranslationKey, Translator } from '../domain/i18n';
 import { weekdays, type Weekday } from '../domain/schedule';
 import { FieldError } from './FieldError';
 
@@ -6,29 +6,33 @@ export interface ScheduleValues {
   workStart: string;
   workEnd: string;
   workDays: readonly Weekday[];
+  workBreak: string;
+  customHours: boolean;
+  dayHours: Record<number, { workStart: string; workEnd: string; workBreak: string }>;
 }
 
-export type ScheduleErrors = Partial<Record<keyof ScheduleValues, string>>;
+export type ScheduleErrors = Partial<Record<keyof ScheduleValues, TranslationKey>>;
 
 interface TimeFieldProps {
   error: string | undefined;
   label: string;
   name: 'workStart' | 'workEnd';
+  id?: string;
   onChange: (name: 'workStart' | 'workEnd', value: string) => void;
   value: string;
 }
 
-function TimeField({ error, label, name, onChange, value }: TimeFieldProps) {
-  const errorId = `${name}-error`;
+function TimeField({ error, label, name, id = name, onChange, value }: TimeFieldProps) {
+  const errorId = `${id}-error`;
   return (
     <div className="field">
-      <label className="field-label" htmlFor={name}>
+      <label className="field-label" htmlFor={id}>
         {label}
       </label>
       <input
         aria-describedby={error ? errorId : undefined}
         aria-invalid={error !== undefined}
-        id={name}
+        id={id}
         name={name}
         onChange={(event) => onChange(name, event.target.value)}
         type="time"
@@ -88,7 +92,12 @@ function DayPicker({ copy, error, onChange, value }: DayPickerProps) {
 interface WorkScheduleFieldsProps {
   copy: Translator;
   errors: ScheduleErrors;
-  onTimeChange: (name: 'workStart' | 'workEnd', value: string) => void;
+  onTimeChange: (name: 'workStart' | 'workEnd' | 'workBreak', value: string) => void;
+  onCustomChange: (custom: boolean) => void;
+  onDayChange: (
+    day: Weekday,
+    hours: { workStart: string; workEnd: string; workBreak: string },
+  ) => void;
   onWorkDaysChange: (days: Weekday[]) => void;
   values: ScheduleValues;
 }
@@ -98,33 +107,106 @@ export function WorkScheduleFields({
   copy,
   errors,
   onTimeChange,
+  onCustomChange,
+  onDayChange,
   onWorkDaysChange,
   values,
 }: WorkScheduleFieldsProps) {
+  const selectedDays = new Set(values.workDays);
   return (
     <>
-      <div className="time-range form-wide">
-        <TimeField
-          error={errors.workStart}
-          label={copy.t('form.workStartLabel')}
-          name="workStart"
-          onChange={onTimeChange}
-          value={values.workStart}
+      {!values.customHours && (
+        <>
+          <div className="time-range form-wide">
+            <TimeField
+              error={errors.workStart === undefined ? undefined : copy.t(errors.workStart)}
+              label={copy.t('form.workStartLabel')}
+              name="workStart"
+              onChange={onTimeChange}
+              value={values.workStart}
+            />
+            <TimeField
+              error={errors.workEnd === undefined ? undefined : copy.t(errors.workEnd)}
+              label={copy.t('form.workEndLabel')}
+              name="workEnd"
+              onChange={onTimeChange}
+              value={values.workEnd}
+            />
+          </div>
+          <label className="field form-wide">
+            <span className="field-label">{copy.t('form.workBreak')}</span>
+            <input
+              type="number"
+              min="0"
+              max="1439"
+              step="1"
+              name="workBreak"
+              value={values.workBreak}
+              onChange={(event) => onTimeChange('workBreak', event.target.value)}
+            />
+          </label>
+        </>
+      )}
+      <label className="option-toggle form-wide">
+        <input
+          type="checkbox"
+          checked={values.customHours}
+          onChange={(event) => onCustomChange(event.target.checked)}
         />
-        <TimeField
-          error={errors.workEnd}
-          label={copy.t('form.workEndLabel')}
-          name="workEnd"
-          onChange={onTimeChange}
-          value={values.workEnd}
-        />
-      </div>
+        {copy.t('form.customHours')}
+      </label>
       <DayPicker
         copy={copy}
-        error={errors.workDays}
+        error={errors.workDays === undefined ? undefined : copy.t(errors.workDays)}
         onChange={onWorkDaysChange}
         value={values.workDays}
       />
+      {values.customHours && (
+        <div className="day-schedules form-wide" data-schedule>
+          {weekdays
+            .filter((day) => selectedDays.has(day))
+            .map((day) => {
+              const hours = values.dayHours[day]!;
+              return (
+                <fieldset className="field" key={day}>
+                  <legend className="field-label">{copy.weekday(day, 'long')}</legend>
+                  <div className="time-range">
+                    <TimeField
+                      name="workStart"
+                      id={`workStart-${day}`}
+                      label={copy.t('form.workStartLabel')}
+                      value={hours.workStart}
+                      error={undefined}
+                      onChange={(name, value) => onDayChange(day, { ...hours, [name]: value })}
+                    />
+                    <TimeField
+                      name="workEnd"
+                      id={`workEnd-${day}`}
+                      label={copy.t('form.workEndLabel')}
+                      value={hours.workEnd}
+                      error={undefined}
+                      onChange={(name, value) => onDayChange(day, { ...hours, [name]: value })}
+                    />
+                  </div>
+                  <label className="field">
+                    <span className="field-label">{copy.t('form.workBreak')}</span>
+                    <input
+                      name="workBreak"
+                      type="number"
+                      min="0"
+                      max="1439"
+                      step="1"
+                      value={hours.workBreak}
+                      onChange={(event) =>
+                        onDayChange(day, { ...hours, workBreak: event.target.value })
+                      }
+                    />
+                  </label>
+                </fieldset>
+              );
+            })}
+        </div>
+      )}
     </>
   );
 }

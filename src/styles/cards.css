@@ -124,3 +124,34 @@
   font-variant-numeric: tabular-nums;
   font-weight: 650;
 }
+
+.cost-breakdown {
+  min-block-size: 2.8em;
+}
+.stat-amount-with-total {
+  min-block-size: calc(1.1em + 1.5rem);
+}
+.fixed-costs-loans .stat-note {
+  min-block-size: 2.8em;
+}
+.monthly-jumps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+@media (min-width: 60rem) {
+  .page[data-page='earnings'],
+  .page[data-page='monthly'] {
+    width: min(100%, 64rem);
+  }
+  .earnings .card-stack {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .monthly-sections {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+}

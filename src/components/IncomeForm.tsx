@@ -10,7 +10,7 @@ import {
   type TranslationKey,
   type Translator,
 } from '../domain/i18n';
-import { formatDecimalInput, localizeDecimalInput, parseDecimalInput } from '../domain/input';
+import { formatDecimalInput, parseDecimalInput, translateDecimalInput } from '../domain/input';
 import { currencyOptions, getCurrencySymbol, isCurrencyCode } from '../domain/locale';
 import { isWorkSchedule, parseTimeInput, timeInputValue, type Weekday } from '../domain/schedule';
 import {
@@ -51,13 +51,16 @@ interface FormValues {
   workStart: string;
   workEnd: string;
   workDays: readonly Weekday[];
+  workBreak: string;
+  customHours: boolean;
+  dayHours: Record<number, { workStart: string; workEnd: string; workBreak: string }>;
   currency: string;
   language: string;
   theme: string;
 }
 
-type TextValueName = Exclude<keyof FormValues, 'workDays'>;
-type FormErrors = Partial<Record<keyof FormValues, string>>;
+type TextValueName = Exclude<keyof FormValues, 'workDays' | 'customHours' | 'dayHours'>;
+type FormErrors = Partial<Record<keyof FormValues, TranslationKey>>;
 type UpdateField = (name: TextValueName, value: string) => void;
 
 type FieldOption = SegmentOption<string>;
@@ -230,6 +233,21 @@ function valuesFromSettings(settings: AffordiSettings): FormValues {
     workStart: timeInputValue(settings.workStart),
     workEnd: timeInputValue(settings.workEnd),
     workDays: settings.workDays,
+    workBreak: String(settings.workBreak ?? 0),
+    customHours: settings.workSessions !== undefined,
+    dayHours: Object.fromEntries(
+      [0, 1, 2, 3, 4, 5, 6].map((day) => {
+        const session = settings.workSessions?.find((item) => item.day === day);
+        return [
+          day,
+          {
+            workStart: timeInputValue(session?.workStart ?? settings.workStart),
+            workEnd: timeInputValue(session?.workEnd ?? settings.workEnd),
+            workBreak: String(session?.workBreak ?? settings.workBreak ?? 0),
+          },
+        ];
+      }),
+    ),
     currency: settings.currency,
     language: settings.language,
     theme: settings.theme,
@@ -263,15 +281,54 @@ function scheduleErrors(
   workStart: number | null,
   workEnd: number | null,
   workDays: readonly Weekday[],
-  copy: Translator,
 ): ScheduleErrors {
   const errors: ScheduleErrors = {};
-  if (workStart === null) errors.workStart = copy.t('validation.workStart');
-  if (workEnd === null || (workStart !== null && workEnd <= workStart)) {
-    errors.workEnd = copy.t('validation.workEnd');
+  if (workStart === null) errors.workStart = 'validation.workStart';
+  if (workEnd === null || (workStart !== null && workEnd === workStart)) {
+    errors.workEnd = 'validation.workEnd';
   }
-  if (workDays.length === 0) errors.workDays = copy.t('validation.workDays');
+  if (workDays.length === 0) errors.workDays = 'validation.workDays';
   return errors;
+}
+
+function scheduleFromValues(values: FormValues) {
+  const workSessions = values.workDays.map((day) => ({
+    day,
+    workStart: parseTimeInput(values.dayHours[day]!.workStart, 'start'),
+    workEnd: parseTimeInput(values.dayHours[day]!.workEnd, 'end'),
+    workBreak: Number(values.dayHours[day]!.workBreak),
+  }));
+  const first = values.customHours ? workSessions[0] : undefined;
+  return {
+    workStart: first?.workStart ?? parseTimeInput(values.workStart, 'start'),
+    workEnd: first?.workEnd ?? parseTimeInput(values.workEnd, 'end'),
+    workDays: values.workDays,
+    workBreak: first?.workBreak ?? Number(values.workBreak),
+    ...(values.customHours ? { workSessions } : {}),
+  };
+}
+
+function changeFormValue(current: FormValues, name: TextValueName, value: string): FormValues {
+  const uniform = new Set(['workStart', 'workEnd', 'workBreak']);
+  return {
+    ...current,
+    [name]: value,
+    netIncome:
+      name === 'language'
+        ? translateDecimalInput(current.netIncome, current.language, value)
+        : name === 'netIncome'
+          ? value
+          : current.netIncome,
+    dayHours:
+      !current.customHours && uniform.has(name)
+        ? Object.fromEntries(
+            Object.entries(current.dayHours).map(([day, hours]) => [
+              day,
+              { ...hours, [name]: value },
+            ]),
+          )
+        : current.dayHours,
+  };
 }
 
 function validate(
@@ -280,22 +337,19 @@ function validate(
   hideAmounts: boolean,
 ): { settings?: AffordiSettings; errors: FormErrors } {
   const netIncome = parseDecimalInput(values.netIncome, copy.locale);
-  const schedule = {
-    workStart: parseTimeInput(values.workStart, 'start'),
-    workEnd: parseTimeInput(values.workEnd, 'end'),
-    workDays: values.workDays,
-  };
-  const errors: FormErrors = scheduleErrors(
-    schedule.workStart,
-    schedule.workEnd,
-    schedule.workDays,
-    copy,
-  );
+  const schedule = scheduleFromValues(values);
+  const errors: FormErrors = values.customHours
+    ? values.workDays.length === 0
+      ? { workDays: 'validation.workDays' }
+      : {}
+    : scheduleErrors(schedule.workStart, schedule.workEnd, schedule.workDays);
 
-  if (netIncome === null || netIncome <= 0) errors.netIncome = copy.t('validation.income');
+  if (netIncome === null || netIncome <= 0) errors.netIncome = 'validation.income';
   for (const field of choiceFields) {
-    if (!field.isValid(values[field.name])) errors[field.name] = copy.t(field.message);
+    if (!field.isValid(values[field.name])) errors[field.name] = field.message;
   }
+  if (Object.keys(errors).length === 0 && !isWorkSchedule(schedule))
+    errors.workDays = 'validation.schedule';
   if (Object.keys(errors).length > 0 || !isWorkSchedule(schedule)) return { errors };
 
   const candidate = {
@@ -325,6 +379,7 @@ export function IncomeForm(props: IncomeFormProps) {
     return { ...valuesFromSettings(defaults), netIncome: '' };
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [pendingCurrency, setPendingCurrency] = useState<AffordiSettings | null>(null);
   const copy = createTranslator(values.language);
 
   function update(name: TextValueName, value: string) {
@@ -334,13 +389,7 @@ export function IncomeForm(props: IncomeFormProps) {
     if (props.mode === 'edit' && name === 'language' && isLocale(value)) {
       props.onLanguagePreview(value);
     }
-    setValues((current) => ({
-      ...current,
-      ...(name === 'language'
-        ? { netIncome: localizeDecimalInput(current.netIncome, current.language, value) }
-        : {}),
-      [name]: value,
-    }));
+    setValues((current) => changeFormValue(current, name, value));
     clearError(name);
   }
 
@@ -360,14 +409,48 @@ export function IncomeForm(props: IncomeFormProps) {
     const result = validate(values, copy, hideAmounts);
     setErrors(result.errors);
     if (result.settings !== undefined) {
-      props.onSubmit(result.settings);
+      if (props.mode === 'edit' && result.settings.currency !== props.initialValues.currency)
+        setPendingCurrency(result.settings);
+      else props.onSubmit(result.settings);
       return;
     }
 
     const firstInvalidName = fieldOrder.find((name) => result.errors[name] !== undefined);
-    const firstInvalidControl = firstControl(event.currentTarget, firstInvalidName ?? '');
+    const firstInvalidControl =
+      values.customHours && result.errors.workDays === 'validation.schedule'
+        ? event.currentTarget.querySelector('[data-schedule] input')
+        : firstControl(event.currentTarget, firstInvalidName ?? '');
     if (firstInvalidControl instanceof HTMLElement) firstInvalidControl.focus();
   }
+
+  if (pendingCurrency !== null && props.mode === 'edit')
+    return (
+      <div className="reset-view">
+        <h3>{copy.t('currency.change')}</h3>
+        <p>
+          {copy.t('currency.description', {
+            from: props.initialValues.currency,
+            to: pendingCurrency.currency,
+          })}
+        </p>
+        <div className="form-actions">
+          <button
+            type="button"
+            className="button button-quiet"
+            onClick={() => setPendingCurrency(null)}
+          >
+            {copy.t('form.cancel')}
+          </button>
+          <button
+            type="button"
+            className="button button-primary"
+            onClick={() => props.onSubmit(pendingCurrency)}
+          >
+            {copy.t('currency.change')}
+          </button>
+        </div>
+      </div>
+    );
 
   return (
     <form
@@ -379,14 +462,14 @@ export function IncomeForm(props: IncomeFormProps) {
       <IncomeField
         copy={copy}
         currency={values.currency}
-        error={errors.netIncome}
+        error={errors.netIncome === undefined ? undefined : copy.t(errors.netIncome)}
         initiallyVisible={!editMode}
         onChange={(value) => update('netIncome', value)}
         value={values.netIncome}
       />
 
       <SelectField
-        error={errors.payFrequency}
+        error={errors.payFrequency === undefined ? undefined : copy.t(errors.payFrequency)}
         label={copy.t('form.payFrequencyLabel')}
         name="payFrequency"
         onChange={update}
@@ -397,7 +480,7 @@ export function IncomeForm(props: IncomeFormProps) {
         value={values.payFrequency}
       />
       <SegmentedField
-        error={errors.currency}
+        error={errors.currency === undefined ? undefined : copy.t(errors.currency)}
         label={copy.t('form.currencyLabel')}
         name="currency"
         onChange={update}
@@ -409,12 +492,20 @@ export function IncomeForm(props: IncomeFormProps) {
         errors={errors}
         onTimeChange={update}
         onWorkDaysChange={updateWorkDays}
+        onCustomChange={(customHours) => {
+          setValues((current) => ({ ...current, customHours }));
+          clearError('workDays');
+        }}
+        onDayChange={(day, hours) => {
+          setValues((current) => ({ ...current, dayHours: { ...current.dayHours, [day]: hours } }));
+          clearError('workDays');
+        }}
         values={values}
       />
       {editMode && (
         <>
           <SelectField
-            error={errors.language}
+            error={errors.language === undefined ? undefined : copy.t(errors.language)}
             label={copy.t('form.languageLabel')}
             name="language"
             onChange={update}
@@ -425,7 +516,7 @@ export function IncomeForm(props: IncomeFormProps) {
             value={values.language}
           />
           <SegmentedField
-            error={errors.theme}
+            error={errors.theme === undefined ? undefined : copy.t(errors.theme)}
             label={copy.t('form.themeLabel')}
             name="theme"
             onChange={update}

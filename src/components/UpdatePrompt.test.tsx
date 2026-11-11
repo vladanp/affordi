@@ -68,10 +68,21 @@ describe('UpdatePromptView', () => {
       expect(screen.queryByRole('status')).not.toBeInTheDocument();
 
       act(() => {
+        readyState.mockReturnValue('complete');
         window.dispatchEvent(new Event('load'));
       });
       expect(useRegisterSW).toHaveBeenCalledOnce();
       expect(screen.getByRole('status')).toHaveTextContent('A new version of Affordi is ready.');
+    } finally {
+      readyState.mockRestore();
+    }
+  });
+  it('registers when load completed before the component subscribed', () => {
+    useRegisterSW.mockClear();
+    const readyState = vi.spyOn(document, 'readyState', 'get').mockReturnValue('complete');
+    try {
+      render(<UpdatePrompt language="en" />);
+      expect(useRegisterSW).toHaveBeenCalledOnce();
     } finally {
       readyState.mockRestore();
     }

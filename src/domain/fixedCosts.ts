@@ -6,7 +6,14 @@ import {
 } from './calculations';
 import { isItemId, isItemName } from './items';
 import { readRecord, writeRecord } from './localStore';
-import { isMonthBefore, monthOf, monthsAfter, parseMonth, type CalendarMonth } from './months';
+import {
+  isMonthBefore,
+  monthOf,
+  monthsAfter,
+  monthValue,
+  parseMonth,
+  type CalendarMonth,
+} from './months';
 
 export const FIXED_COSTS_STORAGE_KEY = 'affordi.fixedCosts.v1';
 export const MAX_FIXED_COSTS = 50;
@@ -101,13 +108,13 @@ export function isPaidOff(cost: FixedCost, now: Date): boolean {
   return last !== null && isMonthBefore(last, now);
 }
 
-/** Whether a payment falls in this month, including the first and last payment months. */
+/** A first and last payment bound the inclusive months in which a cost is due. */
 export function isFixedCostDue(cost: FixedCost, now: Date): boolean {
-  const first = cost.firstPayment === null ? null : parseMonth(cost.firstPayment);
-  return !isPaidOff(cost, now) && (first === null || monthsAfter(first, monthOf(now)) <= 0);
+  const current = monthValue(monthOf(now));
+  return !isPaidOff(cost, now) && (cost.firstPayment === null || cost.firstPayment <= current);
 }
 
-/** Current costs first, then future costs and those already paid off, largest first. */
+/** Costs still paid this month, largest first, then those already paid off. */
 export function sortFixedCosts(costs: readonly FixedCost[], now: Date): FixedCost[] {
   return costs.toSorted(
     (first, second) =>

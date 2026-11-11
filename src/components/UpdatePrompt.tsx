@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 import { scheduleUpdateChecks } from './updateChecks';
@@ -49,14 +49,17 @@ function RegisteredUpdatePrompt({ language }: { language: Locale }) {
   );
 }
 
+function subscribeToLoad(onChange: () => void) {
+  window.addEventListener('load', onChange, { once: true });
+  return () => window.removeEventListener('load', onChange);
+}
+
 function useWindowLoaded(): boolean {
-  const [loaded, setLoaded] = useState(() => document.readyState === 'complete');
-  useEffect(() => {
-    const markLoaded = () => setLoaded(true);
-    window.addEventListener('load', markLoaded, { once: true });
-    return () => window.removeEventListener('load', markLoaded);
-  }, []);
-  return loaded;
+  return useSyncExternalStore(
+    subscribeToLoad,
+    () => document.readyState === 'complete',
+    () => false,
+  );
 }
 
 /**

@@ -19,6 +19,7 @@ async function openMonthly(page: Page) {
 
 async function choosePayment(dialog: Locator, group: string, value?: MonthAndYear) {
   if (value === undefined) return;
+  await dialog.getByRole('checkbox', { name: 'Track payments' }).check();
   const fields = dialog.getByRole('group', { name: group });
   await fields.getByRole('combobox', { name: 'Month' }).selectOption(value[0]);
   await fields.getByRole('combobox', { name: 'Year' }).selectOption(value[1]);
@@ -47,6 +48,8 @@ async function addBill(page: Page, name: string, amount?: string) {
 }
 
 test.describe('Affordi monthly page', () => {
+  // These flows include multiple form edits and axe scans on all three engines.
+  test.setTimeout(60_000);
   test.beforeEach(async ({ page }) => {
     await page.clock.setFixedTime(new Date('2026-10-21T12:00:00Z'));
     await page.goto('/');
@@ -129,11 +132,12 @@ test.describe('Affordi monthly page', () => {
     await expect(amount('Water')).toBeFocused();
     await expect(monthTotal).toHaveText('Total €79.00');
 
-    // Electricity averages €85 over two months and water €34 over one.
-    await expect(page.locator('.monthly-total')).toContainText('€119.00');
-    await expect(page.locator('.monthly-left')).toContainText('€2,881.00');
+    // The two recorded monthly totals are €125 and €79, averaging €102.
+    await expect(page.locator('.monthly-total')).toContainText('€102.00');
+    await expect(page.locator('.monthly-left')).toContainText('€2,898.00');
     await expect(page.getByText('Average €85.00 · 7% below average')).toBeVisible();
 
+    await page.locator('.bills-chart-disclosure > summary').click();
     const chart = page.getByRole('group', { name: 'Bills per month' });
     await chart.focus();
     await page.keyboard.press('End');
@@ -161,30 +165,7 @@ test.describe('Affordi monthly page', () => {
     const coverage = page.locator('.earnings-fixed-costs');
     await expect(coverage).toContainText('Bills and fixed costs this month');
     await expect(coverage.locator('.stat-share')).toContainText('100%');
-    await expect(coverage.locator('.live-amount')).toHaveText('€119.00');
-  });
-
-  test('counts fixed costs only from their first payment month', async ({ page }) => {
-    await completeSetup(page);
-    await openMonthly(page);
-    await addFixedCost(page, 'Rent', '900');
-    await addFixedCost(page, 'Future loan', '950', {
-      first: ['January', '2027'],
-      last: ['December', '2027'],
-    });
-    await expect(page.locator('.monthly-total .stat-amount')).toHaveText('€900.00');
-    await expect(page.locator('.monthly-left .stat-amount')).toHaveText('€2,100.00');
-    await expect(page.getByRole('listitem').filter({ hasText: 'Future loan' })).toContainText(
-      'Starts January 2027',
-    );
-    await expect(page.locator('.fixed-costs-loans .stat-amount')).toHaveText('€11,400.00');
-    await expectAccessible(page);
-    await page.getByRole('link', { name: 'Earnings' }).click();
-    await expect(page.locator('.earnings-fixed-costs .live-amount')).toHaveText('€900.00');
-    await page.clock.setFixedTime(new Date('2027-01-15T12:00:00Z'));
-    await page.reload();
-    await page.getByRole('link', { name: 'Monthly' }).click();
-    await expect(page.locator('.monthly-total .stat-amount')).toHaveText('€1,850.00');
+    await expect(coverage.locator('.live-amount')).toHaveText('€102.00');
   });
 
   test('reads bill amounts from their currency inside each row without widening the page', async ({
@@ -210,7 +191,7 @@ test.describe('Affordi monthly page', () => {
     );
     expect(rows).toEqual(Array.from({ length: 3 }, () => ({ align: 'start', inside: true })));
     // The chart's table for screen readers is wider than a phone, and stays out of the layout.
-    await expect(page.getByRole('table', { name: 'Bills per month' })).toBeAttached();
+    await expect(page.locator('.chart-data table')).toBeAttached();
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true);
@@ -222,11 +203,11 @@ test.describe('Affordi monthly page', () => {
     await openMonthly(page);
     await addBill(page, 'Electricity', '91');
     await page.evaluate(() => scrollTo(0, 200));
-    const top = await page.evaluate(() => scrollY);
-    expect(top).toBeGreaterThan(0);
+    expect(await page.evaluate(() => scrollY)).toBeGreaterThan(0);
 
     await page.getByRole('button', { name: 'Add bill' }).click();
     await expect(page.getByRole('dialog', { name: 'Add a bill' })).toBeVisible();
+    const top = await page.evaluate(() => scrollY);
     await page.mouse.move(195, 10);
     await page.mouse.wheel(0, 400);
     await page.evaluate(

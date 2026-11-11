@@ -74,8 +74,8 @@ describe('Earnings', () => {
     render(<EarningsPage />);
 
     expect(screen.getByRole('heading', { name: 'How much do you earn?' })).toBeInTheDocument();
-    expect(liveAmounts()).toEqual(['€49.45', '€51.92', '€1,960.22 of €3,000.00']);
-    expect(screen.getByText('Earned since midnight')).toBeInTheDocument();
+    expect(liveAmounts()).toEqual(['€49.45', '€51.13', '€1,960.22 of €3,000.00']);
+    expect(screen.getByText('Today’s 24-hour pay equivalent')).toBeInTheDocument();
     expect(workStatus()).toHaveTextContent('Working until 5:00 PM · 5 hours left');
     expect(screen.getByText('65%')).toBeInTheDocument();
     expect(screen.getByText('65% of this month’s take home pay')).toHaveClass('visually-hidden');
@@ -83,7 +83,7 @@ describe('Earnings', () => {
     act(() => {
       vi.advanceTimersByTime(60_000);
     });
-    expect(liveAmounts()).toEqual(['€49.51', '€52.21', '€1,960.51 of €3,000.00']);
+    expect(liveAmounts()).toEqual(['€49.51', '€51.42', '€1,960.51 of €3,000.00']);
     expect(workStatus()).toHaveTextContent('Working until 5:00 PM · 4 hours and 59 minutes left');
   });
 
@@ -93,16 +93,16 @@ describe('Earnings', () => {
     act(() => {
       vi.advanceTimersByTime(1_000);
     });
-    expect(liveAmounts()[1]).toBe('€51.92');
+    expect(liveAmounts()[1]).toBe('€51.14');
     act(() => {
       vi.advanceTimersByTime(1_000);
     });
-    expect(liveAmounts()[1]).toBe('€51.93');
+    expect(liveAmounts()[1]).toBe('€51.14');
   });
 
   it('breaks pay down around the clock and at work with shared totals', () => {
     render(<EarningsPage />);
-    const table = screen.getByRole('table', { name: 'Your take home pay, broken down' });
+    const table = screen.getByRole('table', { name: 'Average pay rates' });
     const cells = (name: string) =>
       within(within(table).getByRole('row', { name: new RegExp(`^${name}`) }))
         .getAllByRole('cell')
@@ -129,7 +129,7 @@ describe('Earnings', () => {
     expect(workStatus()).toHaveTextContent('Working until 5:00 PM · 5 hours left');
 
     fireEvent.click(screen.getByRole('button', { name: 'Show amounts' }));
-    expect(liveAmounts()).toEqual(['€49.45', '€51.92', '€1,960.22 of €3,000.00']);
+    expect(liveAmounts()).toEqual(['€49.45', '€51.13', '€1,960.22 of €3,000.00']);
   });
 
   it('shows how much of this month’s fixed costs the pay covers so far', () => {
@@ -163,7 +163,7 @@ describe('Earnings', () => {
     vi.setSystemTime(new Date(2026, 9, 21, 18));
     const evening = render(<EarningsPage />);
     expect(screen.getByText('Finished at 5:00 PM')).toBeInTheDocument();
-    expect(liveAmounts()[1]).toBe('€138.46');
+    expect(liveAmounts()[1]).toBe('€136.36');
     expect(liveAmounts()[2]).toBe('€2,045.45 of €3,000.00');
     expect(
       document.querySelector<HTMLElement>('.earnings-month .meter > span')?.style.inlineSize,

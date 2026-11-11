@@ -1,4 +1,4 @@
-import type { CSSProperties, KeyboardEvent, PointerEvent } from 'react';
+import { useRef, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
 
 import { billAmount, type Bill, type BillsSummary } from '../domain/bills';
 import type { Translator } from '../domain/i18n';
@@ -62,6 +62,7 @@ export function BillsChart({
   selected,
   summary,
 }: BillsChartProps) {
+  const pointerStart = useRef<{ x: number; y: number } | null>(null);
   const { average, totals } = summary;
   const scale = Math.max(average, ...totals.map((month) => month.total ?? 0)) || 1;
   const money = (value: number) =>
@@ -90,7 +91,10 @@ export function BillsChart({
 
   /** Only a pressed pointer drags the selection, so hovering does not change the month. */
   function dragFromPointer(event: PointerEvent<HTMLDivElement>) {
-    if (event.buttons === 1) selectFromPointer(event);
+    const start = pointerStart.current;
+    if (event.buttons !== 1 || start === null) return;
+    if (Math.abs(event.clientY - start.y) > 10) pointerStart.current = null;
+    else if (Math.abs(event.clientX - start.x) > 10) selectFromPointer(event);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -136,7 +140,17 @@ export function BillsChart({
         aria-label={copy.t('bills.chartTitle')}
         className="bills-chart"
         onKeyDown={handleKeyDown}
-        onPointerDown={selectFromPointer}
+        onPointerDown={(event) => {
+          pointerStart.current = { x: event.clientX, y: event.clientY };
+        }}
+        onPointerCancel={() => {
+          pointerStart.current = null;
+        }}
+        onPointerUp={(event) => {
+          const start = pointerStart.current;
+          pointerStart.current = null;
+          if (start !== null && Math.abs(event.clientY - start.y) < 10) selectFromPointer(event);
+        }}
         onPointerMove={dragFromPointer}
         role="group"
         tabIndex={0}
@@ -177,33 +191,36 @@ export function BillsChart({
         </div>
       </div>
       {/* A table is never narrower than its cells, so a box around it hides it without widening the page. */}
-      <div className="visually-hidden">
-        <table>
-          <caption>{copy.t('bills.chartTitle')}</caption>
-          <thead>
-            <tr>
-              <th scope="col">{copy.t('fixedCosts.month')}</th>
-              {charted.map(({ bill }) => (
-                <th key={bill.id} scope="col">
-                  {bill.name}
-                </th>
-              ))}
-              <th scope="col">{copy.t('bills.total')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {totals.map((month) => (
-              <tr key={month.month}>
-                <th scope="row">{longMonth(month.month)}</th>
+      <details className="chart-data">
+        <summary>{copy.t('bills.data')}</summary>
+        <div className="chart-table-scroll">
+          <table>
+            <caption>{copy.t('bills.chartTitle')}</caption>
+            <thead>
+              <tr>
+                <th scope="col">{copy.t('fixedCosts.month')}</th>
                 {charted.map(({ bill }) => (
-                  <td key={bill.id}>{tableAmount(billAmount(bill, month.month))}</td>
+                  <th key={bill.id} scope="col">
+                    {bill.name}
+                  </th>
                 ))}
-                <td>{tableAmount(month.total)}</td>
+                <th scope="col">{copy.t('bills.total')}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {totals.map((month) => (
+                <tr key={month.month}>
+                  <th scope="row">{longMonth(month.month)}</th>
+                  {charted.map(({ bill }) => (
+                    <td key={bill.id}>{tableAmount(billAmount(bill, month.month))}</td>
+                  ))}
+                  <td>{tableAmount(month.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
     </div>
   );
 }

@@ -52,7 +52,7 @@ describe('bill values', () => {
     { ...water, name: '' },
     { ...water, id: '' },
     { ...water, entries: 'none' },
-    { ...water, entries: [{ month: '2026-10', amount: 0 }] },
+    { ...water, entries: [{ month: '2026-10', amount: -1 }] },
     { ...water, entries: [{ month: '2026-13', amount: 5 }] },
     { ...water, entries: water.entries.toReversed() },
     { ...water, entries: [water.entries[0], water.entries[0]] },
@@ -137,8 +137,8 @@ describe('bill figures', () => {
     expect(billStats({ ...water, entries: [] }, october)).toEqual({ average: null, latest: null });
   });
 
-  it('adds the averages up for a typical month and sorts by them', () => {
-    expect(averageMonthlyBills(bills, october)).toBeCloseTo(95.25 + 32, 10);
+  it('averages recorded monthly totals and sorts individual bills by their means', () => {
+    expect(averageMonthlyBills(bills, october)).toBeCloseTo(111.25, 10);
     expect(sortBills(bills, october).map((bill) => bill.name)).toEqual([
       'Electricity',
       'Water',
@@ -157,7 +157,7 @@ describe('bill figures', () => {
 
   it('sums up the last twelve months for the chart', () => {
     const summary = summarizeBills(bills, october);
-    expect(summary.average).toBeCloseTo(127.25, 10);
+    expect(summary.average).toBeCloseTo(111.25, 10);
     expect(summary.totals).toEqual(monthlyBillTotals(bills, october));
     expect(summarizeBills([{ ...water, entries: [water.entries[1]!] }], october).average).toBe(34);
     expect(summarizeBills([], october).average).toBe(0);

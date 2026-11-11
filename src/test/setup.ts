@@ -13,3 +13,6 @@ vi.mock('virtual:pwa-register/react', () => ({
     updateServiceWorker: vi.fn(async () => undefined),
   }),
 }));
+
+// jsdom has no scrolling surface; browser tests exercise real scroll positioning.
+window.scrollTo = vi.fn();

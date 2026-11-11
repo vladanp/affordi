@@ -10,6 +10,7 @@ interface SettingsDialogProps {
   language: Locale;
   settings: AffordiSettings;
   onClose: () => void;
+  onOpenData: () => void;
   onLanguagePreview: (language: Locale) => void;
   onReset: () => boolean;
   onSave: (settings: AffordiSettings) => void;
@@ -26,6 +27,7 @@ export function SettingsDialog({
   language,
   settings,
   onClose,
+  onOpenData,
   onLanguagePreview,
   onReset,
   onSave,
@@ -122,6 +124,9 @@ export function SettingsDialog({
           onSubmit={onSave}
           onThemePreview={onThemePreview}
         >
+          <button className="text-button form-wide" onClick={onOpenData} type="button">
+            {copy.t('data.title')}
+          </button>
           <button
             className="text-button danger-button form-wide"
             onClick={() => {

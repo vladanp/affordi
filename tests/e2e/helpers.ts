@@ -3,7 +3,7 @@ import { expect, type Page } from '@playwright/test';
 
 export async function completeSetup(page: Page) {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Start with your income' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Turn prices into working time' })).toBeVisible();
   await page.getByLabel('Take home income').fill('3000');
   await page.getByRole('combobox', { name: 'Pay frequency' }).selectOption('monthly');
   await page.getByLabel('Work starts').fill('09:00');
@@ -26,6 +26,9 @@ export async function waitForStillness(page: Page) {
       .every(
         (animation) =>
           animation.playState !== 'running' ||
+          (animation.effect instanceof KeyframeEffect &&
+            animation.effect.target instanceof Element &&
+            animation.effect.target.getClientRects().length === 0) ||
           !(animation.timeline instanceof DocumentTimeline) ||
           animation.effect?.getComputedTiming().iterations === Number.POSITIVE_INFINITY,
       ),

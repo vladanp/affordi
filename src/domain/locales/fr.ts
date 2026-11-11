@@ -2,6 +2,26 @@ import type { Catalog } from '../i18n';
 
 /** French copy. It loads on its own, so the first screen carries only English. */
 const french: Catalog = {
+  'validation.schedule':
+    'Choisissez des horaires valides sans chevauchement et une pause plus courte que chaque service.',
+  'form.customHours': 'Horaires différents selon le jour',
+  'form.workBreak': 'Pause non rémunérée (minutes)',
+  'calculator.noDisposable': 'Aucun revenu restant après les charges mensuelles',
+  'calculator.disposable': 'Utiliser le revenu restant après charges',
+  'currency.description':
+    'Réétiqueter tous les revenus, factures et frais fixes de {{from}} en {{to}} ? Les nombres restent identiques, sans conversion de change.',
+  'currency.change': 'Changer la devise des données',
+  'data.failure':
+    'Impossible d’importer cette sauvegarde. Vérifiez le fichier et l’espace disponible.',
+  'data.replace': 'Remplacer les données',
+  'data.replaceDescription':
+    'Ce fichier remplacera tous les revenus, réglages, factures et frais fixes enregistrés sur cet appareil : {{bills}} factures et {{costs}} frais fixes.',
+  'data.replaceTitle': 'Remplacer les données enregistrées ?',
+  'data.import': 'Importer une sauvegarde',
+  'data.export': 'Exporter une sauvegarde',
+  'data.privacy':
+    'Revenus, factures et réglages restent dans ce navigateur. Aucun compte, suivi ou stockage en ligne. Les fichiers exportés contiennent vos données financières ; conservez-les en lieu sûr.',
+  'data.title': 'Sur cet appareil',
   'storage.visitOnly':
     'Enregistré pour cette visite. Votre navigateur a bloqué l’enregistrement local.',
   'storage.couldNotSave':
@@ -32,7 +52,7 @@ const french: Catalog = {
   'nav.cost': 'Coût',
   'nav.earnings': 'Revenus',
   'earnings.title': 'Combien gagnez-vous ?',
-  'earnings.today': 'Gagné depuis minuit',
+  'earnings.today': 'Équivalent du revenu réparti sur 24 h',
   'earnings.atWork': 'Gagné au travail aujourd’hui',
   'earnings.startsAt': 'Commence à {{time}}',
   'earnings.workingUntil': 'Au travail jusqu’à {{time}}',
@@ -45,7 +65,7 @@ const french: Catalog = {
   'earnings.hideAmounts': 'Masquer les montants',
   'earnings.showAmounts': 'Afficher les montants',
   'earnings.hiddenAmount': 'Masqué',
-  'earnings.breakdown': 'Votre revenu net, en détail',
+  'earnings.breakdown': 'Revenu moyen par période',
   'earnings.period': 'Période',
   'earnings.aroundTheClock': '24 h sur 24',
   'earnings.whileWorking': 'Au travail',
@@ -69,7 +89,6 @@ const french: Catalog = {
   'fixedCosts.share': '{{percentage}} %',
   'fixedCosts.lastPayment': 'Dernier paiement : {{month}}',
   'fixedCosts.ended': 'Terminée',
-  'fixedCosts.starts': 'Début : {{month}}',
   'fixedCosts.limit': 'Vous pouvez ajouter jusqu’à {{count}} charges fixes.',
   'fixedCosts.couldNotSave':
     'Les charges fixes sont disponibles pour cette visite, mais n’ont pas pu être enregistrées.',
@@ -82,6 +101,8 @@ const french: Catalog = {
   'fixedCosts.amountLabel': 'Montant par mois',
   'fixedCosts.amountDescription': 'Montant en {{currency}}.',
   'fixedCosts.lastPaymentLabel': 'Dernier paiement',
+  'fixedCosts.trackPayments': 'Suivre les paiements',
+  'fixedCosts.scheduled': 'Prévu',
   'fixedCosts.firstPaymentLabel': 'Premier paiement',
   'fixedCosts.paidAndLeft': 'Payé : {{paid}} · Reste : {{left}}',
   'fixedCosts.leftToPay': 'Reste à payer : {{amount}}',
@@ -98,6 +119,7 @@ const french: Catalog = {
   'fixedCosts.deleteDescription': 'Cette charge sera supprimée de cet appareil.',
   'fixedCosts.keep': 'Garder',
   'validation.costName': 'Saisissez un nom.',
+  'validation.billAmount': 'Saisissez un montant supérieur ou égal à 0.',
   'validation.costAmount': 'Saisissez un montant supérieur à 0.',
   'validation.lastPayment': 'Choisissez un mois et une année, ou laissez les deux vides.',
   'validation.lastPaymentPast': 'Choisissez ce mois-ci ou plus tard.',
@@ -106,6 +128,7 @@ const french: Catalog = {
   'earnings.fixedCostsShare': '{{percentage}} des charges fixes du mois couvertes',
   'bills.add': 'Ajouter une facture',
   'bills.addShort': 'Ajouter',
+  'bills.data': 'Voir les données',
   'bills.chartTitle': 'Factures par mois',
   'bills.chartAverage': 'Moyenne {{amount}}',
   'bills.other': 'Autres',
@@ -133,7 +156,7 @@ const french: Catalog = {
   'bills.enterMissed': 'Saisir les montants',
   'earnings.costsWithBills': 'Factures et charges fixes ce mois-ci',
   'earnings.costsWithBillsShare': '{{percentage}} des factures et charges fixes du mois couvertes',
-  'form.heading': 'Commencez par vos revenus',
+  'form.heading': 'Convertissez les prix en temps de travail',
   'form.incomeLabel': 'Revenu net',
   'form.incomeDescription': 'Montant en {{currency}}, après impôts.',
   'form.payFrequencyLabel': 'Fréquence de paiement',
@@ -151,7 +174,7 @@ const french: Catalog = {
   'validation.income': 'Saisissez un revenu supérieur à 0.',
   'validation.payFrequency': 'Choisissez la fréquence de votre paiement.',
   'validation.workStart': 'Choisissez l’heure de début du travail.',
-  'validation.workEnd': 'Choisissez une heure de fin plus tard le même jour.',
+  'validation.workEnd': 'Choisissez une heure de fin différente du début.',
   'validation.workDays': 'Choisissez au moins un jour travaillé.',
   'validation.currency': 'Choisissez une devise.',
   'validation.language': 'Choisissez une langue.',

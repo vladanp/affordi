@@ -27,7 +27,7 @@ type FormErrors = Partial<Record<keyof FormValues, string>>;
 function readAmount(value: string, locale: string): number | null | undefined {
   if (value.trim() === '') return null;
   const amount = parseDecimalInput(value, locale);
-  return amount !== null && amount > 0 ? amount : undefined;
+  return amount !== null && amount >= 0 ? amount : undefined;
 }
 
 /** Checks the form and builds the bill. Its amounts are entered month by month on the page. */
@@ -40,7 +40,7 @@ function validate(
   const amount = readAmount(values.amount, copy.locale);
   const errors: FormErrors = {};
   if (!isItemName(name)) errors.name = copy.t('validation.costName');
-  if (amount === undefined) errors.amount = copy.t('validation.costAmount');
+  if (amount === undefined) errors.amount = copy.t('validation.billAmount');
   if (amount === undefined || errors.name !== undefined) return { errors };
 
   if (bill !== null) return { errors, bill: { ...bill, name } };

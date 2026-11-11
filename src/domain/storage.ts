@@ -36,6 +36,10 @@ export function withScheduleHours(
     workStart: schedule.workStart,
     workEnd: schedule.workEnd,
     workDays: schedule.workDays,
+    ...(schedule.workBreak === undefined ? {} : { workBreak: schedule.workBreak }),
+    ...(schedule.workSessions === undefined
+      ? {}
+      : { workSessions: schedule.workSessions.map((session) => ({ ...session })) }),
     ...scheduleHours(schedule),
   };
 }
@@ -87,7 +91,7 @@ function savedSchedule(value: object): WorkSchedule | null {
   );
 }
 
-function normalizeSettings(value: unknown): AffordiSettings | null {
+export function normalizeSettings(value: unknown): AffordiSettings | null {
   if (typeof value !== 'object' || value === null) return null;
   const schedule = savedSchedule(value);
   if (schedule === null) return null;

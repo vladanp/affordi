@@ -36,13 +36,13 @@ jobs:
       - name: Check pushed commit title
         if: github.event_name == 'push'
         run: git log -1 --pretty=%s | pnpm exec commitlint --verbose
+      - name: Run formatting, lint, types, tests, build, bundle, and PWA checks
+        run: pnpm run verify
       - name: Audit changed code with Fallow
         if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: pnpm exec fallow audit --base "$BASE_SHA"
-      - name: Run formatting, lint, types, tests, build, bundle, and PWA checks
-        run: pnpm run verify
+        run: pnpm exec fallow audit --base "$BASE_SHA" --coverage coverage/coverage-final.json
       # Advisories published after a merge would otherwise fail every pull request, even those that
       # leave dependencies alone. Shipped code is always audited, the full tree whenever dependencies
       # change, and the daily dependency audit reports anything published in between.

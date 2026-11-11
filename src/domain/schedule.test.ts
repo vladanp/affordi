@@ -32,7 +32,7 @@ describe('work schedules', () => {
     'office',
     { workStart: 540, workEnd: 1020 },
     { ...officeHours, workEnd: 540 },
-    { ...officeHours, workEnd: 480 },
+    { ...officeHours, workEnd: 0 },
     { ...officeHours, workStart: -1 },
     { ...officeHours, workStart: 1440, workEnd: 1440 },
     { ...officeHours, workEnd: 1441 },
@@ -218,5 +218,58 @@ describe('work progress', () => {
   it('measures time since local midnight', () => {
     expect(msSinceMidnight(wednesday(0))).toBe(0);
     expect(msSinceMidnight(wednesday(12, 30))).toBe(12.5 * 3_600_000);
+  });
+});
+
+describe('overnight, unpaid and variable shifts', () => {
+  const night: WorkSchedule = {
+    workStart: 1320,
+    workEnd: 360,
+    workDays: [1, 2, 3, 4, 5],
+    workBreak: 30,
+  };
+  it('counts paid hours, carries a shift after midnight, and keeps calendar-day earnings separate', () => {
+    expect(isWorkSchedule(night)).toBe(true);
+    expect(scheduleHours(night).weeklyHours).toBe(37.5);
+    const at = new Date(2026, 10, 10, 2);
+    expect(workProgress(night, at)).toMatchObject({
+      state: 'working',
+      workedMs: 3.75 * 3_600_000,
+      remainingMs: 4 * 3_600_000,
+    });
+    expect(workDoneAt(night, 3.75 * 3_600_000, new Date(2026, 10, 9, 22))).toEqual(at);
+  });
+  it('rejects overlapping day overrides and breaks that consume a shift', () => {
+    expect(isWorkSchedule({ ...night, workBreak: 480 })).toBe(false);
+    expect(
+      isWorkSchedule({
+        ...night,
+        workSessions: [{ day: 1, workStart: 1320, workEnd: 360, workBreak: 0 }],
+      }),
+    ).toBe(false);
+    const variable: WorkSchedule = {
+      ...night,
+      workDays: [1, 2],
+      workSessions: [
+        { day: 1, workStart: 1320, workEnd: 360, workBreak: 0 },
+        { day: 2, workStart: 240, workEnd: 600, workBreak: 0 },
+      ],
+    };
+    expect(isWorkSchedule(variable)).toBe(false);
+    const valid = {
+      ...variable,
+      workSessions: [
+        variable.workSessions![0]!,
+        { day: 2 as const, workStart: 540, workEnd: 900, workBreak: 60 },
+      ],
+    };
+    expect(isWorkSchedule(valid)).toBe(true);
+    expect(scheduleHours(valid).weeklyHours).toBe(13);
+  });
+  it('attributes overnight work only to the calendar month it occurs in', () => {
+    const schedule: WorkSchedule = { workStart: 1320, workEnd: 360, workDays: [6] };
+    const progress = monthWorkProgress(schedule, new Date(2026, 10, 1, 3));
+    expect(progress.workedMs).toBe(3 * 3_600_000);
+    expect(progress.scheduledMs).toBe((6 + 4 * 8) * 3_600_000);
   });
 });

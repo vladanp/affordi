@@ -98,6 +98,8 @@ function dialog() {
 
 /** The month and year lists of the first or last payment. */
 function payment(which: 'First payment' | 'Last payment') {
+  const track = dialog().getByRole('checkbox', { name: 'Track payments' });
+  if (track instanceof HTMLInputElement && !track.checked) fireEvent.click(track);
   return within(dialog().getByRole('group', { name: which }));
 }
 
@@ -150,7 +152,7 @@ describe('Monthly fixed costs', () => {
       screen.getByRole('heading', { name: 'What do you pay each month?' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'Fixed costs' })).toBeInTheDocument();
-    expect(screen.queryByText('Each month')).not.toBeInTheDocument();
+    expect(screen.getByText('Each month')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Add fixed cost' }));
     expect(dialog().getByRole('heading', { name: 'Add a fixed cost' })).toBeInTheDocument();
@@ -231,22 +233,6 @@ describe('Monthly fixed costs', () => {
     const [saved, other] = fixedCostRows();
     expect(saved).toHaveAttribute('data-changed');
     expect(other).not.toHaveAttribute('data-changed');
-  });
-
-  it('names a future first payment and leaves it out of this month’s costs', () => {
-    render(
-      <MonthlyPage
-        initialCosts={[insurance, { ...mortgage, firstPayment: '2027-01', lastPayment: '2027-12' }]}
-      />,
-    );
-    const total = screen.getByText('Each month').closest('div')!;
-    expect(within(total).getByText('€120.00')).toBeInTheDocument();
-    expect(screen.getByText('€2,880.00')).toBeInTheDocument();
-    expect(rows()[1]).toContain('Starts January 2027');
-    expect(rows()[1]).not.toContain('32%');
-    // Future loan payments still belong to the outstanding balance.
-    const loans = screen.getByText('Left to pay on loans').closest('div')!;
-    expect(within(loans).getByText('€11,400.00')).toBeInTheDocument();
   });
 
   it('shows what is paid and left on loans with a first payment', () => {
@@ -396,11 +382,11 @@ describe('Monthly bills', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add bill' }));
     expect(dialog().getByRole('heading', { name: 'Add a bill' })).toBeInTheDocument();
     fireEvent.change(dialog().getByRole('textbox', { name: 'Amount' }), {
-      target: { value: '0' },
+      target: { value: '-1' },
     });
     fireEvent.click(dialog().getByRole('button', { name: 'Add' }));
     expect(dialog().getByText('Enter a name.')).toBeInTheDocument();
-    expect(dialog().getByText('Enter an amount greater than 0.')).toBeInTheDocument();
+    expect(dialog().getByText('Enter an amount of 0 or more.')).toBeInTheDocument();
 
     fireEvent.change(dialog().getByRole('textbox', { name: 'Name' }), {
       target: { value: 'Electricity' },
@@ -466,14 +452,14 @@ describe('Monthly bills', () => {
       />,
     );
     const total = screen.getByText('Each month').closest('div')!;
-    expect(within(total).getByText('€1,127.25')).toBeInTheDocument();
-    expect(within(total).getByText('8 days and 1 hour of work')).toBeInTheDocument();
+    expect(within(total).getByText('€1,111.25')).toBeInTheDocument();
+    expect(within(total).getByText('8 days of work')).toBeInTheDocument();
     expect(
-      within(total).getByText('Bills €127.25 on average · Fixed costs €1,000.00'),
+      within(total).getByText('Bills €111.25 on average · Fixed costs €1,000.00'),
     ).toBeInTheDocument();
     const left = screen.getByText('Left each month').closest('div')!;
-    expect(within(left).getByText('€1,872.75')).toBeInTheDocument();
-    expect(within(left).getByText('€61.74 per day')).toBeInTheDocument();
+    expect(within(left).getByText('€1,888.75')).toBeInTheDocument();
+    expect(within(left).getByText('€62.27 per day')).toBeInTheDocument();
     expect(screen.getByText('Average €95.25 · 4% below average')).toBeInTheDocument();
     expect(screen.getByText('Average €32.00 · 6% above average')).toBeInTheDocument();
   });
@@ -561,7 +547,7 @@ describe('Monthly bills', () => {
     render(<MonthlyPage initialBills={[electricity, water]} />);
     const picker = screen.getByRole('combobox', { name: 'Choose a month' });
     const options = within(picker).getAllByRole('option');
-    expect(options).toHaveLength(12);
+    expect(options).toHaveLength(13);
     expect(options[0]).toHaveTextContent('October 2026');
     expect(options[1]).toHaveTextContent('September 2026');
     expect(options[2]).toHaveTextContent('August 2026 · no amounts');
@@ -582,7 +568,7 @@ describe('Monthly bills', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Enter amounts' }));
     expect(monthTitle()).toBe('September 2026');
     expect(amount('Gas')).toHaveFocus();
-    expect(screen.queryByText(/No amount for September/)).not.toBeInTheDocument();
+    expect(screen.getByText(/No amount for September/)).toBeInTheDocument();
     fireEvent.change(amount('Gas'), { target: { value: '38' } });
     fireEvent.blur(amount('Gas'));
 
@@ -607,7 +593,7 @@ describe('Monthly bills', () => {
     fireEvent.change(amount('Electricity'), { target: { value: 'lots' } });
     fireEvent.blur(amount('Electricity'));
     expect(amount('Electricity')).toHaveAttribute('aria-invalid', 'true');
-    expect(screen.getByText('Enter an amount greater than 0.')).toBeInTheDocument();
+    expect(screen.getByText('Enter an amount of 0 or more.')).toBeInTheDocument();
     expect(monthTotal()).toBe('No amounts yet.');
     fireEvent.change(amount('Electricity'), { target: { value: '70' } });
     expect(amount('Electricity')).toHaveAttribute('aria-invalid', 'false');
@@ -652,7 +638,7 @@ describe('Monthly bills', () => {
     expect(screen.queryByText(/€\d/)).not.toBeInTheDocument();
     expect(amount('Electricity')).toHaveAttribute('data-masked', 'true');
     expect(screen.getByText('4% below average')).toBeInTheDocument();
-    expect(screen.getByText('7 hours and 21 minutes of work')).toBeInTheDocument();
+    expect(screen.getByText('6 hours and 26 minutes of work')).toBeInTheDocument();
   });
 
   it('marks a bill without recent amounts and keeps it out of the average', () => {

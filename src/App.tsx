@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { Settings2 } from 'lucide-react';
 
+import { DataDialog } from './components/DataDialog';
 import { Brand } from './components/Brand';
 import { Calculator } from './components/Calculator';
 import { Earnings } from './components/Earnings';
@@ -18,7 +19,7 @@ import { PageNav } from './components/PageNav';
 import { pageNames, usePage, usePageMotion } from './components/pages';
 import { SettingsDialog } from './components/SettingsDialog';
 import { UpdatePrompt } from './components/UpdatePrompt';
-import { loadBills, saveBills, type Bill } from './domain/bills';
+import { loadBills, mergeBill, saveBills, type Bill } from './domain/bills';
 import { loadFixedCosts, saveFixedCosts, type FixedCost } from './domain/fixedCosts';
 import {
   createTranslator,
@@ -30,7 +31,14 @@ import {
   type TranslationKey,
   type Translator,
 } from './domain/i18n';
-import { clearSettings, loadSettings, saveSettings, type AffordiSettings } from './domain/storage';
+import {
+  clearSettings,
+  loadSettings,
+  saveSettings,
+  SETTINGS_STORAGE_KEY,
+  type AffordiSettings,
+} from './domain/storage';
+import { mergeChanges, mergeList, withStorageLock } from './domain/storageSync';
 import { applyTheme } from './domain/theme';
 
 const APP_NAME = 'Affordi';
@@ -74,7 +82,7 @@ function PageShell({
   }, [title]);
 
   return (
-    <div className="page" data-motion={motion ?? undefined}>
+    <div className="page" data-page={page} data-motion={motion ?? undefined}>
       <header className="topbar">
         <Brand />
         <PageNav copy={copy} page={page} />
@@ -90,7 +98,7 @@ function PageShell({
         </button>
       </header>
       <Activity mode={page === 'cost' ? 'visible' : 'hidden'}>
-        <Calculator settings={settings} />
+        <Calculator settings={settings} bills={bills} fixedCosts={fixedCosts} />
       </Activity>
       <Activity mode={page === 'earnings' ? 'visible' : 'hidden'}>
         <Earnings
@@ -131,13 +139,27 @@ function StorageNotice({ copy, message, visible }: StorageNoticeProps) {
 }
 
 /** A saved list, such as fixed costs or bills, with whether the last change could be saved. */
-function useSavedList<T>(load: () => T[], save: (items: readonly T[]) => boolean) {
+function useSavedList<T extends { id: string }>(
+  load: () => T[],
+  save: (items: readonly T[]) => boolean,
+  merge?: (base: T, next: T, latest: T) => T,
+) {
   const [items, setItems] = useState<T[]>(load);
   const [saveFailed, setSaveFailed] = useState(false);
 
+  useEffect(() => {
+    const refresh = () => setItems(load());
+    window.addEventListener('storage', refresh);
+    return () => window.removeEventListener('storage', refresh);
+  }, [load]);
+
   function persist(nextItems: T[]) {
     setItems(nextItems);
-    setSaveFailed(!save(nextItems));
+    withStorageLock(() => {
+      const next = loadSettings() === null ? [] : mergeList(items, nextItems, load(), merge);
+      setSaveFailed(!save(next));
+      setItems(next);
+    });
   }
 
   /** Forgets the list after a reset has already erased it from the device. */
@@ -162,10 +184,25 @@ function useLanguage(preview: Locale | null, saved: Locale | undefined): Locale 
   return language;
 }
 
-export function App() {
+function shouldRefreshSettings(event: StorageEvent, editing: boolean): boolean {
+  if (event.key !== null && event.key !== SETTINGS_STORAGE_KEY) return false;
+  return event.key === null || !editing || loadSettings() === null;
+}
+
+function rebaseSettings(
+  base: AffordiSettings | null,
+  next: AffordiSettings,
+): AffordiSettings | null {
+  const latest = loadSettings();
+  if (base !== null && latest === null) return null;
+  return base === null || latest === null ? next : mergeChanges(base, next, latest);
+}
+
+function useAppState() {
   const [settings, setSettings] = useState<AffordiSettings | null>(() => loadSettings());
   const fixedCosts = useSavedList(loadFixedCosts, saveFixedCosts);
-  const bills = useSavedList(loadBills, saveBills);
+  const bills = useSavedList(loadBills, saveBills, mergeBill);
+  const [showData, setShowData] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [storageNotice, setStorageNotice] = useState(false);
   const [previewLanguage, setPreviewLanguage] = useState<Locale | null>(null);
@@ -187,12 +224,29 @@ export function App() {
     settingsButtonRef.current?.focus();
   }, [showSettings]);
 
+  useEffect(() => {
+    const refresh = (event: StorageEvent) => {
+      if (!shouldRefreshSettings(event, showSettings)) return;
+      setSettings(loadSettings());
+      setShowSettings(false);
+      setPreviewLanguage(null);
+      setPreviewTheme(null);
+    };
+    window.addEventListener('storage', refresh);
+    return () => window.removeEventListener('storage', refresh);
+  }, [showSettings]);
+
   function persist(nextSettings: AffordiSettings) {
     setSettings(nextSettings);
-    setStorageNotice(!saveSettings(nextSettings));
+    withStorageLock(() => {
+      const next = rebaseSettings(settings, nextSettings);
+      setSettings(next);
+      if (next !== null) setStorageNotice(!saveSettings(next));
+    });
   }
 
   function closeSettings() {
+    setSettings(loadSettings());
     setPreviewLanguage(null);
     setPreviewTheme(null);
     restoreSettingsFocusRef.current = true;
@@ -220,12 +274,58 @@ export function App() {
     return true;
   }
 
+  return {
+    settings,
+    fixedCosts,
+    bills,
+    showSettings,
+    showData,
+    setShowData,
+    setShowSettings,
+    storageNotice,
+    setPreviewLanguage,
+    setPreviewTheme,
+    settingsButtonRef,
+    language,
+    copy,
+    persist,
+    closeSettings,
+    saveAndCloseSettings,
+    reset,
+  };
+}
+
+export function App() {
+  const {
+    settings,
+    fixedCosts,
+    bills,
+    showSettings,
+    showData,
+    setShowData,
+    setShowSettings,
+    storageNotice,
+    setPreviewLanguage,
+    setPreviewTheme,
+    settingsButtonRef,
+    language,
+    copy,
+    persist,
+    closeSettings,
+    saveAndCloseSettings,
+    reset,
+  } = useAppState();
   return (
     <>
       {settings === null ? (
         <main className="app-shell setup-shell">
           <div className="setup-intro">
-            <Brand />
+            <div className="setup-topbar">
+              <Brand />
+              <button className="pill-button" type="button" onClick={() => setShowData(true)}>
+                {copy.t('data.title')}
+              </button>
+            </div>
             <h1>{copy.t('form.heading')}</h1>
           </div>
           <div className="setup-panel">
@@ -255,6 +355,7 @@ export function App() {
           {showSettings && (
             <SettingsDialog
               onClose={closeSettings}
+              onOpenData={() => setShowData(true)}
               language={language}
               onLanguagePreview={setPreviewLanguage}
               onReset={reset}
@@ -265,6 +366,7 @@ export function App() {
           )}
         </main>
       )}
+      {showData && <DataDialog copy={copy} onClose={() => setShowData(false)} />}
       <UpdatePrompt language={language} />
     </>
   );

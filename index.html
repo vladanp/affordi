@@ -40,7 +40,12 @@
     <title>Affordi</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="app-shell setup-shell" role="status" aria-label="Affordi">
+        <div class="brand"><img src="/favicon.svg" width="28" height="28" alt="" />Affordi</div>
+        <div class="loading-indicator" aria-hidden="true"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

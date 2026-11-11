@@ -4,7 +4,6 @@ import { formatWorkDuration } from '../domain/duration';
 import { formatProgress } from '../domain/earningsText';
 import {
   isPaidOff,
-  isFixedCostDue,
   MAX_FIXED_COSTS,
   monthlyCostFigures,
   paidShare,
@@ -60,14 +59,12 @@ function progressNote(
 
 /** What a row says under its name: its work time and share of pay, or that it ended. */
 function rowFigures(cost: FixedCost, settings: AffordiSettings, now: Date, copy: Translator) {
+  if (
+    cost.firstPayment !== null &&
+    cost.firstPayment > `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  )
+    return { details: copy.t('fixedCosts.scheduled'), share: null };
   if (isPaidOff(cost, now)) return { details: copy.t('fixedCosts.ended'), share: null };
-  if (!isFixedCostDue(cost, now)) {
-    const first = parseMonth(cost.firstPayment!);
-    return {
-      details: copy.t('fixedCosts.starts', { month: copy.month(monthStart(first!), true) }),
-      share: null,
-    };
-  }
   const figures = monthlyCostFigures(cost.amount, settings);
   if (figures === null) return { details: '', share: null };
   const duration = formatWorkDuration(figures.workHours, settings, settings.language);
@@ -91,7 +88,11 @@ function FixedCostRow({ changed, copy, cost, hidden, now, onEdit, settings }: Fi
   const { details, share } = rowFigures(cost, settings, now, copy);
   const progress = paymentProgress(cost, now);
   const notes = [
-    progressNote(progress, hidden, settings, copy),
+    progressNote(progress, hidden, settings, copy) ??
+      ((progress.paid !== null && progress.paid > 0) ||
+      (progress.left !== null && progress.left > 0)
+        ? '\u00a0'
+        : null),
     lastPaymentNote(cost.lastPayment, copy),
   ].filter((note) => note !== null);
   return (
@@ -190,7 +191,7 @@ export function FixedCostsSection({
       <ListHeading
         addButtonRef={addButtonRef}
         addLabel={copy.t('fixedCosts.add')}
-        addShortLabel={copy.t('fixedCosts.addShort')}
+        addShortLabel={copy.t(fixedCosts.length === 0 ? 'fixedCosts.add' : 'fixedCosts.addShort')}
         id="fixed-cost-list-title"
         limitNote={
           fixedCosts.length >= MAX_FIXED_COSTS

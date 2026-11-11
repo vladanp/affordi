@@ -3,7 +3,13 @@ import {
   calculateHoursPerWorkday,
   calculatePeriodIncome,
 } from './calculations';
-import { monthWorkProgress, msSinceMidnight, workProgress, type WorkProgress } from './schedule';
+import {
+  monthWorkProgress,
+  msSinceMidnight,
+  paidToday,
+  workProgress,
+  type WorkProgress,
+} from './schedule';
 import type { AffordiSettings } from './storage';
 
 const HOURS_PER_WEEK = 7 * 24;
@@ -68,6 +74,8 @@ export interface EarnedToday {
 export interface EarnedThisMonth {
   /** This month's pay in proportion to the work done so far this month. */
   amount: number;
+  /** The total scheduled pay this calendar month. */
+  total: number;
   /** The share of this month's scheduled work that is done, from 0 to 1. */
   share: number;
 }
@@ -84,7 +92,11 @@ export function calculateEarnedThisMonth(
   const { workedMs, scheduledMs } = monthWorkProgress(settings, now);
   // Every weekday occurs at least four times a month, so some work is always scheduled.
   const share = workedMs / scheduledMs;
-  return { amount: rates.totals.month * share, share };
+  const total =
+    settings.payFrequency === 'monthly' || settings.payFrequency === 'yearly'
+      ? rates.totals.month
+      : (rates.atWork.hour * scheduledMs) / MS_PER_HOUR;
+  return { amount: total * share, total, share };
 }
 
 export function calculateEarnedToday(
@@ -95,7 +107,10 @@ export function calculateEarnedToday(
   const progress = workProgress(settings, now);
   return {
     aroundTheClock: (rates.totals.week / MS_PER_WEEK) * msSinceMidnight(now),
-    atWork: (rates.atWork.hour / MS_PER_HOUR) * progress.workedMs,
+    atWork:
+      (settings.payFrequency === 'monthly' || settings.payFrequency === 'yearly'
+        ? rates.totals.month / monthWorkProgress(settings, now).scheduledMs
+        : rates.atWork.hour / MS_PER_HOUR) * paidToday(settings, now),
     progress,
   };
 }

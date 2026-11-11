@@ -142,7 +142,7 @@ describe('App', () => {
 
     expect(screen.getByText('Affordi')).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Start with your income' }),
+      screen.getByRole('heading', { level: 1, name: 'Turn prices into working time' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Start calculating' })).toBeInTheDocument();
     const income = screen.getByLabelText('Take home income');
@@ -200,6 +200,7 @@ describe('App', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(screen.getByRole('textbox', { name: 'How much does it cost?' })).toHaveValue('10');
+    fireEvent.click(screen.getByRole('button', { name: 'Change denomination' }));
     expect(screen.getByText(/€10/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     fireEvent.click(screen.getByRole('button', { name: 'Reset saved settings' }));
@@ -453,7 +454,9 @@ describe('App', () => {
     fireEvent.change(price, { target: { value: '-1' } });
     expect(screen.getByText(/price of 0 or more/)).toBeInTheDocument();
     fireEvent.change(price, { target: { value: '0' } });
-    expect(screen.getByText('0 minutes of work')).toBeInTheDocument();
+    expect(
+      within(document.querySelector('.calculator')!).getByText('0 minutes of work'),
+    ).toBeInTheDocument();
     fireEvent.change(price, { target: { value: '9'.repeat(400) } });
     expect(screen.getByText(/price of 0 or more/)).toBeInTheDocument();
   });
@@ -504,7 +507,9 @@ describe('App', () => {
     fireEvent.change(price, { target: { value: '15' } });
     expect(screen.getByText('1% of your monthly take home pay')).toBeInTheDocument();
     fireEvent.change(price, { target: { value: '0' } });
-    expect(screen.getByText('0% of your monthly take home pay')).toBeInTheDocument();
+    expect(
+      within(document.querySelector('.calculator')!).getByText('0% of your monthly take home pay'),
+    ).toBeInTheDocument();
   });
 
   it('shows small percentages as under one percent and dismisses the price input on submit', () => {
@@ -637,6 +642,7 @@ describe('App', () => {
     expect(screen.queryByRole('textbox', { name: /savings|commute|costs/i })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(JSON.parse(localStorage.getItem('affordi.settings.v1') ?? '{}').settings).toEqual({
+      workBreak: 0,
       netIncome: 3000,
       payFrequency: 'monthly',
       workStart: 540,
@@ -668,9 +674,9 @@ describe('App', () => {
   it('rejects impossible work schedules during setup', () => {
     render(<App />);
     fireEvent.change(screen.getByLabelText('Take home income'), { target: { value: '3000' } });
-    fireEvent.change(screen.getByLabelText('Work ends'), { target: { value: '08:00' } });
+    fireEvent.change(screen.getByLabelText('Work ends'), { target: { value: '09:00' } });
     fireEvent.click(screen.getByRole('button', { name: 'Start calculating' }));
-    expect(screen.getByText('Choose an end time later the same day.')).toBeInTheDocument();
+    expect(screen.getByText('Choose an end time different from the start.')).toBeInTheDocument();
     expect(screen.getByLabelText('Work ends')).toHaveFocus();
     expect(screen.getByLabelText('Work ends')).toHaveAttribute('aria-invalid', 'true');
 

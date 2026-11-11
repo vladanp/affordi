@@ -170,3 +170,9 @@
     opacity: 0.35;
   }
 }
+
+/* A collapsed history chart has no visible motion to run or wait for. */
+.bills-chart-disclosure:not([open]) .bills-bar {
+  animation: none;
+  transition: none;
+}

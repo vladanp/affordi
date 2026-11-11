@@ -37,16 +37,16 @@ test.describe('Affordi earnings', () => {
       'page',
     );
     const amounts = page.locator('.live-amount');
-    await expect(amounts).toHaveText(['€49.45', '€51.92', '€1,960.22 of €3,000.00']);
+    await expect(amounts).toHaveText(['€49.45', '€51.13', '€1,960.22 of €3,000.00']);
     const status = page.locator('.earnings-status');
     await expect(status).toHaveText('Working until 5:00 PM · 5 hours left');
     await expect(page.getByText('65%', { exact: true })).toBeVisible();
 
     await page.clock.runFor(60_000);
-    await expect(amounts).toHaveText(['€49.51', '€52.21', '€1,960.51 of €3,000.00']);
+    await expect(amounts).toHaveText(['€49.51', '€51.42', '€1,960.51 of €3,000.00']);
     await expect(status).toHaveText('Working until 5:00 PM · 4 hours and 59 minutes left');
 
-    const table = page.getByRole('table', { name: 'Your take home pay, broken down' });
+    const table = page.getByRole('table', { name: 'Average pay rates' });
     await expect(table.getByRole('row', { name: /^Per hour/ })).toHaveText(/€4\.12\s*€17\.31/);
     await expect(table.getByRole('row', { name: /^Per month/ })).toHaveText(/€3,000\.00/);
     // Axe waits on timers, so the paused clock runs again for the audit.
