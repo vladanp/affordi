@@ -359,3 +359,48 @@
     grid-column: 1 / -1;
   }
 }
+.field-error {
+  min-block-size: 1.35em;
+}
+.bill-row .field-error {
+  min-block-size: 2.7em;
+}
+.field-error-empty {
+  visibility: hidden;
+}
+.option-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-block-size: 2.75rem;
+  font-weight: 600;
+}
+.option-toggle input {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  accent-color: var(--color-accent);
+}
+.day-schedules {
+  display: grid;
+  gap: 1.5rem;
+}
+.day-schedules > fieldset {
+  border-top: 1px solid var(--color-line);
+  padding-top: 1rem;
+}
+/* Validation occupies the inter-field space rather than making every resting form taller. */
+.field {
+  position: relative;
+}
+.field > .field-error {
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  margin-top: 0.1rem;
+}
+.time-range .field {
+  margin-bottom: 1rem;
+}
+.field[data-field='workDays'] {
+  margin-bottom: 1.5rem;
+}

@@ -56,16 +56,13 @@ describe('earned today', () => {
   it('counts from midnight around the clock and during working time at work', () => {
     const noon = calculateEarnedToday(settings, rates, wednesday(12));
     expect(noon.aroundTheClock).toBeCloseTo(weeklyPay / 14, 10);
-    expect(noon.atWork).toBeCloseTo((weeklyPay / 40) * 3, 10);
+    expect(noon.atWork).toBeCloseTo((3000 / (22 * 8)) * 3, 10);
     expect(noon.progress.state).toBe('working');
   });
 
   it('holds the work total outside working time', () => {
     expect(calculateEarnedToday(settings, rates, wednesday(8)).atWork).toBe(0);
-    expect(calculateEarnedToday(settings, rates, wednesday(20)).atWork).toBeCloseTo(
-      weeklyPay / 5,
-      10,
-    );
+    expect(calculateEarnedToday(settings, rates, wednesday(20)).atWork).toBeCloseTo(3000 / 22, 10);
     const saturday = calculateEarnedToday(settings, rates, new Date(2026, 9, 24, 12));
     expect(saturday.atWork).toBe(0);
     expect(saturday.aroundTheClock).toBeCloseTo(weeklyPay / 14, 10);

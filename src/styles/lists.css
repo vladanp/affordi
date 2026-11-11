@@ -1,6 +1,7 @@
 /* Parts shared by the sections of the monthly page: fixed costs and bills. */
 
 .cost-work-time {
+  min-block-size: 3em;
   font-size: 1.125rem;
   font-weight: 650;
   letter-spacing: -0.01em;
@@ -160,4 +161,7 @@
 /* A little less room before the chevron keeps a four digit year whole on the narrowest phones. */
 .month-year .select-wrap select {
   padding-inline-end: 2.25rem;
+}
+.item-note {
+  min-block-size: 2.8em;
 }

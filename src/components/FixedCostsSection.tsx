@@ -19,6 +19,7 @@ import { formatCurrency } from '../domain/locale';
 import { monthStart, parseMonth } from '../domain/months';
 import { formatIncomePercentage } from '../domain/priceText';
 import type { AffordiSettings } from '../domain/storage';
+import { afterStorageSave, mergeChanges } from '../domain/storageSync';
 import { FixedCostDialog } from './FixedCostDialog';
 import { ItemRow, ListHeading, Money, useEditDialog } from './MonthlyCosts';
 
@@ -59,6 +60,11 @@ function progressNote(
 
 /** What a row says under its name: its work time and share of pay, or that it ended. */
 function rowFigures(cost: FixedCost, settings: AffordiSettings, now: Date, copy: Translator) {
+  if (
+    cost.firstPayment !== null &&
+    cost.firstPayment > `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  )
+    return { details: copy.t('fixedCosts.scheduled'), share: null };
   if (isPaidOff(cost, now)) return { details: copy.t('fixedCosts.ended'), share: null };
   const figures = monthlyCostFigures(cost.amount, settings);
   if (figures === null) return { details: '', share: null };
@@ -83,7 +89,11 @@ function FixedCostRow({ changed, copy, cost, hidden, now, onEdit, settings }: Fi
   const { details, share } = rowFigures(cost, settings, now, copy);
   const progress = paymentProgress(cost, now);
   const notes = [
-    progressNote(progress, hidden, settings, copy),
+    progressNote(progress, hidden, settings, copy) ??
+      ((progress.paid !== null && progress.paid > 0) ||
+      (progress.left !== null && progress.left > 0)
+        ? '\u00a0'
+        : null),
     lastPaymentNote(cost.lastPayment, copy),
   ].filter((note) => note !== null);
   return (
@@ -145,7 +155,7 @@ interface FixedCostsSectionProps {
   fixedCosts: readonly FixedCost[];
   hidden: boolean;
   now: Date;
-  onFixedCostsChange: (fixedCosts: FixedCost[]) => void;
+  onFixedCostsChange: (fixedCosts: FixedCost[]) => void | Promise<void>;
   settings: AffordiSettings;
 }
 
@@ -163,18 +173,26 @@ export function FixedCostsSection({
   const loans = summarizeLoans(fixedCosts, now);
 
   function save(cost: FixedCost) {
-    const exists = fixedCosts.some((saved) => saved.id === cost.id);
-    onFixedCostsChange(
-      exists
-        ? fixedCosts.map((saved) => (saved.id === cost.id ? cost : saved))
-        : [...fixedCosts, cost],
+    const latest = fixedCosts.find((saved) => saved.id === cost.id);
+    const base = dialog.editing ?? null;
+    if (base !== null && latest === undefined) {
+      dialog.close();
+      return;
+    }
+    const updated = base !== null && latest !== undefined ? mergeChanges(base, cost, latest) : cost;
+    const saving = onFixedCostsChange(
+      latest !== undefined
+        ? fixedCosts.map((saved) => (saved.id === cost.id ? updated : saved))
+        : [...fixedCosts, updated],
     );
-    dialog.saved(cost);
+    afterStorageSave(saving, () => dialog.saved(updated));
   }
 
   function remove(cost: FixedCost) {
-    onFixedCostsChange(fixedCosts.filter((saved) => saved.id !== cost.id));
-    dialog.close();
+    afterStorageSave(
+      onFixedCostsChange(fixedCosts.filter((saved) => saved.id !== cost.id)),
+      dialog.close,
+    );
   }
 
   return (
@@ -182,7 +200,7 @@ export function FixedCostsSection({
       <ListHeading
         addButtonRef={addButtonRef}
         addLabel={copy.t('fixedCosts.add')}
-        addShortLabel={copy.t('fixedCosts.addShort')}
+        addShortLabel={copy.t(fixedCosts.length === 0 ? 'fixedCosts.add' : 'fixedCosts.addShort')}
         id="fixed-cost-list-title"
         limitNote={
           fixedCosts.length >= MAX_FIXED_COSTS

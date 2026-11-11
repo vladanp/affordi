@@ -24,8 +24,19 @@ async function attachScreenshot(page: Page, testInfo: TestInfo, name: string, fu
 test.use({ timezoneId: 'UTC' });
 
 test.describe('UI screenshot audit', () => {
-  test.beforeEach(({ browserName }) => {
+  test.beforeEach(async ({ browserName, page }) => {
     test.skip(browserName !== 'chromium', 'One deterministic browser captures UI audit evidence.');
+    await page.addInitScript(() => {
+      document.addEventListener(
+        'DOMContentLoaded',
+        () => {
+          const style = document.createElement('style');
+          style.textContent = ':root { font-family: "DejaVu Sans", sans-serif; }';
+          document.head.append(style);
+        },
+        { once: true },
+      );
+    });
   });
 
   test('captures the complete phone setup', async ({ page }, testInfo) => {
@@ -34,7 +45,9 @@ test.describe('UI screenshot audit', () => {
     await page.evaluate(() => localStorage.clear());
     await page.reload();
 
-    await expect(page.getByRole('heading', { name: 'Start with your income' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Turn prices into working time' }),
+    ).toBeVisible();
     await page.getByRole('button', { name: 'Start calculating' }).scrollIntoViewIfNeeded();
     await expect(page.getByRole('button', { name: 'Start calculating' })).toBeInViewport();
     await expect
@@ -75,7 +88,7 @@ test.describe('UI screenshot audit', () => {
     await expect(page.getByRole('heading', { name: 'How much do you earn?' })).toBeVisible();
     await expect(page.locator('.live-amount')).toHaveText([
       '€58.72',
-      '€90.86',
+      '€89.48',
       '€1,998.57 of €3,000.00',
     ]);
 

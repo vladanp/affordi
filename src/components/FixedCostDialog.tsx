@@ -266,6 +266,9 @@ function FixedCostForm({
 }: FixedCostFormProps) {
   const [values, setValues] = useState(() => initialValues(cost, copy.locale));
   const [errors, setErrors] = useState<FormErrors>({});
+  const [trackPayments, setTrackPayments] = useState(
+    cost?.firstPayment != null || cost?.lastPayment != null,
+  );
   const thisYear = now.getFullYear();
 
   function update(name: keyof FormValues, value: string) {
@@ -299,29 +302,51 @@ function FixedCostForm({
         placeholder="950"
         value={values.amount}
       />
-      <MonthYearField
-        copy={copy}
-        error={errors.firstPayment}
-        id="first-payment"
-        legend={copy.t('fixedCosts.firstPaymentLabel')}
-        names={['firstMonth', 'firstYear']}
-        now={now}
-        onChange={update}
-        values={values}
-        // Recent years first, since most loans started not long ago.
-        years={yearRange(thisYear + 1, thisYear - YEARS_BACK, values.firstYear)}
-      />
-      <MonthYearField
-        copy={copy}
-        error={errors.lastPayment}
-        id="last-payment"
-        legend={copy.t('fixedCosts.lastPaymentLabel')}
-        names={['lastMonth', 'lastYear']}
-        now={now}
-        onChange={update}
-        values={values}
-        years={yearRange(thisYear, thisYear + YEARS_AHEAD, values.lastYear)}
-      />
+      <label className="form-wide option-toggle">
+        <input
+          type="checkbox"
+          checked={trackPayments}
+          onChange={(event) => {
+            setTrackPayments(event.target.checked);
+            if (!event.target.checked)
+              setValues((current) => ({
+                ...current,
+                firstMonth: '',
+                firstYear: '',
+                lastMonth: '',
+                lastYear: '',
+              }));
+          }}
+        />
+        {copy.t('fixedCosts.trackPayments')}
+      </label>
+      {trackPayments && (
+        <>
+          <MonthYearField
+            copy={copy}
+            error={errors.firstPayment}
+            id="first-payment"
+            legend={copy.t('fixedCosts.firstPaymentLabel')}
+            names={['firstMonth', 'firstYear']}
+            now={now}
+            onChange={update}
+            values={values}
+            // Recent years first, since most loans started not long ago.
+            years={yearRange(thisYear + 1, thisYear - YEARS_BACK, values.firstYear)}
+          />
+          <MonthYearField
+            copy={copy}
+            error={errors.lastPayment}
+            id="last-payment"
+            legend={copy.t('fixedCosts.lastPaymentLabel')}
+            names={['lastMonth', 'lastYear']}
+            now={now}
+            onChange={update}
+            values={values}
+            years={yearRange(thisYear, thisYear + YEARS_AHEAD, values.lastYear)}
+          />
+        </>
+      )}
       <FormActions
         copy={copy}
         onCancel={onCancel}

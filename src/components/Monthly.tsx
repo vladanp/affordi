@@ -16,8 +16,8 @@ const CLOCK_MS = 60_000;
 interface MonthlyProps {
   bills: readonly Bill[];
   fixedCosts: readonly FixedCost[];
-  onBillsChange: (bills: Bill[]) => void;
-  onFixedCostsChange: (fixedCosts: FixedCost[]) => void;
+  onBillsChange: (bills: Bill[]) => void | Promise<void>;
+  onFixedCostsChange: (fixedCosts: FixedCost[]) => void | Promise<void>;
   onHideAmountsChange: (hideAmounts: boolean) => void;
   settings: AffordiSettings;
 }
@@ -49,11 +49,13 @@ export function Monthly({
   return (
     <section aria-labelledby="monthly-title" className="monthly">
       <div className="page-heading">
-        <h1 id="monthly-title">{copy.t('monthly.title')}</h1>
+        <h1 id="monthly-title" tabIndex={-1}>
+          {copy.t('monthly.title')}
+        </h1>
         <HideAmountsButton copy={copy} hidden={hidden} onChange={onHideAmountsChange} />
       </div>
 
-      {(fixedCosts.length > 0 || bills.length > 0) && (
+      {
         <div className="card-stack">
           <CostCard
             className="monthly-total"
@@ -68,24 +70,42 @@ export function Monthly({
           />
           <PayLeftCard copy={copy} hidden={hidden} payLeft={summary} settings={settings} />
         </div>
-      )}
+      }
 
-      <BillsSection
-        bills={bills}
-        copy={copy}
-        hidden={hidden}
-        now={now}
-        onBillsChange={onBillsChange}
-        settings={settings}
-      />
-      <FixedCostsSection
-        copy={copy}
-        fixedCosts={fixedCosts}
-        hidden={hidden}
-        now={now}
-        onFixedCostsChange={onFixedCostsChange}
-        settings={settings}
-      />
+      <div className="monthly-jumps" role="group" aria-label={copy.t('monthly.title')}>
+        {(['bill-list-title', 'fixed-cost-list-title'] as const).map((id, index) => (
+          <button
+            className="pill-button"
+            key={id}
+            type="button"
+            onClick={() => {
+              const target = document.getElementById(id);
+              target?.scrollIntoView({ block: 'start' });
+              target?.focus({ preventScroll: true });
+            }}
+          >
+            {copy.t(index === 0 ? 'bills.list' : 'fixedCosts.list')}
+          </button>
+        ))}
+      </div>
+      <div className="monthly-sections">
+        <BillsSection
+          bills={bills}
+          copy={copy}
+          hidden={hidden}
+          now={now}
+          onBillsChange={onBillsChange}
+          settings={settings}
+        />
+        <FixedCostsSection
+          copy={copy}
+          fixedCosts={fixedCosts}
+          hidden={hidden}
+          now={now}
+          onFixedCostsChange={onFixedCostsChange}
+          settings={settings}
+        />
+      </div>
     </section>
   );
 }

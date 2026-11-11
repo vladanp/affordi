@@ -27,6 +27,8 @@ test.describe('Affordi accessibility', () => {
 
   test('primary flow is keyboard reachable', async ({ browserName, page }) => {
     await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'On this device' })).toBeFocused();
+    await page.keyboard.press('Tab');
     await expect(page.getByLabel('Take home income')).toBeFocused();
     await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
     await expect(page.getByRole('button', { name: 'Hide income' })).toBeFocused();
@@ -46,6 +48,7 @@ test.describe('Affordi accessibility', () => {
   }) => {
     const hideIncome = page.getByRole('button', { name: 'Hide income' });
     const payFrequency = page.getByRole('combobox', { name: 'Pay frequency' });
+    await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
     await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
     await expect(hideIncome).toBeFocused();

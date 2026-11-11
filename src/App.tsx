@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { Settings2 } from 'lucide-react';
 
+import { DataDialog } from './components/DataDialog';
 import { Brand } from './components/Brand';
 import { Calculator } from './components/Calculator';
 import { Earnings } from './components/Earnings';
@@ -18,7 +19,7 @@ import { PageNav } from './components/PageNav';
 import { pageNames, usePage, usePageMotion } from './components/pages';
 import { SettingsDialog } from './components/SettingsDialog';
 import { UpdatePrompt } from './components/UpdatePrompt';
-import { loadBills, saveBills, type Bill } from './domain/bills';
+import { loadBills, mergeBill, saveBills, type Bill } from './domain/bills';
 import { loadFixedCosts, saveFixedCosts, type FixedCost } from './domain/fixedCosts';
 import {
   createTranslator,
@@ -30,7 +31,14 @@ import {
   type TranslationKey,
   type Translator,
 } from './domain/i18n';
-import { clearSettings, loadSettings, saveSettings, type AffordiSettings } from './domain/storage';
+import {
+  clearSettings,
+  loadSettings,
+  saveSettings,
+  SETTINGS_STORAGE_KEY,
+  type AffordiSettings,
+} from './domain/storage';
+import { mergeChanges, mergeList, withStorageLock } from './domain/storageSync';
 import { applyTheme } from './domain/theme';
 
 const APP_NAME = 'Affordi';
@@ -38,8 +46,8 @@ const APP_NAME = 'Affordi';
 interface PageShellProps {
   bills: readonly Bill[];
   fixedCosts: readonly FixedCost[];
-  onBillsChange: (bills: Bill[]) => void;
-  onFixedCostsChange: (fixedCosts: FixedCost[]) => void;
+  onBillsChange: (bills: Bill[]) => void | Promise<void>;
+  onFixedCostsChange: (fixedCosts: FixedCost[]) => void | Promise<void>;
   onHideAmountsChange: (hideAmounts: boolean) => void;
   onOpenSettings: () => void;
   settings: AffordiSettings;
@@ -74,7 +82,7 @@ function PageShell({
   }, [title]);
 
   return (
-    <div className="page" data-motion={motion ?? undefined}>
+    <div className="page" data-page={page} data-motion={motion ?? undefined}>
       <header className="topbar">
         <Brand />
         <PageNav copy={copy} page={page} />
@@ -90,7 +98,7 @@ function PageShell({
         </button>
       </header>
       <Activity mode={page === 'cost' ? 'visible' : 'hidden'}>
-        <Calculator settings={settings} />
+        <Calculator settings={settings} bills={bills} fixedCosts={fixedCosts} />
       </Activity>
       <Activity mode={page === 'earnings' ? 'visible' : 'hidden'}>
         <Earnings
@@ -131,17 +139,49 @@ function StorageNotice({ copy, message, visible }: StorageNoticeProps) {
 }
 
 /** A saved list, such as fixed costs or bills, with whether the last change could be saved. */
-function useSavedList<T>(load: () => T[], save: (items: readonly T[]) => boolean) {
+function useSavedList<T extends { id: string }>(
+  load: () => T[],
+  save: (items: readonly T[]) => boolean,
+  storedSettings: RefObject<AffordiSettings | null>,
+  merge?: (base: T, next: T, latest: T) => T,
+) {
   const [items, setItems] = useState<T[]>(load);
+  const confirmed = useRef(items);
   const [saveFailed, setSaveFailed] = useState(false);
 
+  useEffect(() => {
+    const refresh = (event: StorageEvent) => {
+      const latest = load();
+      const base = confirmed.current;
+      confirmed.current = latest;
+      if (event.key === null || (storedSettings.current !== null && loadSettings() === null)) {
+        setItems(latest);
+        setSaveFailed(false);
+      } else setItems((current) => mergeList(base, current, latest, merge));
+    };
+    window.addEventListener('storage', refresh);
+    return () => window.removeEventListener('storage', refresh);
+  }, [load, merge, storedSettings]);
+
   function persist(nextItems: T[]) {
+    const base = saveFailed ? confirmed.current : items;
+    const hadStoredSettings = storedSettings.current !== null;
     setItems(nextItems);
-    setSaveFailed(!save(nextItems));
+    return withStorageLock(() => {
+      const next =
+        hadStoredSettings && loadSettings() === null
+          ? []
+          : mergeList(base, nextItems, load(), merge);
+      const saved = save(next);
+      setSaveFailed(!saved);
+      if (saved) confirmed.current = next;
+      setItems(saved ? next : nextItems);
+    });
   }
 
   /** Forgets the list after a reset has already erased it from the device. */
   function forget() {
+    confirmed.current = [];
     setItems([]);
     setSaveFailed(false);
   }
@@ -162,12 +202,88 @@ function useLanguage(preview: Locale | null, saved: Locale | undefined): Locale 
   return language;
 }
 
-export function App() {
+function shouldRefreshSettings(event: StorageEvent, editing: boolean): boolean {
+  if (event.key !== null && event.key !== SETTINGS_STORAGE_KEY) return false;
+  return event.key === null || !editing || loadSettings() === null;
+}
+
+function rebaseSettings(
+  base: AffordiSettings | null,
+  next: AffordiSettings,
+  latest = loadSettings(),
+): AffordiSettings | null {
+  if (base !== null && latest === null) return null;
+  return base === null || latest === null ? next : mergeChanges(base, next, latest);
+}
+
+/** The complete settings transaction, called while holding the cross-tab storage lock. */
+function saveRebasedSettings(base: AffordiSettings | null, nextSettings: AffordiSettings) {
+  const next = rebaseSettings(base, nextSettings);
+  return { next, saved: next !== null && saveSettings(next) };
+}
+
+/** Cancel drops form edits while retaining visit-only values and fresh changes from other tabs. */
+function loadRebasedSettings(base: AffordiSettings | null, session: AffordiSettings | null) {
+  const latest = loadSettings();
+  return { latest, current: session === null ? latest : rebaseSettings(base, session, latest) };
+}
+
+/** Owns the saved snapshot separately from values retained for this visit after a failed write. */
+function useSettingsStorage() {
   const [settings, setSettings] = useState<AffordiSettings | null>(() => loadSettings());
-  const fixedCosts = useSavedList(loadFixedCosts, saveFixedCosts);
-  const bills = useSavedList(loadBills, saveBills);
-  const [showSettings, setShowSettings] = useState(false);
+  const storedSettings = useRef(settings);
   const [storageNotice, setStorageNotice] = useState(false);
+
+  function persist(nextSettings: AffordiSettings, onComplete?: () => void) {
+    const base = storedSettings.current;
+    void withStorageLock(() => {
+      const { next, saved } = saveRebasedSettings(base, nextSettings);
+      setStorageNotice(next !== null && !saved);
+      if (saved || next === null) storedSettings.current = next;
+      setSettings(next);
+      onComplete?.();
+    });
+  }
+
+  function reloadForCancel() {
+    const { latest, current } = loadRebasedSettings(storedSettings.current, settings);
+    setSettings(current);
+    storedSettings.current = latest;
+  }
+
+  function forgetSettings() {
+    setSettings(null);
+    storedSettings.current = null;
+    setStorageNotice(false);
+  }
+
+  return {
+    settings,
+    storedSettings,
+    storageNotice,
+    setStorageNotice,
+    setSettings,
+    persist,
+    reloadForCancel,
+    forgetSettings,
+  };
+}
+
+function useAppState() {
+  const {
+    settings,
+    storedSettings,
+    storageNotice,
+    setStorageNotice,
+    setSettings,
+    persist,
+    reloadForCancel,
+    forgetSettings,
+  } = useSettingsStorage();
+  const fixedCosts = useSavedList(loadFixedCosts, saveFixedCosts, storedSettings);
+  const bills = useSavedList(loadBills, saveBills, storedSettings, mergeBill);
+  const [showData, setShowData] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [previewLanguage, setPreviewLanguage] = useState<Locale | null>(null);
   const [previewTheme, setPreviewTheme] = useState<AffordiSettings['theme'] | null>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
@@ -187,21 +303,34 @@ export function App() {
     settingsButtonRef.current?.focus();
   }, [showSettings]);
 
-  function persist(nextSettings: AffordiSettings) {
-    setSettings(nextSettings);
-    setStorageNotice(!saveSettings(nextSettings));
-  }
+  useEffect(() => {
+    const refresh = (event: StorageEvent) => {
+      if (!shouldRefreshSettings(event, showSettings)) return;
+      const latest = loadSettings();
+      storedSettings.current = latest;
+      setSettings(latest);
+      setShowSettings(false);
+      setPreviewLanguage(null);
+      setPreviewTheme(null);
+    };
+    window.addEventListener('storage', refresh);
+    return () => window.removeEventListener('storage', refresh);
+  }, [showSettings, setSettings, storedSettings]);
 
-  function closeSettings() {
+  function dismissSettings() {
     setPreviewLanguage(null);
     setPreviewTheme(null);
     restoreSettingsFocusRef.current = true;
     setShowSettings(false);
   }
 
+  function closeSettings() {
+    reloadForCancel();
+    dismissSettings();
+  }
+
   function saveAndCloseSettings(nextSettings: AffordiSettings) {
-    persist(nextSettings);
-    closeSettings();
+    persist(nextSettings, dismissSettings);
   }
 
   function reset(): boolean {
@@ -212,20 +341,65 @@ export function App() {
 
     setPreviewLanguage(null);
     setPreviewTheme(null);
-    setSettings(null);
+    forgetSettings();
     fixedCosts.forget();
     bills.forget();
     setShowSettings(false);
-    setStorageNotice(false);
     return true;
   }
 
+  return {
+    settings,
+    fixedCosts,
+    bills,
+    showSettings,
+    showData,
+    setShowData,
+    setShowSettings,
+    storageNotice,
+    setPreviewLanguage,
+    setPreviewTheme,
+    settingsButtonRef,
+    language,
+    copy,
+    persist,
+    closeSettings,
+    saveAndCloseSettings,
+    reset,
+  };
+}
+
+export function App() {
+  const {
+    settings,
+    fixedCosts,
+    bills,
+    showSettings,
+    showData,
+    setShowData,
+    setShowSettings,
+    storageNotice,
+    setPreviewLanguage,
+    setPreviewTheme,
+    settingsButtonRef,
+    language,
+    copy,
+    persist,
+    closeSettings,
+    saveAndCloseSettings,
+    reset,
+  } = useAppState();
   return (
     <>
       {settings === null ? (
         <main className="app-shell setup-shell">
           <div className="setup-intro">
-            <Brand />
+            <div className="setup-topbar">
+              <Brand />
+              <button className="pill-button" type="button" onClick={() => setShowData(true)}>
+                {copy.t('data.title')}
+              </button>
+            </div>
             <h1>{copy.t('form.heading')}</h1>
           </div>
           <div className="setup-panel">
@@ -255,6 +429,7 @@ export function App() {
           {showSettings && (
             <SettingsDialog
               onClose={closeSettings}
+              onOpenData={() => setShowData(true)}
               language={language}
               onLanguagePreview={setPreviewLanguage}
               onReset={reset}
@@ -265,6 +440,7 @@ export function App() {
           )}
         </main>
       )}
+      {showData && <DataDialog copy={copy} onClose={() => setShowData(false)} />}
       <UpdatePrompt language={language} />
     </>
   );

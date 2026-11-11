@@ -10,6 +10,9 @@ import { ChevronDown, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 
 import {
   billAmount,
+  billHistoryMonths,
+  monthlyBillTotals,
+  mergeBill,
   billStats,
   MAX_BILLS,
   missedLastMonth,
@@ -21,15 +24,17 @@ import {
   type MissedMonth,
   type MonthTotal,
 } from '../domain/bills';
-import type { Translator } from '../domain/i18n';
+import { createTranslator, type Translator } from '../domain/i18n';
 import { formatDecimalInput, parseDecimalInput } from '../domain/input';
 import { currencyDigits, formatCurrency, getCurrencySymbol } from '../domain/locale';
 import { monthStart, parseMonth } from '../domain/months';
 import { formatIncomePercentage } from '../domain/priceText';
 import type { AffordiSettings } from '../domain/storage';
+import { afterStorageSave } from '../domain/storageSync';
 import { billColor } from './billColor';
 import { BillDialog } from './BillDialog';
 import { BillsChart } from './BillsChart';
+import { useDecimalInput } from './useDecimalInput';
 import { FieldError } from './FieldError';
 import { ListHeading, Money, useEditDialog } from './MonthlyCosts';
 
@@ -95,7 +100,46 @@ interface BillAmountRowProps {
   settings: AffordiSettings;
 }
 
-/** One bill with its amount for the month, saved when the field is left. */
+/** A valid draft persists while typing; blur formats it and reports incomplete input. */
+function useBillDraft(
+  bill: Bill,
+  month: string,
+  settings: AffordiSettings,
+  onChange: (bill: Bill) => void,
+) {
+  const copy = createTranslator(settings.language);
+  const saved = billAmount(bill, month);
+  // Amounts read back with the currency's usual decimals, such as 91.00.
+  const shown = (amount: number) =>
+    formatDecimalInput(amount, copy.locale, currencyDigits(settings.currency, copy.locale));
+  const [editing, setEditing] = useState(false);
+  const decimal = useDecimalInput(
+    saved === null ? '' : shown(saved),
+    copy.locale,
+    currencyDigits(settings.currency, copy.locale),
+    !editing,
+  );
+  const draft = decimal.value;
+  const setDraft = decimal.setValue;
+  const [error, setError] = useState(false);
+  function commit() {
+    setEditing(false);
+    const amount = parseDecimalInput(draft, copy.locale);
+    const invalid = draft.trim() !== '' && (amount === null || amount < 0);
+    setError(invalid);
+    if (!invalid && amount !== null) setDraft(shown(amount));
+  }
+
+  function updateDraft(value: string) {
+    setDraft(value);
+    setError(false);
+    const amount = parseDecimalInput(value, copy.locale);
+    if (value.trim() === '') onChange(withoutBillAmount(bill, month));
+    else if (amount !== null && amount >= 0) onChange(withBillAmount(bill, month, amount));
+  }
+  return { draft, error, commit, updateDraft, setEditing };
+}
+
 function BillAmountRow({
   bill,
   changed,
@@ -108,33 +152,18 @@ function BillAmountRow({
   onEdit,
   settings,
 }: BillAmountRowProps) {
+  const { draft, error, commit, updateDraft, setEditing } = useBillDraft(
+    bill,
+    month,
+    settings,
+    onChange,
+  );
   const saved = billAmount(bill, month);
-  // Amounts read back with the currency's usual decimals, such as 91.00.
-  const shown = (amount: number) =>
-    formatDecimalInput(amount, copy.locale, currencyDigits(settings.currency, copy.locale));
-  const [draft, setDraft] = useState(() => (saved === null ? '' : shown(saved)));
-  const [error, setError] = useState(false);
   const id = `bill-amount-${bill.id}`;
   const note = averageNote(billStats(bill, now), saved, hidden, settings, copy);
   const describedBy = [note === '' ? '' : `${id}-note`, error ? `${id}-error` : '']
     .filter((part) => part !== '')
     .join(' ');
-
-  function commit() {
-    if (draft.trim() === '') {
-      setError(false);
-      if (saved !== null) onChange(withoutBillAmount(bill, month));
-      return;
-    }
-    const amount = parseDecimalInput(draft, copy.locale);
-    if (amount === null || amount <= 0) {
-      setError(true);
-      return;
-    }
-    setError(false);
-    setDraft(shown(amount));
-    if (amount !== saved) onChange(withBillAmount(bill, month, amount));
-  }
 
   return (
     <li className="bill-row" data-changed={changed || undefined}>
@@ -163,10 +192,8 @@ function BillAmountRow({
           id={id}
           inputMode="decimal"
           onBlur={commit}
-          onChange={(event) => {
-            setDraft(event.target.value);
-            setError(false);
-          }}
+          onChange={(event) => updateDraft(event.target.value)}
+          onFocus={() => setEditing(true)}
           onKeyDown={moveToNextAmount}
           placeholder={copy.t('bills.amountLabel')}
           spellCheck={false}
@@ -174,12 +201,10 @@ function BillAmountRow({
           value={draft}
         />
       </span>
-      {note !== '' && (
-        <span className="bill-row-note" id={`${id}-note`}>
-          {note}
-        </span>
-      )}
-      <FieldError error={error ? copy.t('validation.costAmount') : undefined} id={`${id}-error`} />
+      <span className="bill-row-note" id={`${id}-note`} aria-hidden={note === ''}>
+        {note || '\u00a0'}
+      </span>
+      <FieldError error={error ? copy.t('validation.billAmount') : undefined} id={`${id}-error`} />
     </li>
   );
 }
@@ -192,7 +217,7 @@ interface MonthPickerProps {
 }
 
 /**
- * The month's name, which opens a list of the last twelve months, newest first, so an amount
+ * The month's name, which opens every retained month, newest first, so an amount
  * forgotten months ago is two taps away. The list is the phone's own picker.
  */
 function MonthPicker({ copy, index, onSelect, totals }: MonthPickerProps) {
@@ -308,9 +333,6 @@ function BillMonth({
           <ChevronRight aria-hidden="true" size={20} strokeWidth={2} />
         </button>
       </div>
-      {missed !== null && missed.month !== current.month && (
-        <MissedNote copy={copy} missed={missed} onEnter={onEnterMissed} />
-      )}
       <ul aria-labelledby={MONTH_TITLE_ID} className="bill-rows" onAnimationEnd={onAnimationEnd}>
         {bills.map((bill, billIndex) => (
           <BillAmountRow
@@ -338,6 +360,7 @@ function BillMonth({
           </>
         )}
       </p>
+      {missed !== null && <MissedNote copy={copy} missed={missed} onEnter={onEnterMissed} />}
     </div>
   );
 }
@@ -347,7 +370,7 @@ interface BillsSectionProps {
   copy: Translator;
   hidden: boolean;
   now: Date;
-  onBillsChange: (bills: Bill[]) => void;
+  onBillsChange: (bills: Bill[]) => void | Promise<void>;
   settings: AffordiSettings;
 }
 
@@ -366,7 +389,9 @@ export function BillsSection({
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const dialog = useEditDialog<Bill>(addButtonRef);
   const summary = summarizeBills(bills, now);
-  const months = summary.totals.map(({ month }) => month);
+  const months = billHistoryMonths(bills, now);
+  const history = monthlyBillTotals(bills, now, months);
+  const chartOffset = months.length - summary.totals.length;
   // The chosen month, until it leaves the last year; this month until one is chosen.
   const [chosen, setChosen] = useState<string | null>(null);
   const chosenIndex = chosen === null ? -1 : months.indexOf(chosen);
@@ -387,23 +412,32 @@ export function BillsSection({
   }
 
   function change(bill: Bill) {
-    onBillsChange(bills.map((saved) => (saved.id === bill.id ? bill : saved)));
+    void onBillsChange(bills.map((saved) => (saved.id === bill.id ? bill : saved)));
   }
 
   function save(bill: Bill) {
-    const exists = bills.some((saved) => saved.id === bill.id);
-    onBillsChange(
-      exists ? bills.map((saved) => (saved.id === bill.id ? bill : saved)) : [...bills, bill],
+    const latest = bills.find((saved) => saved.id === bill.id);
+    const base = dialog.editing ?? null;
+    if (base !== null && latest === undefined) {
+      dialog.close();
+      return;
+    }
+    const updated = base !== null && latest !== undefined ? mergeBill(base, bill, latest) : bill;
+    const saving = onBillsChange(
+      latest !== undefined
+        ? bills.map((saved) => (saved.id === bill.id ? updated : saved))
+        : [...bills, updated],
     );
-    // A new bill's amount may be for another month, which then shows it in place.
-    const added = exists ? undefined : bill.entries[0]?.month;
-    if (added !== undefined) setChosen(added);
-    dialog.saved(bill);
+    afterStorageSave(saving, () => {
+      // A new bill's amount may be for another month, which then shows it in place.
+      const added = latest !== undefined ? undefined : updated.entries[0]?.month;
+      if (added !== undefined) setChosen(added);
+      dialog.saved(updated);
+    });
   }
 
   function remove(bill: Bill) {
-    onBillsChange(bills.filter((saved) => saved.id !== bill.id));
-    dialog.close();
+    afterStorageSave(onBillsChange(bills.filter((saved) => saved.id !== bill.id)), dialog.close);
   }
 
   return (
@@ -411,7 +445,7 @@ export function BillsSection({
       <ListHeading
         addButtonRef={addButtonRef}
         addLabel={copy.t('bills.add')}
-        addShortLabel={copy.t('bills.addShort')}
+        addShortLabel={copy.t(bills.length === 0 ? 'bills.add' : 'bills.addShort')}
         id="bill-list-title"
         limitNote={bills.length >= MAX_BILLS ? copy.t('bills.limit', { count: MAX_BILLS }) : null}
         onAdd={(opener) => dialog.open(null, opener)}
@@ -419,16 +453,6 @@ export function BillsSection({
       />
       {bills.length > 0 && (
         <>
-          <BillsChart
-            bills={bills}
-            copy={copy}
-            currency={settings.currency}
-            hidden={hidden}
-            monthTitleId={MONTH_TITLE_ID}
-            onSelect={select}
-            selected={selected}
-            summary={summary}
-          />
           <BillMonth
             bills={bills}
             changedId={dialog.changedId}
@@ -443,8 +467,21 @@ export function BillsSection({
             onEnterMissed={enterMissed}
             onSelect={select}
             settings={settings}
-            totals={summary.totals}
+            totals={history}
           />
+          <details className="bills-chart-disclosure">
+            <summary>{copy.t('bills.chartTitle')}</summary>
+            <BillsChart
+              bills={bills}
+              copy={copy}
+              currency={settings.currency}
+              hidden={hidden}
+              monthTitleId={MONTH_TITLE_ID}
+              onSelect={(index) => select(index + chartOffset)}
+              selected={selected - chartOffset}
+              summary={summary}
+            />
+          </details>
         </>
       )}
 

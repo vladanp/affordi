@@ -16,7 +16,9 @@ test.describe('Affordi calculator', () => {
     await page.reload();
     await expect(page.getByRole('heading', { name: 'How much does it cost?' })).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'How much does it cost?' })).not.toBeFocused();
-    await expect(page.getByRole('heading', { name: 'Start with your income' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Turn prices into working time' })).toHaveCount(
+      0,
+    );
   });
 
   test('updates the time result as a price is entered', async ({ page }) => {
@@ -220,7 +222,9 @@ test.describe('Affordi calculator', () => {
     await page.getByRole('button', { name: 'Reset saved settings' }).click();
     await expect(page.getByRole('heading', { name: 'Reset settings?' })).toBeVisible();
     await page.getByRole('button', { name: 'Reset', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Start with your income' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Turn prices into working time' }),
+    ).toBeVisible();
   });
 
   test('shows useful validation for incomplete setup', async ({ page }) => {

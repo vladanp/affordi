@@ -118,7 +118,9 @@ export function CostCard({
           period: copy.payPeriod('monthly'),
         })}
       </p>
-      {note !== null && !hidden && <p className="stat-note">{note}</p>}
+      <p className="stat-note cost-breakdown" aria-hidden={hidden || note === null}>
+        {hidden ? '\u00a0' : (note ?? '\u00a0')}
+      </p>
     </div>
   );
 }
@@ -146,7 +148,9 @@ export function PayLeftCard({ copy, hidden, payLeft, settings }: PayLeftCardProp
       <p className="stat-amount">
         <Money copy={copy} hidden={hidden} settings={settings} value={Math.abs(payLeft.left)} />
       </p>
-      {note !== null && <p className="stat-note">{note}</p>}
+      <p className="stat-note" aria-hidden={note === null}>
+        {note ?? '\u00a0'}
+      </p>
     </div>
   );
 }
@@ -175,7 +179,9 @@ export function ListHeading({
   return (
     <>
       <div className="list-heading">
-        <h2 id={id}>{title}</h2>
+        <h2 id={id} tabIndex={-1}>
+          {title}
+        </h2>
         <button
           aria-label={addLabel}
           className="pill-button"

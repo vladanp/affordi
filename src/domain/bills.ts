@@ -1,3 +1,4 @@
+import { mergeChanges, mergeList } from './storageSync';
 import { isItemId, isItemName } from './items';
 import { readRecord, writeRecord } from './localStore';
 import { monthValue, parseMonth, recentMonths } from './months';
@@ -33,7 +34,7 @@ function isBillEntry(value: unknown): value is BillEntry {
     parseMonth(value.month) !== null &&
     typeof value.amount === 'number' &&
     Number.isFinite(value.amount) &&
-    value.amount > 0
+    value.amount >= 0
   );
 }
 
@@ -167,8 +168,12 @@ export interface MonthTotal {
   total: number | null;
 }
 
-export function monthlyBillTotals(bills: readonly Bill[], now: Date): MonthTotal[] {
-  return recentMonthValues(now).map((month) => {
+export function monthlyBillTotals(
+  bills: readonly Bill[],
+  now: Date,
+  months = recentMonthValues(now),
+): MonthTotal[] {
+  return months.map((month) => {
     const amounts = bills.flatMap((bill) => {
       const amount = billAmount(bill, month);
       return amount === null ? [] : [amount];
@@ -182,7 +187,12 @@ export function monthlyBillTotals(bills: readonly Bill[], now: Date): MonthTotal
 
 /** What bills cost in a typical month: each bill's recent average, added up. */
 export function averageMonthlyBills(bills: readonly Bill[], now: Date): number {
-  return bills.reduce((sum, bill) => sum + (billStats(bill, now).average ?? 0), 0);
+  const recorded = monthlyBillTotals(bills, now).flatMap(({ total }) =>
+    total === null ? [] : [total],
+  );
+  return recorded.length === 0
+    ? 0
+    : recorded.reduce((sum, total) => sum + total, 0) / recorded.length;
 }
 
 /** The last twelve months of bills, for the chart. */
@@ -194,4 +204,30 @@ export interface BillsSummary {
 
 export function summarizeBills(bills: readonly Bill[], now: Date): BillsSummary {
   return { average: averageMonthlyBills(bills, now), totals: monthlyBillTotals(bills, now) };
+}
+
+/** Every retained month can be viewed, including sparse history older than ten calendar years. */
+export function billHistoryMonths(bills: readonly Bill[], now: Date): string[] {
+  const current = monthValue({ year: now.getFullYear(), month: now.getMonth() + 1 });
+  return [
+    ...new Set([
+      ...recentMonthValues(now),
+      ...bills.flatMap((bill) =>
+        bill.entries.map((entry) => entry.month).filter((month) => month <= current),
+      ),
+    ]),
+  ].toSorted();
+}
+
+/** Two tabs may edit different months of the same bill. Rebase those entries independently. */
+export function mergeBill(base: Bill, next: Bill, latest: Bill): Bill {
+  const entries = mergeList(
+    base.entries.map((entry) => ({ ...entry, id: entry.month })),
+    next.entries.map((entry) => ({ ...entry, id: entry.month })),
+    latest.entries.map((entry) => ({ ...entry, id: entry.month })),
+  )
+    .map(({ month, amount }) => ({ month, amount }))
+    .toSorted((a, b) => a.month.localeCompare(b.month))
+    .slice(-MAX_BILL_ENTRIES);
+  return { ...mergeChanges(base, next, latest), entries };
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseDecimalInput } from './input';
+import { formatDecimalInput, translateDecimalInput, parseDecimalInput } from './input';
 
 describe('parseDecimalInput', () => {
   it.each([
@@ -38,5 +38,24 @@ describe('parseDecimalInput', () => {
     expect(parseDecimalInput('3.125', 'en-US')).toBe(3.125);
     expect(parseDecimalInput('.5', 'en-US')).toBe(0.5);
     expect(parseDecimalInput(',5', 'de-DE')).toBe(0.5);
+  });
+});
+
+describe('localized decimal drafts', () => {
+  it('preserves an amount across grouping and decimal conventions', () => {
+    expect(translateDecimalInput('1,234.56', 'en', 'de')).toBe('1234,56');
+    expect(translateDecimalInput('1.234', 'de', 'en')).toBe('1234');
+    expect(translateDecimalInput('3.125', 'en', 'de')).toBe('3,125');
+    expect(translateDecimalInput('91.00', 'en', 'de', 2)).toBe('91,00');
+  });
+
+  it('leaves empty, invalid, and same-locale drafts as typed', () => {
+    expect(translateDecimalInput('', 'en', 'de')).toBe('');
+    expect(translateDecimalInput('1,2,3', 'en', 'de')).toBe('1,2,3');
+    expect(translateDecimalInput('1,234.00', 'en', 'en')).toBe('1,234.00');
+  });
+
+  it('does not round saved decimal values to six places on edit', () => {
+    expect(formatDecimalInput(3.123456789, 'de')).toBe('3,123456789');
   });
 });

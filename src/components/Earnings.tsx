@@ -140,7 +140,9 @@ export function Earnings({ bills, fixedCosts, settings, onHideAmountsChange }: E
   return (
     <section aria-labelledby="earnings-title" className="earnings">
       <div className="page-heading">
-        <h1 id="earnings-title">{copy.t('earnings.title')}</h1>
+        <h1 id="earnings-title" tabIndex={-1}>
+          {copy.t('earnings.title')}
+        </h1>
         <HideAmountsButton copy={copy} hidden={amountsHidden} onChange={onHideAmountsChange} />
       </div>
 
@@ -170,7 +172,7 @@ export function Earnings({ bills, fixedCosts, settings, onHideAmountsChange }: E
           label={copy.t('earnings.month')}
           share={month.share}
           spokenShare={(percentage) => copy.t('earnings.monthShare', { percentage })}
-          total={formatRate(rates.totals.month, currency, language)}
+          total={formatRate(month.total, currency, language)}
         />
         {coverage !== null && (
           <ProgressCard

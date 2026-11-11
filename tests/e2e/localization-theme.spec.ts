@@ -14,7 +14,9 @@ test.describe('localization and theme preferences', () => {
 
     await expect(page).toHaveTitle(/Affordi/);
     await expect(page.locator('html')).toHaveAttribute('lang', 'de');
-    await expect(page.getByRole('heading', { name: 'Beginne mit deinem Einkommen' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Preise in Arbeitszeit umrechnen' }),
+    ).toBeVisible();
     await expectAccessible(page);
 
     await page.getByLabel('Nettoeinkommen').fill('3000');

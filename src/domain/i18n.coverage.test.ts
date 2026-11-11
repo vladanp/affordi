@@ -6,6 +6,9 @@ describe('translation catalog completeness', () => {
   it('provides populated, interpolated copy for every supported locale and key', () => {
     const values = {
       currency: 'EUR',
+      from: 'EUR',
+      to: 'USD',
+      costs: 2,
       price: '€10',
       percentage: 25,
       period: 'monthly',

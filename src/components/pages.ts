@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from 'react';
+import { useLayoutEffect, useState, useSyncExternalStore } from 'react';
 
 import type { TranslationKey } from '../domain/i18n';
 
@@ -43,6 +43,14 @@ export type PageMotion = 'forward' | 'back';
  * depends on an earlier render.
  */
 export function usePageMotion(page: Page): PageMotion | null {
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    if (document.documentElement.hasAttribute('data-keyboard')) {
+      document
+        .querySelector<HTMLElement>(`#${page === 'cost' ? 'calculator' : page}-title`)
+        ?.focus({ preventScroll: true });
+    }
+  }, [page]);
   const [shown, setShown] = useState<{ page: Page; motion: PageMotion | null }>({
     page,
     motion: null,

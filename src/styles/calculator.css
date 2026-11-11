@@ -381,3 +381,19 @@
 .price-repeat-active .select-chevron {
   border-color: var(--color-on-highlight);
 }
+
+/* A stable reading target across units, values and all five languages. */
+.result-primary {
+  min-block-size: 3.06em;
+  margin-block-end: 1rem;
+  font-size: clamp(1.75rem, 7vw, 3rem);
+}
+.result-approx {
+  min-block-size: 2.8em;
+}
+.result-note {
+  min-block-size: 2.8em;
+}
+.share-row {
+  min-block-size: 2.8em;
+}

@@ -5,6 +5,7 @@ import {
   FIXED_COSTS_STORAGE_KEY,
   isFixedCost,
   isPaidOff,
+  isFixedCostDue,
   loadFixedCosts,
   monthlyCostFigures,
   monthlyFixedCosts,
@@ -172,6 +173,21 @@ describe('fixed cost figures', () => {
     expect(monthlyFixedCosts(costs, october)).toBe(1_095);
     expect(monthlyFixedCosts(costs, new Date(2026, 10, 1))).toBe(1_070);
     expect(monthlyFixedCosts([], october)).toBe(0);
+  });
+
+  it('starts charging in the first payment month and stops after the last', () => {
+    const future = { ...mortgage, firstPayment: '2027-01', lastPayment: '2027-12' };
+    expect(isFixedCostDue(future, october)).toBe(false);
+    expect(monthlyFixedCosts([insurance, future], october)).toBe(120);
+    expect(monthlyFixedCosts([future], new Date(2027, 0, 1))).toBe(950);
+    expect(monthlyFixedCosts([future], new Date(2027, 11, 31))).toBe(950);
+    expect(monthlyFixedCosts([future], new Date(2028, 0, 1))).toBe(0);
+    expect(sortFixedCosts([carLoan, future, insurance], october).map((cost) => cost.name)).toEqual([
+      'Insurance',
+      'Mortgage',
+      'Car loan',
+    ]);
+    expect(monthlyFixedCosts([{ ...future, lastPayment: null }], october)).toBe(0);
   });
 
   it('turns one monthly amount into work time and a share of monthly pay', () => {

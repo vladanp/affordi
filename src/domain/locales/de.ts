@@ -2,6 +2,26 @@ import type { Catalog } from '../i18n';
 
 /** German copy. It loads on its own, so the first screen carries only English. */
 const german: Catalog = {
+  'validation.schedule':
+    'Wähle gültige, überschneidungsfreie Schichten und eine kürzere Pause als jede Schicht.',
+  'form.customHours': 'Andere Zeiten je Wochentag',
+  'form.workBreak': 'Unbezahlte Pause (Minuten)',
+  'calculator.noDisposable': 'Kein Einkommen nach monatlichen Kosten übrig',
+  'calculator.disposable': 'Verbleibendes Einkommen verwenden',
+  'currency.description':
+    'Alle gespeicherten Einkommensdaten, Rechnungen und Fixkosten von {{from}} auf {{to}} umstellen? Zahlen bleiben gleich; es erfolgt keine Umrechnung.',
+  'currency.change': 'Währungseinheit ändern',
+  'data.failure':
+    'Diese Sicherung konnte nicht importiert werden. Prüfe die Datei und den verfügbaren Speicher.',
+  'data.replace': 'Daten ersetzen',
+  'data.replaceDescription':
+    'Dies ersetzt alle gespeicherten Einkommensdaten, Einstellungen, Rechnungen und Fixkosten auf diesem Gerät durch die Daten der Datei. Rechnungen: {{bills}}. Fixkosten: {{costs}}.',
+  'data.replaceTitle': 'Gespeicherte Daten ersetzen?',
+  'data.import': 'Sicherung importieren',
+  'data.export': 'Sicherung exportieren',
+  'data.privacy':
+    'Einkommen, Rechnungen und Einstellungen bleiben in diesem Browser. Keine Konten, kein Tracking, keine Cloud. Exportierte Dateien enthalten deine Finanzdaten; bewahre sie privat auf.',
+  'data.title': 'Auf diesem Gerät',
   'storage.visitOnly':
     'Für diesen Besuch gespeichert. Dein Browser hat das lokale Speichern blockiert.',
   'storage.couldNotSave':
@@ -32,7 +52,7 @@ const german: Catalog = {
   'nav.cost': 'Kosten',
   'nav.earnings': 'Verdienst',
   'earnings.title': 'Wie viel verdienst du?',
-  'earnings.today': 'Seit Mitternacht verdient',
+  'earnings.today': 'Heutiger Verdienst auf 24 Stunden verteilt',
   'earnings.atWork': 'Heute bei der Arbeit verdient',
   'earnings.startsAt': 'Beginnt um {{time}}',
   'earnings.workingUntil': 'Arbeit bis {{time}}',
@@ -45,7 +65,7 @@ const german: Catalog = {
   'earnings.hideAmounts': 'Beträge ausblenden',
   'earnings.showAmounts': 'Beträge anzeigen',
   'earnings.hiddenAmount': 'Ausgeblendet',
-  'earnings.breakdown': 'Dein Nettoeinkommen, aufgeschlüsselt',
+  'earnings.breakdown': 'Durchschnittliche Verdienstsätze',
   'earnings.period': 'Zeitraum',
   'earnings.aroundTheClock': 'Rund um die Uhr',
   'earnings.whileWorking': 'Bei der Arbeit',
@@ -81,6 +101,8 @@ const german: Catalog = {
   'fixedCosts.amountLabel': 'Betrag pro Monat',
   'fixedCosts.amountDescription': 'Betrag in {{currency}}.',
   'fixedCosts.lastPaymentLabel': 'Letzte Zahlung',
+  'fixedCosts.trackPayments': 'Zahlungen verfolgen',
+  'fixedCosts.scheduled': 'Geplant',
   'fixedCosts.firstPaymentLabel': 'Erste Zahlung',
   'fixedCosts.paidAndLeft': '{{paid}} bezahlt · {{left}} offen',
   'fixedCosts.leftToPay': '{{amount}} noch offen',
@@ -97,6 +119,7 @@ const german: Catalog = {
   'fixedCosts.deleteDescription': 'Der Eintrag wird von diesem Gerät entfernt.',
   'fixedCosts.keep': 'Behalten',
   'validation.costName': 'Gib einen Namen ein.',
+  'validation.billAmount': 'Gib einen Betrag von mindestens 0 ein.',
   'validation.costAmount': 'Gib einen Betrag über 0 ein.',
   'validation.lastPayment': 'Wähle Monat und Jahr oder lass beides leer.',
   'validation.lastPaymentPast': 'Wähle diesen Monat oder später.',
@@ -105,6 +128,7 @@ const german: Catalog = {
   'earnings.fixedCostsShare': '{{percentage}} der Fixkosten dieses Monats gedeckt',
   'bills.add': 'Rechnung hinzufügen',
   'bills.addShort': 'Hinzufügen',
+  'bills.data': 'Daten anzeigen',
   'bills.chartTitle': 'Rechnungen pro Monat',
   'bills.chartAverage': 'Durchschnitt {{amount}}',
   'bills.other': 'Weitere',
@@ -133,7 +157,7 @@ const german: Catalog = {
   'earnings.costsWithBills': 'Rechnungen und Fixkosten diesen Monat',
   'earnings.costsWithBillsShare':
     '{{percentage}} der Rechnungen und Fixkosten dieses Monats gedeckt',
-  'form.heading': 'Beginne mit deinem Einkommen',
+  'form.heading': 'Preise in Arbeitszeit umrechnen',
   'form.incomeLabel': 'Nettoeinkommen',
   'form.incomeDescription': 'Betrag in {{currency}}, nach Steuern.',
   'form.payFrequencyLabel': 'Zahlungsrhythmus',
@@ -151,7 +175,7 @@ const german: Catalog = {
   'validation.income': 'Gib ein Einkommen über 0 ein.',
   'validation.payFrequency': 'Wähle aus, wie oft du bezahlt wirst.',
   'validation.workStart': 'Wähle, wann die Arbeit beginnt.',
-  'validation.workEnd': 'Wähle ein Ende später am selben Tag.',
+  'validation.workEnd': 'Wähle eine Endzeit, die sich vom Beginn unterscheidet.',
   'validation.workDays': 'Wähle mindestens einen Arbeitstag.',
   'validation.currency': 'Wähle eine Währung.',
   'validation.language': 'Wähle eine Sprache.',
