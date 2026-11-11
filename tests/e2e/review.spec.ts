@@ -133,6 +133,7 @@ test('persists an inline zero before blur and reload', async ({ page }) => {
   await page.getByRole('dialog').getByLabel('Name', { exact: true }).fill('Power');
   await page.getByRole('dialog').getByLabel('Amount', { exact: true }).fill('100');
   await page.getByRole('dialog').getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('textbox', { name: 'Power', exact: true }).fill('0');
   await expect
     .poll(() =>

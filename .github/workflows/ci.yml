@@ -72,7 +72,8 @@ jobs:
     timeout-minutes: 15
     container:
       image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f
-      options: --ipc=host
+      # Match GitHub's mounted home/workspace owner so Firefox can start.
+      options: --ipc=host --user 1001
       volumes:
         - /usr/share/fonts/truetype/dejavu:/usr/share/fonts/truetype/dejavu:ro
     env:
@@ -90,7 +91,16 @@ jobs:
         run: |
           test -f /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
           if command -v fc-cache >/dev/null; then fc-cache -f /usr/share/fonts/truetype/dejavu; fi
-          node --input-type=module -e 'import { chromium, firefox, webkit } from "@playwright/test"; import { access } from "node:fs/promises"; await Promise.all([chromium, firefox, webkit].map(browser => access(browser.executablePath())));'
+          node --input-type=module <<'JS'
+          import { chromium, firefox, webkit } from '@playwright/test';
+          import { access } from 'node:fs/promises';
+          for (const engine of [chromium, firefox, webkit]) {
+            await access(engine.executablePath());
+            const browser = await engine.launch();
+            console.log(engine.name(), browser.version());
+            await browser.close();
+          }
+          JS
       - name: Download validated production build
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
