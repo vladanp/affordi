@@ -137,7 +137,8 @@ jobs:
           path: dist
       - name: Run Lighthouse assertions
         run: |
-          export CHROME_PATH="$(node --input-type=module -e 'import { chromium } from "@playwright/test"; process.stdout.write(chromium.executablePath());')"
+          CHROME_PATH="$(node --input-type=module -e 'import { chromium } from "@playwright/test"; process.stdout.write(chromium.executablePath());')"
+          export CHROME_PATH
           pnpm exec lhci autorun --config=lighthouserc.json --collect.settings.chromeFlags="--no-sandbox"
       - name: Upload Lighthouse report
         if: always()
