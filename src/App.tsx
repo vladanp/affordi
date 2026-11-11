@@ -46,8 +46,8 @@ const APP_NAME = 'Affordi';
 interface PageShellProps {
   bills: readonly Bill[];
   fixedCosts: readonly FixedCost[];
-  onBillsChange: (bills: Bill[]) => void;
-  onFixedCostsChange: (fixedCosts: FixedCost[]) => void;
+  onBillsChange: (bills: Bill[]) => void | Promise<void>;
+  onFixedCostsChange: (fixedCosts: FixedCost[]) => void | Promise<void>;
   onHideAmountsChange: (hideAmounts: boolean) => void;
   onOpenSettings: () => void;
   settings: AffordiSettings;
@@ -142,28 +142,46 @@ function StorageNotice({ copy, message, visible }: StorageNoticeProps) {
 function useSavedList<T extends { id: string }>(
   load: () => T[],
   save: (items: readonly T[]) => boolean,
+  storedSettings: RefObject<AffordiSettings | null>,
   merge?: (base: T, next: T, latest: T) => T,
 ) {
   const [items, setItems] = useState<T[]>(load);
+  const confirmed = useRef(items);
   const [saveFailed, setSaveFailed] = useState(false);
 
   useEffect(() => {
-    const refresh = () => setItems(load());
+    const refresh = (event: StorageEvent) => {
+      const latest = load();
+      const base = confirmed.current;
+      confirmed.current = latest;
+      if (event.key === null || (storedSettings.current !== null && loadSettings() === null)) {
+        setItems(latest);
+        setSaveFailed(false);
+      } else setItems((current) => mergeList(base, current, latest, merge));
+    };
     window.addEventListener('storage', refresh);
     return () => window.removeEventListener('storage', refresh);
-  }, [load]);
+  }, [load, merge, storedSettings]);
 
   function persist(nextItems: T[]) {
+    const base = saveFailed ? confirmed.current : items;
+    const hadStoredSettings = storedSettings.current !== null;
     setItems(nextItems);
-    withStorageLock(() => {
-      const next = loadSettings() === null ? [] : mergeList(items, nextItems, load(), merge);
-      setSaveFailed(!save(next));
-      setItems(next);
+    return withStorageLock(() => {
+      const next =
+        hadStoredSettings && loadSettings() === null
+          ? []
+          : mergeList(base, nextItems, load(), merge);
+      const saved = save(next);
+      setSaveFailed(!saved);
+      if (saved) confirmed.current = next;
+      setItems(saved ? next : nextItems);
     });
   }
 
   /** Forgets the list after a reset has already erased it from the device. */
   function forget() {
+    confirmed.current = [];
     setItems([]);
     setSaveFailed(false);
   }
@@ -192,19 +210,80 @@ function shouldRefreshSettings(event: StorageEvent, editing: boolean): boolean {
 function rebaseSettings(
   base: AffordiSettings | null,
   next: AffordiSettings,
+  latest = loadSettings(),
 ): AffordiSettings | null {
-  const latest = loadSettings();
   if (base !== null && latest === null) return null;
   return base === null || latest === null ? next : mergeChanges(base, next, latest);
 }
 
-function useAppState() {
+/** The complete settings transaction, called while holding the cross-tab storage lock. */
+function saveRebasedSettings(base: AffordiSettings | null, nextSettings: AffordiSettings) {
+  const next = rebaseSettings(base, nextSettings);
+  return { next, saved: next !== null && saveSettings(next) };
+}
+
+/** Cancel drops form edits while retaining visit-only values and fresh changes from other tabs. */
+function loadRebasedSettings(base: AffordiSettings | null, session: AffordiSettings | null) {
+  const latest = loadSettings();
+  return { latest, current: session === null ? latest : rebaseSettings(base, session, latest) };
+}
+
+/** Owns the saved snapshot separately from values retained for this visit after a failed write. */
+function useSettingsStorage() {
   const [settings, setSettings] = useState<AffordiSettings | null>(() => loadSettings());
-  const fixedCosts = useSavedList(loadFixedCosts, saveFixedCosts);
-  const bills = useSavedList(loadBills, saveBills, mergeBill);
+  const storedSettings = useRef(settings);
+  const [storageNotice, setStorageNotice] = useState(false);
+
+  function persist(nextSettings: AffordiSettings, onComplete?: () => void) {
+    const base = storedSettings.current;
+    void withStorageLock(() => {
+      const { next, saved } = saveRebasedSettings(base, nextSettings);
+      setStorageNotice(next !== null && !saved);
+      if (saved || next === null) storedSettings.current = next;
+      setSettings(next);
+      onComplete?.();
+    });
+  }
+
+  function reloadForCancel() {
+    const { latest, current } = loadRebasedSettings(storedSettings.current, settings);
+    setSettings(current);
+    storedSettings.current = latest;
+  }
+
+  function forgetSettings() {
+    setSettings(null);
+    storedSettings.current = null;
+    setStorageNotice(false);
+  }
+
+  return {
+    settings,
+    storedSettings,
+    storageNotice,
+    setStorageNotice,
+    setSettings,
+    persist,
+    reloadForCancel,
+    forgetSettings,
+  };
+}
+
+function useAppState() {
+  const {
+    settings,
+    storedSettings,
+    storageNotice,
+    setStorageNotice,
+    setSettings,
+    persist,
+    reloadForCancel,
+    forgetSettings,
+  } = useSettingsStorage();
+  const fixedCosts = useSavedList(loadFixedCosts, saveFixedCosts, storedSettings);
+  const bills = useSavedList(loadBills, saveBills, storedSettings, mergeBill);
   const [showData, setShowData] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [storageNotice, setStorageNotice] = useState(false);
   const [previewLanguage, setPreviewLanguage] = useState<Locale | null>(null);
   const [previewTheme, setPreviewTheme] = useState<AffordiSettings['theme'] | null>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
@@ -227,35 +306,31 @@ function useAppState() {
   useEffect(() => {
     const refresh = (event: StorageEvent) => {
       if (!shouldRefreshSettings(event, showSettings)) return;
-      setSettings(loadSettings());
+      const latest = loadSettings();
+      storedSettings.current = latest;
+      setSettings(latest);
       setShowSettings(false);
       setPreviewLanguage(null);
       setPreviewTheme(null);
     };
     window.addEventListener('storage', refresh);
     return () => window.removeEventListener('storage', refresh);
-  }, [showSettings]);
+  }, [showSettings, setSettings, storedSettings]);
 
-  function persist(nextSettings: AffordiSettings) {
-    setSettings(nextSettings);
-    withStorageLock(() => {
-      const next = rebaseSettings(settings, nextSettings);
-      setSettings(next);
-      if (next !== null) setStorageNotice(!saveSettings(next));
-    });
-  }
-
-  function closeSettings() {
-    setSettings(loadSettings());
+  function dismissSettings() {
     setPreviewLanguage(null);
     setPreviewTheme(null);
     restoreSettingsFocusRef.current = true;
     setShowSettings(false);
   }
 
+  function closeSettings() {
+    reloadForCancel();
+    dismissSettings();
+  }
+
   function saveAndCloseSettings(nextSettings: AffordiSettings) {
-    persist(nextSettings);
-    closeSettings();
+    persist(nextSettings, dismissSettings);
   }
 
   function reset(): boolean {
@@ -266,11 +341,10 @@ function useAppState() {
 
     setPreviewLanguage(null);
     setPreviewTheme(null);
-    setSettings(null);
+    forgetSettings();
     fixedCosts.forget();
     bills.forget();
     setShowSettings(false);
-    setStorageNotice(false);
     return true;
   }
 

@@ -15,7 +15,7 @@ const french: Catalog = {
     'Impossible d’importer cette sauvegarde. Vérifiez le fichier et l’espace disponible.',
   'data.replace': 'Remplacer les données',
   'data.replaceDescription':
-    'Ce fichier remplacera tous les revenus, réglages, factures et frais fixes enregistrés sur cet appareil : {{bills}} factures et {{costs}} frais fixes.',
+    'Ce fichier remplacera tous les revenus, réglages, factures et frais fixes enregistrés sur cet appareil. Factures : {{bills}}. Frais fixes : {{costs}}.',
   'data.replaceTitle': 'Remplacer les données enregistrées ?',
   'data.import': 'Importer une sauvegarde',
   'data.export': 'Exporter une sauvegarde',

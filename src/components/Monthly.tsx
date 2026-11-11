@@ -16,8 +16,8 @@ const CLOCK_MS = 60_000;
 interface MonthlyProps {
   bills: readonly Bill[];
   fixedCosts: readonly FixedCost[];
-  onBillsChange: (bills: Bill[]) => void;
-  onFixedCostsChange: (fixedCosts: FixedCost[]) => void;
+  onBillsChange: (bills: Bill[]) => void | Promise<void>;
+  onFixedCostsChange: (fixedCosts: FixedCost[]) => void | Promise<void>;
   onHideAmountsChange: (hideAmounts: boolean) => void;
   settings: AffordiSettings;
 }

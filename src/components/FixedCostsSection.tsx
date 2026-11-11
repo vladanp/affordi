@@ -19,6 +19,7 @@ import { formatCurrency } from '../domain/locale';
 import { monthStart, parseMonth } from '../domain/months';
 import { formatIncomePercentage } from '../domain/priceText';
 import type { AffordiSettings } from '../domain/storage';
+import { afterStorageSave } from '../domain/storageSync';
 import { FixedCostDialog } from './FixedCostDialog';
 import { ItemRow, ListHeading, Money, useEditDialog } from './MonthlyCosts';
 
@@ -154,7 +155,7 @@ interface FixedCostsSectionProps {
   fixedCosts: readonly FixedCost[];
   hidden: boolean;
   now: Date;
-  onFixedCostsChange: (fixedCosts: FixedCost[]) => void;
+  onFixedCostsChange: (fixedCosts: FixedCost[]) => void | Promise<void>;
   settings: AffordiSettings;
 }
 
@@ -173,17 +174,19 @@ export function FixedCostsSection({
 
   function save(cost: FixedCost) {
     const exists = fixedCosts.some((saved) => saved.id === cost.id);
-    onFixedCostsChange(
+    const saving = onFixedCostsChange(
       exists
         ? fixedCosts.map((saved) => (saved.id === cost.id ? cost : saved))
         : [...fixedCosts, cost],
     );
-    dialog.saved(cost);
+    afterStorageSave(saving, () => dialog.saved(cost));
   }
 
   function remove(cost: FixedCost) {
-    onFixedCostsChange(fixedCosts.filter((saved) => saved.id !== cost.id));
-    dialog.close();
+    afterStorageSave(
+      onFixedCostsChange(fixedCosts.filter((saved) => saved.id !== cost.id)),
+      dialog.close,
+    );
   }
 
   return (

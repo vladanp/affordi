@@ -41,7 +41,7 @@ export function DataDialog({ copy, onClose }: { copy: Translator; onClose: () =>
 
   function replace() {
     if (pending === null) return;
-    withStorageLock(() => {
+    void withStorageLock(() => {
       if (!restoreBackup(pending)) {
         setError(true);
         return;

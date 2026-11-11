@@ -15,7 +15,7 @@ const german: Catalog = {
     'Diese Sicherung konnte nicht importiert werden. Prüfe die Datei und den verfügbaren Speicher.',
   'data.replace': 'Daten ersetzen',
   'data.replaceDescription':
-    'Dies ersetzt alle gespeicherten Einkommensdaten, Einstellungen, Rechnungen und Fixkosten auf diesem Gerät durch die Datei: {{bills}} Rechnungen und {{costs}} Fixkosten.',
+    'Dies ersetzt alle gespeicherten Einkommensdaten, Einstellungen, Rechnungen und Fixkosten auf diesem Gerät durch die Daten der Datei. Rechnungen: {{bills}}. Fixkosten: {{costs}}.',
   'data.replaceTitle': 'Gespeicherte Daten ersetzen?',
   'data.import': 'Sicherung importieren',
   'data.export': 'Sicherung exportieren',

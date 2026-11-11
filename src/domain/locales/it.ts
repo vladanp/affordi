@@ -14,7 +14,7 @@ const italian: Catalog = {
   'data.failure': 'Impossibile importare il backup. Controlla il file e lo spazio disponibile.',
   'data.replace': 'Sostituisci dati',
   'data.replaceDescription':
-    'Questo file sostituirà tutti i redditi, le impostazioni, le bollette e i costi fissi salvati su questo dispositivo: {{bills}} bollette e {{costs}} costi fissi.',
+    'Questo file sostituirà tutti i redditi, le impostazioni, le bollette e i costi fissi salvati su questo dispositivo. Bollette: {{bills}}. Costi fissi: {{costs}}.',
   'data.replaceTitle': 'Sostituire i dati salvati?',
   'data.import': 'Importa backup',
   'data.export': 'Esporta backup',

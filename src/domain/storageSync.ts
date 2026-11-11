@@ -30,8 +30,14 @@ export function mergeList<T extends { id: string }>(
 }
 
 /** Web Locks serialize writes from tabs and the installed app without network persistence. */
-export function withStorageLock(write: () => void): void {
+export function withStorageLock(write: () => void): void | Promise<void> {
   if (typeof navigator !== 'undefined' && navigator.locks !== undefined) {
-    void navigator.locks.request('affordi.storage', write).catch(write);
+    return navigator.locks.request('affordi.storage', write).catch(write);
   } else write();
+}
+
+/** Completes a save after queued writes, or immediately for a synchronous state owner. */
+export function afterStorageSave(result: void | Promise<void>, complete: () => void) {
+  if (result === undefined) complete();
+  else void result.then(complete);
 }

@@ -29,6 +29,7 @@ import { currencyDigits, formatCurrency, getCurrencySymbol } from '../domain/loc
 import { monthStart, parseMonth } from '../domain/months';
 import { formatIncomePercentage } from '../domain/priceText';
 import type { AffordiSettings } from '../domain/storage';
+import { afterStorageSave } from '../domain/storageSync';
 import { billColor } from './billColor';
 import { BillDialog } from './BillDialog';
 import { BillsChart } from './BillsChart';
@@ -368,7 +369,7 @@ interface BillsSectionProps {
   copy: Translator;
   hidden: boolean;
   now: Date;
-  onBillsChange: (bills: Bill[]) => void;
+  onBillsChange: (bills: Bill[]) => void | Promise<void>;
   settings: AffordiSettings;
 }
 
@@ -410,23 +411,24 @@ export function BillsSection({
   }
 
   function change(bill: Bill) {
-    onBillsChange(bills.map((saved) => (saved.id === bill.id ? bill : saved)));
+    void onBillsChange(bills.map((saved) => (saved.id === bill.id ? bill : saved)));
   }
 
   function save(bill: Bill) {
     const exists = bills.some((saved) => saved.id === bill.id);
-    onBillsChange(
+    const saving = onBillsChange(
       exists ? bills.map((saved) => (saved.id === bill.id ? bill : saved)) : [...bills, bill],
     );
-    // A new bill's amount may be for another month, which then shows it in place.
-    const added = exists ? undefined : bill.entries[0]?.month;
-    if (added !== undefined) setChosen(added);
-    dialog.saved(bill);
+    afterStorageSave(saving, () => {
+      // A new bill's amount may be for another month, which then shows it in place.
+      const added = exists ? undefined : bill.entries[0]?.month;
+      if (added !== undefined) setChosen(added);
+      dialog.saved(bill);
+    });
   }
 
   function remove(bill: Bill) {
-    onBillsChange(bills.filter((saved) => saved.id !== bill.id));
-    dialog.close();
+    afterStorageSave(onBillsChange(bills.filter((saved) => saved.id !== bill.id)), dialog.close);
   }
 
   return (

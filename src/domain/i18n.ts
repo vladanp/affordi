@@ -222,7 +222,7 @@ const english: Catalog = {
   'data.failure': 'Could not import this backup. Check the file and available device storage.',
   'data.replace': 'Replace data',
   'data.replaceDescription':
-    'This replaces all saved income, settings, bills and fixed costs on this device with the file: {{bills}} bills and {{costs}} fixed costs.',
+    'This replaces all saved income, settings, bills and fixed costs on this device with data from the file. Bills: {{bills}}. Fixed costs: {{costs}}.',
   'data.replaceTitle': 'Replace saved data?',
   'data.import': 'Import backup',
   'data.export': 'Export backup',

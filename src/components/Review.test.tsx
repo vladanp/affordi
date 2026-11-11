@@ -22,8 +22,130 @@ function saved() {
 function openSettings() {
   fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
 }
+function addFixedCost(name: string) {
+  fireEvent.click(screen.getByRole('button', { name: 'Add fixed cost' }));
+  const dialog = within(screen.getByRole('dialog'));
+  fireEvent.change(dialog.getByLabelText('Name'), { target: { value: name } });
+  fireEvent.change(dialog.getByLabelText('Amount each month'), { target: { value: '100' } });
+  fireEvent.click(dialog.getByRole('button', { name: 'Add' }));
+}
+
+function holdStorageWrites() {
+  let release: (() => void) | undefined;
+  vi.stubGlobal('navigator', {
+    languages: ['en-US'],
+    locks: {
+      request: (_name: string, write: () => void) =>
+        new Promise<void>((resolve) => {
+          release = () => {
+            write();
+            resolve();
+          };
+        }),
+    },
+  });
+  return () => release?.();
+}
 
 describe('review interaction regressions', () => {
+  it.each([
+    ['fixed cost', 'Add fixed cost', 'Amount each month', 'Rent', 'affordi.fixedCosts.v1'],
+    ['bill', 'Add bill', 'Amount', 'Power', 'affordi.bills.v1'],
+  ])(
+    'keeps a %s dialog open until the queued write completes',
+    async (_kind, add, amount, name, key) => {
+      saved();
+      const release = holdStorageWrites();
+      render(<App />);
+      fireEvent.click(screen.getByRole('link', { name: 'Monthly' }));
+      await screen.findByRole('heading', { name: 'What do you pay each month?' });
+      fireEvent.click(screen.getByRole('button', { name: add }));
+      const dialog = within(screen.getByRole('dialog'));
+      fireEvent.change(dialog.getByLabelText('Name'), { target: { value: name } });
+      fireEvent.change(dialog.getByLabelText(amount), { target: { value: '100' } });
+      fireEvent.click(dialog.getByRole('button', { name: 'Add' }));
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(localStorage.getItem(key)).toBeNull();
+      await act(async () => release());
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(localStorage.getItem(key)).toContain(name);
+    },
+  );
+  it('keeps Settings open until a queued storage write has completed', async () => {
+    saved();
+    const release = holdStorageWrites();
+    render(<App />);
+    openSettings();
+    fireEvent.change(screen.getByLabelText('Take home income'), { target: { value: '4000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(loadSettings()?.netIncome).toBe(3000);
+    await act(async () => release());
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(loadSettings()?.netIncome).toBe(4000);
+    openSettings();
+    expect(screen.getByLabelText('Take home income')).toHaveValue('4000');
+  });
+  it('retains edited settings for the visit when saving fails', () => {
+    saved();
+    render(<App />);
+    openSettings();
+    fireEvent.change(screen.getByLabelText('Take home income'), { target: { value: '4000' } });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('Quota exceeded');
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText(/Settings are available for this visit/)).toBeInTheDocument();
+    openSettings();
+    expect(screen.getByLabelText('Take home income')).toHaveValue('4000');
+  });
+  it('does not revive settings reset by another tab while a write was queued', async () => {
+    saved();
+    const release = holdStorageWrites();
+    render(<App />);
+    openSettings();
+    fireEvent.change(screen.getByLabelText('Take home income'), { target: { value: '4000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    localStorage.clear();
+    await act(async () => {
+      window.dispatchEvent(new StorageEvent('storage', { key: null }));
+      release();
+    });
+    expect(loadSettings()).toBeNull();
+    expect(screen.getByRole('button', { name: 'Start calculating' })).toBeInTheDocument();
+  });
+  it('keeps visit-only edits and retries all unsaved records when storage recovers', async () => {
+    render(<App />);
+    const blocked = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('Quota exceeded');
+    });
+    fireEvent.change(screen.getByLabelText('Take home income'), { target: { value: '3000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Start calculating' }));
+    openSettings();
+    fireEvent.change(screen.getByLabelText('Take home income'), { target: { value: '4000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    openSettings();
+    fireEvent.change(screen.getByLabelText('Take home income'), { target: { value: '5000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Monthly' }));
+    await screen.findByRole('heading', { name: 'What do you pay each month?' });
+    addFixedCost('Rent');
+    addFixedCost('Phone');
+    expect(screen.getByRole('button', { name: 'Edit Rent' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit Phone' })).toBeInTheDocument();
+    blocked.mockRestore();
+    openSettings();
+    expect(screen.getByLabelText('Take home income')).toHaveValue('4000');
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(loadSettings()?.netIncome).toBe(4000);
+    addFixedCost('Water');
+    expect(JSON.parse(localStorage.getItem('affordi.fixedCosts.v1')!).fixedCosts).toMatchObject([
+      { name: 'Rent' },
+      { name: 'Phone' },
+      { name: 'Water' },
+    ]);
+  });
   it('preserves income and an entered price while changing language, and translates existing errors', () => {
     saved();
     render(<App />);

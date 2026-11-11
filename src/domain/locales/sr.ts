@@ -13,7 +13,7 @@ const serbian: Catalog = {
   'data.failure': 'Uvoz rezervne kopije nije uspeo. Proverite datoteku i slobodan prostor.',
   'data.replace': 'Zameni podatke',
   'data.replaceDescription':
-    'Datoteka će zameniti sve sačuvane prihode, podešavanja, račune i fiksne troškove na ovom uređaju: {{bills}} računa i {{costs}} fiksnih troškova.',
+    'Datoteka će zameniti sve sačuvane prihode, podešavanja, račune i fiksne troškove na ovom uređaju. Računi: {{bills}}. Fiksni troškovi: {{costs}}.',
   'data.replaceTitle': 'Zameniti sačuvane podatke?',
   'data.import': 'Uvezi rezervnu kopiju',
   'data.export': 'Izvezi rezervnu kopiju',
