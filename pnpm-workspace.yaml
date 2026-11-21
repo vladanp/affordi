@@ -1,11 +1,85 @@
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
-  # Exact versions adopted before the seven day cutoff for an advisory fix the owner asked for.
-  # Remove each entry once it ages past the cutoff.
-  - '@isaacs/nonrecursive-glob-match@1.0.3'
-  - 'glob@14.0.3'
-  - 'minimatch@11.0.3'
-  - 'path-scurry@3.0.0'
+  # Exact releases adopted for the owner-requested latest dependency update.
+  - 'lucide-react@1.77.0'
+  - '@testing-library/jest-dom@8.0.0'
+  - '@vitest/coverage-v8@5.1.1'
+  - 'fallow@3.45.0'
+  - 'oxfmt@0.79.0'
+  - 'oxlint@1.94.0'
+  - 'oxlint-tsgolint@7.0.2008'
+  - 'semantic-release@26.0.1'
+  - 'vitest@5.1.1'
+  - 'wrangler@4.166.0'
+  - '@cloudflare/kv-asset-handler@0.5.1'
+  - '@cloudflare/workerd-darwin-64@1.20261119.1'
+  - '@cloudflare/workerd-darwin-arm64@1.20261119.1'
+  - '@cloudflare/workerd-linux-64@1.20261119.1'
+  - '@cloudflare/workerd-linux-arm64@1.20261119.1'
+  - '@cloudflare/workerd-windows-64@1.20261119.1'
+  - '@cloudflare/workers-utils@0.56.0'
+  - '@fallow-cli/darwin-arm64@3.45.0'
+  - '@fallow-cli/darwin-x64@3.45.0'
+  - '@fallow-cli/linux-arm64-gnu@3.45.0'
+  - '@fallow-cli/linux-arm64-musl@3.45.0'
+  - '@fallow-cli/linux-x64-gnu@3.45.0'
+  - '@fallow-cli/linux-x64-musl@3.45.0'
+  - '@fallow-cli/win32-arm64-msvc@3.45.0'
+  - '@fallow-cli/win32-x64-msvc@3.45.0'
+  - '@oxfmt/binding-android-arm-eabi@0.79.0'
+  - '@oxfmt/binding-android-arm64@0.79.0'
+  - '@oxfmt/binding-darwin-arm64@0.79.0'
+  - '@oxfmt/binding-darwin-x64@0.79.0'
+  - '@oxfmt/binding-freebsd-x64@0.79.0'
+  - '@oxfmt/binding-linux-arm-gnueabihf@0.79.0'
+  - '@oxfmt/binding-linux-arm-musleabihf@0.79.0'
+  - '@oxfmt/binding-linux-arm64-gnu@0.79.0'
+  - '@oxfmt/binding-linux-arm64-musl@0.79.0'
+  - '@oxfmt/binding-linux-ppc64-gnu@0.79.0'
+  - '@oxfmt/binding-linux-riscv64-gnu@0.79.0'
+  - '@oxfmt/binding-linux-riscv64-musl@0.79.0'
+  - '@oxfmt/binding-linux-s390x-gnu@0.79.0'
+  - '@oxfmt/binding-linux-x64-gnu@0.79.0'
+  - '@oxfmt/binding-linux-x64-musl@0.79.0'
+  - '@oxfmt/binding-openharmony-arm64@0.79.0'
+  - '@oxfmt/binding-win32-arm64-msvc@0.79.0'
+  - '@oxfmt/binding-win32-ia32-msvc@0.79.0'
+  - '@oxfmt/binding-win32-x64-msvc@0.79.0'
+  - '@oxlint-tsgolint/darwin-arm64@7.0.2008'
+  - '@oxlint-tsgolint/darwin-x64@7.0.2008'
+  - '@oxlint-tsgolint/linux-arm64@7.0.2008'
+  - '@oxlint-tsgolint/linux-x64@7.0.2008'
+  - '@oxlint-tsgolint/win32-arm64@7.0.2008'
+  - '@oxlint-tsgolint/win32-x64@7.0.2008'
+  - '@oxlint/binding-android-arm-eabi@1.94.0'
+  - '@oxlint/binding-android-arm64@1.94.0'
+  - '@oxlint/binding-darwin-arm64@1.94.0'
+  - '@oxlint/binding-darwin-x64@1.94.0'
+  - '@oxlint/binding-freebsd-x64@1.94.0'
+  - '@oxlint/binding-linux-arm-gnueabihf@1.94.0'
+  - '@oxlint/binding-linux-arm-musleabihf@1.94.0'
+  - '@oxlint/binding-linux-arm64-gnu@1.94.0'
+  - '@oxlint/binding-linux-arm64-musl@1.94.0'
+  - '@oxlint/binding-linux-ppc64-gnu@1.94.0'
+  - '@oxlint/binding-linux-riscv64-gnu@1.94.0'
+  - '@oxlint/binding-linux-riscv64-musl@1.94.0'
+  - '@oxlint/binding-linux-s390x-gnu@1.94.0'
+  - '@oxlint/binding-linux-x64-gnu@1.94.0'
+  - '@oxlint/binding-linux-x64-musl@1.94.0'
+  - '@oxlint/binding-openharmony-arm64@1.94.0'
+  - '@oxlint/binding-win32-arm64-msvc@1.94.0'
+  - '@oxlint/binding-win32-ia32-msvc@1.94.0'
+  - '@oxlint/binding-win32-x64-msvc@1.94.0'
+  - '@vitest/mocker@5.1.1'
+  - '@vitest/spy@5.1.1'
+  - 'degenerator@7.0.2'
+  - 'get-uri@8.0.2'
+  - 'miniflare@5.20261119.0-beta'
+  - 'minimatch@11.0.9'
+  - 'pac-proxy-agent@9.1.1'
+  - 'pac-resolver@9.0.2'
+  - 'proxy-agent@8.0.3'
+  - 'workerd@1.20261119.1'
 trustPolicy: no-downgrade
 trustPolicyIgnoreAfter: 10080
 blockExoticSubdeps: true
@@ -14,21 +88,20 @@ overrides:
   # One version for the Sentry tracing inside lighthouse and react-doctor: the 2.x OpenTelemetry
   # packages accept the API only below 1.10.0.
   '@opentelemetry/api': 1.9.1
-  basic-ftp: 6.2.3
+  basic-ftp: 6.2.6
   handlebars: 4.7.10
-  lighthouse: 13.5.0
+  lighthouse: 13.6.0
   # Only these new majors fix GHSA-3g3m-2fjr-6pw4 and GHSA-g3hv-75wg-m249, and no dependent's range
   # reaches them yet. Both keep a CommonJS build with the same named exports. glob 7 in rimraf 3,
   # which Lighthouse CI uses to remove its own temporary profile, only tests that literal path,
   # which minimatch 11 still handles. Remove both once workbox-build and eslint reach them.
-  glob@>=9.0.0 <14.0.2: 14.0.3
-  minimatch@<11.0.1: 11.0.3
-  # miniflare pins undici exactly; 7.30.1 is the patch release that fixes its advisories.
-  miniflare>undici: 7.30.1
-  proxy-agent: 8.0.2
-  qs: 6.16.1
+  glob@>=9.0.0 <14.0.2: 14.0.6
+  minimatch@<11.0.1: 11.0.9
+  # miniflare pins undici exactly; 7.30.2 is the latest compatible patch release that fixes its advisories.
+  miniflare>undici: 7.30.2
+  proxy-agent: 8.0.3
+  qs: 6.17.1
   sharp: 0.35.5
-  tmp: 0.2.7
   uuid: 14.0.3
 allowBuilds:
   esbuild: true

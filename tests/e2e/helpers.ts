@@ -1,5 +1,17 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page } from '@playwright/test';
+import axe from 'axe-core';
+
+// Firefox 159 crashes when axe reads native ariaLabelledByElements during a scan.
+// Affordi uses aria-labelledby attributes, so keep every rule enabled and let axe
+// resolve those attributes instead. Remove this once the native getter is fixed.
+const firefoxAxeSource = `${axe.source}; axe.configure({
+  standards: {
+    ariaAttrs: {
+      'aria-labelledby': { type: 'idrefs', allowEmpty: true, global: true, prop: '' }
+    }
+  }
+});`;
 
 export async function completeSetup(page: Page) {
   await page.goto('/');
@@ -38,5 +50,7 @@ export async function waitForStillness(page: Page) {
 /** Audits the page with axe once it is still, so no text is caught part way through fading in. */
 export async function expectAccessible(page: Page) {
   await waitForStillness(page);
-  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  const firefox = page.context().browser()?.browserType().name() === 'firefox';
+  const builder = new AxeBuilder({ page, ...(firefox ? { axeSource: firefoxAxeSource } : {}) });
+  expect((await builder.analyze()).violations).toEqual([]);
 }
