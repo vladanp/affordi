@@ -259,7 +259,11 @@ export function ItemRow({
         </span>
       )}
       {notes.map((note) => (
-        <span className="item-details item-note" key={note}>
+        <span
+          aria-hidden={note === '\u00a0' || undefined}
+          className="item-details item-note"
+          key={note}
+        >
           {note}
         </span>
       ))}

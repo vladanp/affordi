@@ -14,7 +14,7 @@ import {
 import { averageMonthlyBills, type Bill } from '../domain/bills';
 import { costsCoverage, monthlyFixedCosts, type FixedCost } from '../domain/fixedCosts';
 import { createTranslator, type Translator } from '../domain/i18n';
-import type { WorkProgress } from '../domain/schedule';
+import { monthWorkProgress, type WorkProgress } from '../domain/schedule';
 import type { AffordiSettings } from '../domain/storage';
 import { HiddenAmount, HideAmountsButton } from './HiddenAmount';
 import { useNow } from './useNow';
@@ -128,8 +128,9 @@ export function Earnings({ bills, fixedCosts, settings, onHideAmountsChange }: E
   if (rates === null) return null;
 
   const { currency, language } = settings;
-  const today = calculateEarnedToday(settings, rates, now);
-  const month = calculateEarnedThisMonth(settings, rates, now);
+  const monthProgress = monthWorkProgress(settings, now);
+  const today = calculateEarnedToday(settings, rates, now, monthProgress);
+  const month = calculateEarnedThisMonth(settings, rates, now, monthProgress);
   // Bills count at their average month, beside the fixed costs still paid this month.
   const billsAverage = averageMonthlyBills(bills, now);
   const coverage = costsCoverage(month.amount, monthlyFixedCosts(fixedCosts, now) + billsAverage);

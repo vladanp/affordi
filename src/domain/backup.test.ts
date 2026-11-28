@@ -67,4 +67,40 @@ describe('on-device backups', () => {
     expect(restoreBackup(backup)).toBe(false);
     spy.mockRestore();
   });
+
+  it('normalizes legacy settings without schedule fields and preserves fixed cost cadences', () => {
+    const legacy = {
+      version: 1,
+      settings: {
+        netIncome: 3000,
+        payFrequency: 'monthly',
+        weeklyHours: 40,
+        workingDaysPerWeek: 5,
+        currency: 'EUR',
+      },
+      bills: [],
+      fixedCosts: [
+        {
+          id: 'ins',
+          name: 'Insurance',
+          amount: 1200,
+          frequency: 'yearly',
+          firstPayment: null,
+          lastPayment: null,
+        },
+      ],
+    };
+    const parsed = parseBackup(JSON.stringify(legacy));
+    expect(parsed).not.toBeNull();
+    expect(parsed?.settings).toMatchObject({
+      netIncome: 3000,
+      workStart: 540,
+      workEnd: 1020,
+      workDays: [1, 2, 3, 4, 5],
+      currency: 'EUR',
+      theme: 'system',
+      hideAmounts: false,
+    });
+    expect(parsed?.fixedCosts[0]).toMatchObject({ frequency: 'yearly', amount: 1200 });
+  });
 });

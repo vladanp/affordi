@@ -13,6 +13,7 @@
 }
 
 .field {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: start;
@@ -273,6 +274,7 @@
 }
 
 .field-error {
+  min-block-size: 1.35em;
   color: var(--color-danger);
   font-size: 0.8125rem;
   font-weight: 550;
@@ -359,15 +361,15 @@
     grid-column: 1 / -1;
   }
 }
-.field-error {
-  min-block-size: 1.35em;
-}
+
 .bill-row .field-error {
   min-block-size: 2.7em;
 }
+
 .field-error-empty {
   visibility: hidden;
 }
+
 .option-toggle {
   display: flex;
   align-items: center;
@@ -375,32 +377,38 @@
   min-block-size: 2.75rem;
   font-weight: 600;
 }
+
 .option-toggle input {
   inline-size: 1.25rem;
   block-size: 1.25rem;
   accent-color: var(--color-accent);
 }
+
 .day-schedules {
   display: grid;
   gap: 1.5rem;
 }
+
 .day-schedules > fieldset {
   border-top: 1px solid var(--color-line);
   padding-top: 1rem;
 }
-/* Validation occupies the inter-field space rather than making every resting form taller. */
-.field {
-  position: relative;
-}
-.field > .field-error {
+
+/*
+ * Resting forms stay compact by taking empty error slots out of flow, while visible
+ * errors return to flow so multi-line translations never overlap the next field's label.
+ */
+.field > .field-error.field-error-empty {
   position: absolute;
   inset-inline: 0;
   top: 100%;
   margin-top: 0.1rem;
 }
+
 .time-range .field {
   margin-bottom: 1rem;
 }
+
 .field[data-field='workDays'] {
   margin-bottom: 1.5rem;
 }

@@ -4,6 +4,12 @@ import type { Translator } from '../domain/i18n';
 import { withStorageLock } from '../domain/storageSync';
 import { SheetDialog } from './SheetDialog';
 
+const REVOKE_DELAY_MS = 60_000;
+
+function localDateStamp(now = new Date()): string {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
 function download() {
   const backup = createBackup();
   if (backup === null) return;
@@ -12,9 +18,9 @@ function download() {
   );
   const link = document.createElement('a');
   link.href = url;
-  link.download = `affordi-${new Date().toISOString().slice(0, 10)}.json`;
+  link.download = `affordi-${localDateStamp()}.json`;
   link.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  window.setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS);
 }
 
 export function DataDialog({ copy, onClose }: { copy: Translator; onClose: () => void }) {

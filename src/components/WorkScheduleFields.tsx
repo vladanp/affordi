@@ -133,18 +133,27 @@ export function WorkScheduleFields({
               value={values.workEnd}
             />
           </div>
-          <label className="field form-wide">
-            <span className="field-label">{copy.t('form.workBreak')}</span>
+          <div className="field form-wide">
+            <label className="field-label" htmlFor="workBreak">
+              {copy.t('form.workBreak')}
+            </label>
             <input
-              type="number"
-              min="0"
-              max="1439"
-              step="1"
+              aria-describedby={errors.workBreak === undefined ? undefined : 'workBreak-error'}
+              aria-invalid={errors.workBreak !== undefined}
+              autoComplete="off"
+              id="workBreak"
+              inputMode="numeric"
               name="workBreak"
-              value={values.workBreak}
               onChange={(event) => onTimeChange('workBreak', event.target.value)}
+              spellCheck={false}
+              type="text"
+              value={values.workBreak}
             />
-          </label>
+            <FieldError
+              error={errors.workBreak === undefined ? undefined : copy.t(errors.workBreak)}
+              id="workBreak-error"
+            />
+          </div>
         </>
       )}
       <label className="option-toggle form-wide">
@@ -188,20 +197,23 @@ export function WorkScheduleFields({
                       onChange={(name, value) => onDayChange(day, { ...hours, [name]: value })}
                     />
                   </div>
-                  <label className="field">
-                    <span className="field-label">{copy.t('form.workBreak')}</span>
+                  <div className="field">
+                    <label className="field-label" htmlFor={`workBreak-${day}`}>
+                      {copy.t('form.workBreak')}
+                    </label>
                     <input
+                      autoComplete="off"
+                      id={`workBreak-${day}`}
+                      inputMode="numeric"
                       name="workBreak"
-                      type="number"
-                      min="0"
-                      max="1439"
-                      step="1"
-                      value={hours.workBreak}
                       onChange={(event) =>
                         onDayChange(day, { ...hours, workBreak: event.target.value })
                       }
+                      spellCheck={false}
+                      type="text"
+                      value={hours.workBreak}
                     />
-                  </label>
+                  </div>
                 </fieldset>
               );
             })}

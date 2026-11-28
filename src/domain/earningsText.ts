@@ -1,24 +1,10 @@
 import { formatHoursAndMinutes } from './duration';
 import type { Translator } from './i18n';
+import { currencyDigits } from './locale';
 import { minutesLeft, type WorkProgress } from './schedule';
 
 const MAX_FRACTION_DIGITS = 6;
 const RATE_SIGNIFICANT_DIGITS = 2;
-
-const currencyDigits = new Map<string, number>();
-
-/** The fraction digits a currency normally shows, which browsers may report as 0 for dinars. */
-function standardDigits(currency: string, locale: string): number {
-  const key = `${locale}|${currency}`;
-  let digits = currencyDigits.get(key);
-  if (digits === undefined) {
-    digits =
-      new Intl.NumberFormat(locale, { style: 'currency', currency }).resolvedOptions()
-        .maximumFractionDigits ?? 2;
-    currencyDigits.set(key, digits);
-  }
-  return digits;
-}
 
 const fixedFormats = new Map<string, Intl.NumberFormat>();
 
@@ -42,7 +28,7 @@ function fixedFormat(currency: string, locale: string, digits: number): Intl.Num
  * stay legible, and never fewer fraction digits than the currency uses.
  */
 export function formatRate(value: number, currency: string, locale: string): string {
-  const standard = standardDigits(currency, locale);
+  const standard = currencyDigits(currency, locale);
   const needed = value > 0 ? RATE_SIGNIFICANT_DIGITS - 1 - Math.floor(Math.log10(value)) : standard;
   const digits = Math.min(Math.max(needed, standard), MAX_FRACTION_DIGITS);
   return fixedFormat(currency, locale, digits).format(value);
@@ -50,7 +36,7 @@ export function formatRate(value: number, currency: string, locale: string): str
 
 /** A total earned so far in the currency's usual precision, rounded down so it never runs ahead. */
 export function formatEarned(value: number, currency: string, locale: string): string {
-  const standard = standardDigits(currency, locale);
+  const standard = currencyDigits(currency, locale);
   const scale = 10 ** standard;
   // A small allowance keeps exact totals such as 0.29 from dropping a cent to float error.
   return fixedFormat(currency, locale, standard).format(Math.floor(value * scale + 1e-9) / scale);

@@ -94,6 +94,7 @@ export function describeResult(
   repeat: PriceRepeat,
   settings: AffordiSettings,
   now = new Date(),
+  disposable = false,
 ): PriceResult | null {
   if (price === null) return null;
   const comparison = priceComparison(price, repeat, settings);
@@ -112,7 +113,7 @@ export function describeResult(
     secondary: formatSecondaryDuration(workHours, settings, settings.language),
     repeatNote: repeat === 'once' ? null : describeRepeat(workHours, repeat, settings, copy),
     earnedBy: repeat === 'once' ? describeEarnedAt(workHours, settings, now, copy) : null,
-    share: copy.t('calculator.payContext', {
+    share: copy.t(disposable ? 'calculator.disposableContext' : 'calculator.payContext', {
       percentage: formatIncomePercentage(percentage, settings.language),
       period: copy.payPeriod(comparison.period),
     }),

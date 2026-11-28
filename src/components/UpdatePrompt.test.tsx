@@ -37,22 +37,35 @@ describe('UpdatePromptView', () => {
     expect(onDismiss).toHaveBeenCalledOnce();
   });
 
-  it('checks for updates hourly only while the app is visible and online', async () => {
+  it('checks for updates hourly and on wake only while visible and online, and cleans up', async () => {
     vi.useFakeTimers();
     const update = vi.fn(async () => undefined);
     const visibility = vi.spyOn(document, 'visibilityState', 'get');
     try {
-      scheduleUpdateChecks('/sw.js', undefined);
-      scheduleUpdateChecks('/sw.js', { update });
+      scheduleUpdateChecks('/sw.js', undefined)();
+      const stop = scheduleUpdateChecks('/sw.js', { update });
 
       visibility.mockReturnValue('hidden');
       await vi.advanceTimersByTimeAsync(UPDATE_CHECK_INTERVAL_MS);
       expect(update).not.toHaveBeenCalled();
 
+      // Returning to the foreground after an hour triggers a wake check immediately.
       visibility.mockReturnValue('visible');
       update.mockRejectedValueOnce(new Error('offline'));
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(update).toHaveBeenCalledTimes(1);
+
+      // Another visibility change within the same hour is throttled.
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(update).toHaveBeenCalledTimes(1);
+
       await vi.advanceTimersByTimeAsync(UPDATE_CHECK_INTERVAL_MS);
-      expect(update).toHaveBeenCalledOnce();
+      expect(update).toHaveBeenCalledTimes(2);
+
+      stop();
+      await vi.advanceTimersByTimeAsync(UPDATE_CHECK_INTERVAL_MS);
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(update).toHaveBeenCalledTimes(2);
     } finally {
       visibility.mockRestore();
       vi.clearAllTimers();

@@ -69,6 +69,7 @@
   flex-wrap: wrap;
   align-items: baseline;
   column-gap: 0.5rem;
+  min-block-size: calc(1.1em + 1.5rem);
 }
 
 .stat-total {
@@ -128,9 +129,7 @@
 .cost-breakdown {
   min-block-size: 2.8em;
 }
-.stat-amount-with-total {
-  min-block-size: calc(1.1em + 1.5rem);
-}
+
 .fixed-costs-loans .stat-note {
   min-block-size: 2.8em;
 }

@@ -55,22 +55,20 @@ export function Monthly({
         <HideAmountsButton copy={copy} hidden={hidden} onChange={onHideAmountsChange} />
       </div>
 
-      {
-        <div className="card-stack">
-          <CostCard
-            className="monthly-total"
-            copy={copy}
-            hidden={hidden}
-            label={copy.t('monthly.total')}
-            note={breakdown}
-            percentage={summary.percentage}
-            settings={settings}
-            value={summary.total}
-            workHours={summary.workHours}
-          />
-          <PayLeftCard copy={copy} hidden={hidden} payLeft={summary} settings={settings} />
-        </div>
-      }
+      <div className="card-stack">
+        <CostCard
+          className="monthly-total"
+          copy={copy}
+          hidden={hidden}
+          label={copy.t('monthly.total')}
+          note={breakdown}
+          percentage={summary.percentage}
+          settings={settings}
+          value={summary.total}
+          workHours={summary.workHours}
+        />
+        <PayLeftCard copy={copy} hidden={hidden} payLeft={summary} settings={settings} />
+      </div>
 
       <div className="monthly-jumps" role="group" aria-label={copy.t('monthly.title')}>
         {(['bill-list-title', 'fixed-cost-list-title'] as const).map((id, index) => (

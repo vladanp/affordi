@@ -272,20 +272,44 @@ const fieldOrder = [
   'currency',
   'workStart',
   'workEnd',
+  'workBreak',
   'workDays',
   'language',
   'theme',
 ] as const satisfies readonly (keyof FormValues)[];
 
+/** Whole non-negative break minutes, with blank treated as 0 and invalid input rejected. */
+function parseBreakMinutes(value: string): number | null {
+  const trimmed = value.trim();
+  if (trimmed === '') return 0;
+  if (!/^\d+$/.test(trimmed)) return null;
+  const minutes = Number(trimmed);
+  return Number.isSafeInteger(minutes) ? minutes : null;
+}
+
+function shiftLengthMinutes(start: number, end: number): number {
+  return end > start ? end - start : end + 24 * 60 - start;
+}
+
 function scheduleErrors(
   workStart: number | null,
   workEnd: number | null,
+  workBreak: number | null,
   workDays: readonly Weekday[],
 ): ScheduleErrors {
   const errors: ScheduleErrors = {};
   if (workStart === null) errors.workStart = 'validation.workStart';
   if (workEnd === null || (workStart !== null && workEnd === workStart)) {
     errors.workEnd = 'validation.workEnd';
+  }
+  if (
+    workBreak === null ||
+    (workStart !== null &&
+      workEnd !== null &&
+      workEnd !== workStart &&
+      workBreak >= shiftLengthMinutes(workStart, workEnd))
+  ) {
+    errors.workBreak = 'validation.workBreak';
   }
   if (workDays.length === 0) errors.workDays = 'validation.workDays';
   return errors;
@@ -296,14 +320,14 @@ function scheduleFromValues(values: FormValues) {
     day,
     workStart: parseTimeInput(values.dayHours[day]!.workStart, 'start'),
     workEnd: parseTimeInput(values.dayHours[day]!.workEnd, 'end'),
-    workBreak: Number(values.dayHours[day]!.workBreak),
+    workBreak: parseBreakMinutes(values.dayHours[day]!.workBreak),
   }));
   const first = values.customHours ? workSessions[0] : undefined;
   return {
     workStart: first?.workStart ?? parseTimeInput(values.workStart, 'start'),
     workEnd: first?.workEnd ?? parseTimeInput(values.workEnd, 'end'),
     workDays: values.workDays,
-    workBreak: first?.workBreak ?? Number(values.workBreak),
+    workBreak: first?.workBreak ?? parseBreakMinutes(values.workBreak),
     ...(values.customHours ? { workSessions } : {}),
   };
 }
@@ -342,7 +366,7 @@ function validate(
     ? values.workDays.length === 0
       ? { workDays: 'validation.workDays' }
       : {}
-    : scheduleErrors(schedule.workStart, schedule.workEnd, schedule.workDays);
+    : scheduleErrors(schedule.workStart, schedule.workEnd, schedule.workBreak, schedule.workDays);
 
   if (netIncome === null || netIncome <= 0) errors.netIncome = 'validation.income';
   for (const field of choiceFields) {
@@ -379,7 +403,6 @@ export function IncomeForm(props: IncomeFormProps) {
     return { ...valuesFromSettings(defaults), netIncome: '' };
   });
   const [errors, setErrors] = useState<FormErrors>({});
-  const [pendingCurrency, setPendingCurrency] = useState<AffordiSettings | null>(null);
   const copy = createTranslator(values.language);
 
   function update(name: TextValueName, value: string) {
@@ -391,6 +414,7 @@ export function IncomeForm(props: IncomeFormProps) {
     }
     setValues((current) => changeFormValue(current, name, value));
     clearError(name);
+    if (name === 'workStart' || name === 'workEnd') clearError('workBreak');
   }
 
   function updateWorkDays(workDays: Weekday[]) {
@@ -409,9 +433,7 @@ export function IncomeForm(props: IncomeFormProps) {
     const result = validate(values, copy, hideAmounts);
     setErrors(result.errors);
     if (result.settings !== undefined) {
-      if (props.mode === 'edit' && result.settings.currency !== props.initialValues.currency)
-        setPendingCurrency(result.settings);
-      else props.onSubmit(result.settings);
+      props.onSubmit(result.settings);
       return;
     }
 
@@ -422,35 +444,6 @@ export function IncomeForm(props: IncomeFormProps) {
         : firstControl(event.currentTarget, firstInvalidName ?? '');
     if (firstInvalidControl instanceof HTMLElement) firstInvalidControl.focus();
   }
-
-  if (pendingCurrency !== null && props.mode === 'edit')
-    return (
-      <div className="reset-view">
-        <h3>{copy.t('currency.change')}</h3>
-        <p>
-          {copy.t('currency.description', {
-            from: props.initialValues.currency,
-            to: pendingCurrency.currency,
-          })}
-        </p>
-        <div className="form-actions">
-          <button
-            type="button"
-            className="button button-quiet"
-            onClick={() => setPendingCurrency(null)}
-          >
-            {copy.t('form.cancel')}
-          </button>
-          <button
-            type="button"
-            className="button button-primary"
-            onClick={() => props.onSubmit(pendingCurrency)}
-          >
-            {copy.t('currency.change')}
-          </button>
-        </div>
-      </div>
-    );
 
   return (
     <form

@@ -16,15 +16,25 @@ function openAsModal(node: HTMLDialogElement | null) {
 
 interface SheetDialogProps {
   children: ReactNode;
+  className?: string;
   closeLabel: string;
   /** What Escape does first, such as leaving a question, before it closes the dialog. */
   onBack: (() => void) | null;
   onClose: () => void;
   title: string;
+  titleId?: string;
 }
 
 /** A modal dialog that rises from the bottom on a phone. */
-export function SheetDialog({ children, closeLabel, onBack, onClose, title }: SheetDialogProps) {
+export function SheetDialog({
+  children,
+  className,
+  closeLabel,
+  onBack,
+  onClose,
+  title,
+  titleId = 'sheet-title',
+}: SheetDialogProps) {
   function handleCancel(event: SyntheticEvent<HTMLDialogElement>) {
     event.preventDefault();
     if (onBack === null) onClose();
@@ -37,15 +47,15 @@ export function SheetDialog({ children, closeLabel, onBack, onClose, title }: Sh
 
   return (
     <dialog
-      aria-labelledby="sheet-title"
-      className="sheet-dialog"
+      aria-labelledby={titleId}
+      className={className === undefined ? 'sheet-dialog' : `sheet-dialog ${className}`}
       onCancel={handleCancel}
       onKeyDown={handleKeyDown}
       ref={openAsModal}
     >
       <div className="dialog-inner">
         <div className="dialog-header">
-          <h2 id="sheet-title">{title}</h2>
+          <h2 id={titleId}>{title}</h2>
           <button aria-label={closeLabel} className="icon-button" onClick={onClose} type="button">
             <X aria-hidden="true" size={20} strokeWidth={1.75} />
           </button>
@@ -59,6 +69,46 @@ export function SheetDialog({ children, closeLabel, onBack, onClose, title }: Sh
 /** Moves focus to the safe choice when the question appears. A stable callback runs only once. */
 function focusOnMount(node: HTMLButtonElement | null) {
   node?.focus();
+}
+
+interface ConfirmViewProps {
+  cancelLabel: string;
+  confirmLabel: string;
+  confirmVariant: 'danger' | 'primary';
+  description: string;
+  error?: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+/** A confirmation step inside a sheet, focusing the safe cancel action on mount. */
+export function ConfirmView({
+  cancelLabel,
+  confirmLabel,
+  confirmVariant,
+  description,
+  error,
+  onCancel,
+  onConfirm,
+}: ConfirmViewProps) {
+  return (
+    <div className="reset-view">
+      <p className="reset-copy">{description}</p>
+      {error !== undefined && (
+        <p className="field-error" role="status">
+          {error}
+        </p>
+      )}
+      <div className="form-actions">
+        <button className="button button-quiet" onClick={onCancel} ref={focusOnMount} type="button">
+          {cancelLabel}
+        </button>
+        <button className={`button button-${confirmVariant}`} onClick={onConfirm} type="button">
+          {confirmLabel}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 interface DeleteConfirmationProps {
@@ -75,17 +125,14 @@ export function DeleteConfirmation({
   onKeep,
 }: DeleteConfirmationProps) {
   return (
-    <div className="reset-view">
-      <p className="reset-copy">{description}</p>
-      <div className="form-actions">
-        <button className="button button-quiet" onClick={onKeep} ref={focusOnMount} type="button">
-          {copy.t('fixedCosts.keep')}
-        </button>
-        <button className="button button-danger" onClick={onDelete} type="button">
-          {copy.t('fixedCosts.delete')}
-        </button>
-      </div>
-    </div>
+    <ConfirmView
+      cancelLabel={copy.t('fixedCosts.keep')}
+      confirmLabel={copy.t('fixedCosts.delete')}
+      confirmVariant="danger"
+      description={description}
+      onCancel={onKeep}
+      onConfirm={onDelete}
+    />
   );
 }
 

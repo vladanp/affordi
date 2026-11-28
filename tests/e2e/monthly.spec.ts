@@ -108,6 +108,39 @@ test.describe('Affordi monthly page', () => {
     await expect(page.locator('.earnings-fixed-costs .live-amount')).toHaveText('€950.00');
   });
 
+  test('supports quarterly and yearly fixed cost billing cadences', async ({ page }) => {
+    await completeSetup(page);
+    await openMonthly(page);
+
+    await page.getByRole('button', { name: 'Add fixed cost' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Add a fixed cost' });
+    await dialog.getByRole('textbox', { name: 'Name' }).fill('Car insurance');
+    await dialog.getByRole('radio', { name: 'Yearly' }).check();
+    await dialog.getByRole('textbox', { name: 'Amount each year' }).fill('1200');
+    await dialog.getByRole('button', { name: 'Add', exact: true }).click();
+    await expect(dialog).toBeHidden();
+
+    const list = page.getByRole('list', { name: 'Fixed costs' });
+    await expect(list.getByRole('listitem')).toHaveText([
+      /^Car insurance€100\.005 hours and 47 minutes of work3%.*€1,200\.00 a year$/,
+    ]);
+    await expect(page.locator('.monthly-total')).toContainText('€100.00');
+    await expectAccessible(page);
+
+    await page.reload();
+    await page.getByRole('button', { name: 'Edit Car insurance' }).click();
+    const edit = page.getByRole('dialog', { name: 'Edit fixed cost' });
+    await expect(edit.getByRole('radio', { name: 'Yearly' })).toBeChecked();
+    await edit.getByRole('radio', { name: 'Quarterly' }).check();
+    await edit.getByRole('textbox', { name: 'Amount every 3 months' }).fill('360');
+    await edit.getByRole('button', { name: 'Save' }).click();
+    await expect(edit).toBeHidden();
+    await expect(list.getByRole('listitem')).toHaveText([
+      /^Car insurance€120\.006 hours and 56 minutes of work4%.*€360\.00 every 3 months$/,
+    ]);
+    await expect(page.locator('.monthly-total')).toContainText('€120.00');
+  });
+
   test('enters bills month by month and averages them', async ({ page }) => {
     await completeSetup(page);
     await openMonthly(page);

@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 import { scheduleUpdateChecks } from './updateChecks';
@@ -36,7 +36,20 @@ export function UpdatePromptView({
 }
 
 function RegisteredUpdatePrompt({ language }: { language: Locale }) {
-  const registration = useRegisterSW({ onRegisteredSW: scheduleUpdateChecks });
+  const stopChecksRef = useRef<(() => void) | null>(null);
+  useEffect(
+    () => () => {
+      stopChecksRef.current?.();
+      stopChecksRef.current = null;
+    },
+    [],
+  );
+  const registration = useRegisterSW({
+    onRegisteredSW(scriptUrl, swRegistration) {
+      stopChecksRef.current?.();
+      stopChecksRef.current = scheduleUpdateChecks(scriptUrl, swRegistration);
+    },
+  });
   const [needRefresh, setNeedRefresh] = registration.needRefresh;
 
   return (

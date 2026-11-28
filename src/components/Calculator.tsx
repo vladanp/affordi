@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type RefObject } from 'rea
 import type { Bill } from '../domain/bills';
 import type { FixedCost } from '../domain/fixedCosts';
 import { summarizeMonth } from '../domain/monthly';
-import { CalendarClock, Repeat } from 'lucide-react';
+import { CalendarClock, Repeat, X } from 'lucide-react';
 
 import { isPriceRepeat, priceRepeats, type PriceRepeat } from '../domain/calculations';
 import { createTranslator, type Translator } from '../domain/i18n';
@@ -144,7 +144,9 @@ function calculateContext(
   const resultSettings: AffordiSettings = disposable
     ? { ...settings, netIncome: left, payFrequency: 'monthly' }
     : settings;
-  const result = noDisposable ? null : describeResult(price, repeat, resultSettings, now);
+  const result = noDisposable
+    ? null
+    : describeResult(price, repeat, resultSettings, now, disposable);
   return { result, noDisposable };
 }
 
@@ -155,8 +157,22 @@ function dismissPrice(event: FormEvent<HTMLFormElement>, result: HTMLDivElement 
   result?.scrollIntoView?.({ block: 'nearest' });
 }
 
+function describeLiveAnnouncement(
+  priceError: boolean,
+  noDisposable: boolean,
+  price: number | null,
+  result: PriceResult | null,
+  copy: ReturnType<typeof createTranslator>,
+): string {
+  if (priceError) return copy.t('calculator.priceError');
+  if (noDisposable && price !== null) return copy.t('calculator.noDisposable');
+  return result === null ? '' : describeAnnouncement(result);
+}
+
 function useCalculator({ settings, bills = emptyBills, fixedCosts = emptyCosts }: CalculatorProps) {
   const [disposable, setDisposable] = useState(false);
+  const hasCosts = bills.length > 0 || fixedCosts.length > 0;
+  const effectiveDisposable = disposable && hasCosts;
   const priceDraft = useDecimalInput('', settings.language);
   const itemPrice = priceDraft.value;
   const setItemPrice = priceDraft.setValue;
@@ -172,17 +188,17 @@ function useCalculator({ settings, bills = emptyBills, fixedCosts = emptyCosts }
     settings,
     bills,
     fixedCosts,
-    disposable,
+    effectiveDisposable,
     now,
   );
   const priceError =
     itemPrice.trim() !== '' && (price === null || price < 0 || (!noDisposable && result === null));
-  let announcement = result === null ? '' : describeAnnouncement(result);
-  if (priceError) announcement = copy.t('calculator.priceError');
+  const announcement = describeLiveAnnouncement(priceError, noDisposable, price, result, copy);
   const spokenResult = useDelayedValue(announcement, ANNOUNCEMENT_DELAY_MS);
 
   return {
-    disposable,
+    disposable: effectiveDisposable,
+    hasCosts,
     setDisposable,
     itemPrice,
     setItemPrice,
@@ -200,9 +216,10 @@ function useCalculator({ settings, bills = emptyBills, fixedCosts = emptyCosts }
 }
 
 export function Calculator(props: CalculatorProps) {
-  const { settings, bills = emptyBills, fixedCosts = emptyCosts } = props;
+  const { settings } = props;
   const {
     disposable,
+    hasCosts,
     setDisposable,
     itemPrice,
     setItemPrice,
@@ -245,6 +262,19 @@ export function Calculator(props: CalculatorProps) {
             type="text"
             value={itemPrice}
           />
+          {itemPrice !== '' && (
+            <button
+              aria-label={copy.t('calculator.clearPrice')}
+              className="price-clear-button"
+              onClick={() => {
+                setItemPrice('');
+                priceInputRef.current?.focus();
+              }}
+              type="button"
+            >
+              <X aria-hidden="true" size={18} strokeWidth={2} />
+            </button>
+          )}
           <button
             aria-controls={result === null ? undefined : 'calculator-result'}
             className="price-done-button"
@@ -266,7 +296,7 @@ export function Calculator(props: CalculatorProps) {
         </small>
       </form>
 
-      {(bills.length > 0 || fixedCosts.length > 0) && (
+      {hasCosts && (
         <label className="option-toggle disposable-toggle">
           <input
             type="checkbox"

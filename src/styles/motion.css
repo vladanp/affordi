@@ -90,11 +90,19 @@
     animation: breathe 2.4s ease-in-out infinite;
   }
 
+  .loading-indicator {
+    animation: spin 0.9s linear infinite;
+  }
+
   /* Buttons, tabs, and choices give a little as they are pressed. */
-  :is(.pill-button, .icon-button, .income-visibility-button, .text-button, .page-nav a):active:not(
-      :disabled,
-      [aria-disabled='true']
-    ),
+  :is(
+      .pill-button,
+      .icon-button,
+      .income-visibility-button,
+      .price-clear-button,
+      .text-button,
+      .page-nav a
+    ):active:not(:disabled, [aria-disabled='true']),
   :is(.segment, .day-chip):active > span {
     scale: 0.95;
   }
@@ -168,6 +176,12 @@
 @keyframes breathe {
   50% {
     opacity: 0.35;
+  }
+}
+
+@keyframes spin {
+  to {
+    rotate: 1turn;
   }
 }
 

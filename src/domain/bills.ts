@@ -154,14 +154,6 @@ export function billStats(bill: Bill, now: Date): BillStats {
   return { average, latest: bill.entries.at(-1) ?? null };
 }
 
-/** Bills with the highest average first, then those without recent amounts. */
-export function sortBills(bills: readonly Bill[], now: Date): Bill[] {
-  return bills.toSorted(
-    (first, second) =>
-      (billStats(second, now).average ?? -1) - (billStats(first, now).average ?? -1),
-  );
-}
-
 /** All bills added up for one month, or null when no bill has an amount for it. */
 export interface MonthTotal {
   month: string;
@@ -185,7 +177,7 @@ export function monthlyBillTotals(
   });
 }
 
-/** What bills cost in a typical month: each bill's recent average, added up. */
+/** What bills cost in a typical month: the average of recorded monthly totals in the last year. */
 export function averageMonthlyBills(bills: readonly Bill[], now: Date): number {
   const recorded = monthlyBillTotals(bills, now).flatMap(({ total }) =>
     total === null ? [] : [total],

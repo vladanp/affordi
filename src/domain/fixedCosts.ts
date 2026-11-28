@@ -21,16 +21,37 @@ const MONTHS_PER_YEAR = 12;
 /** A year of 52 weeks, the same year the hourly rate and the earnings page use. */
 const DAYS_PER_YEAR = 52 * 7;
 
-/** A cost paid every month, such as rent or a loan. Loans can name their first and last payment. */
+export const fixedCostFrequencies = ['monthly', 'quarterly', 'yearly'] as const;
+
+export type FixedCostFrequency = (typeof fixedCostFrequencies)[number];
+
+const MONTHS_PER_CADENCE: Record<FixedCostFrequency, number> = {
+  monthly: 1,
+  quarterly: 3,
+  yearly: MONTHS_PER_YEAR,
+};
+
+function isFixedCostFrequency(value: unknown): value is FixedCostFrequency {
+  return typeof value === 'string' && fixedCostFrequencies.some((option) => option === value);
+}
+
+/** A cost paid on a regular cadence, such as rent, annual insurance, or a loan. */
 export interface FixedCost {
   id: string;
   name: string;
-  /** The amount paid each month, in the settings currency. */
+  /** The amount paid each billing period, in the settings currency. */
   amount: number;
+  /** How often the amount is paid; omitted means every month. */
+  frequency?: FixedCostFrequency;
   /** The month of the first payment as YYYY-MM, or null when it is not known. */
   firstPayment: string | null;
   /** The month of the last payment as YYYY-MM, or null for a cost that keeps going. */
   lastPayment: string | null;
+}
+
+/** The monthly equivalent of a fixed cost's billed amount. */
+export function monthlyEquivalent(cost: Pick<FixedCost, 'amount' | 'frequency'>): number {
+  return cost.amount / MONTHS_PER_CADENCE[cost.frequency ?? 'monthly'];
 }
 
 function isMonthOrNull(value: unknown): value is string | null {
@@ -55,12 +76,14 @@ export function isFixedCost(value: unknown): value is FixedCost {
     return false;
   }
 
+  const frequency = 'frequency' in value ? value.frequency : undefined;
   return (
     isItemId(value.id) &&
     isItemName(value.name) &&
     typeof value.amount === 'number' &&
     Number.isFinite(value.amount) &&
     value.amount > 0 &&
+    (frequency === undefined || isFixedCostFrequency(frequency)) &&
     isMonthOrNull(value.firstPayment) &&
     isMonthOrNull(value.lastPayment) &&
     inPaymentOrder(value.firstPayment, value.lastPayment)
@@ -70,6 +93,20 @@ export function isFixedCost(value: unknown): value is FixedCost {
 /** Costs saved before first payments existed have none. */
 function withFirstPayment(value: unknown): unknown {
   return typeof value === 'object' && value !== null ? { firstPayment: null, ...value } : value;
+}
+
+/** Returns a clean FixedCost record, omitting the default monthly cadence to keep saves compact. */
+export function normalizeFixedCost(value: FixedCost): FixedCost {
+  return {
+    id: value.id,
+    name: value.name,
+    amount: value.amount,
+    ...(value.frequency !== undefined && value.frequency !== 'monthly'
+      ? { frequency: value.frequency }
+      : {}),
+    firstPayment: value.firstPayment,
+    lastPayment: value.lastPayment,
+  };
 }
 
 /** Reads saved costs defensively, dropping any malformed or repeated entry. */
@@ -83,13 +120,7 @@ export function loadFixedCosts(): FixedCost[] {
     const value = withFirstPayment(entry);
     if (!isFixedCost(value) || ids.has(value.id)) continue;
     ids.add(value.id);
-    costs.push({
-      id: value.id,
-      name: value.name,
-      amount: value.amount,
-      firstPayment: value.firstPayment,
-      lastPayment: value.lastPayment,
-    });
+    costs.push(normalizeFixedCost(value));
   }
   return costs.slice(0, MAX_FIXED_COSTS);
 }
@@ -98,7 +129,7 @@ export function saveFixedCosts(costs: readonly FixedCost[]): boolean {
   return (
     costs.length <= MAX_FIXED_COSTS &&
     costs.every(isFixedCost) &&
-    writeRecord(FIXED_COSTS_STORAGE_KEY, 'fixedCosts', costs)
+    writeRecord(FIXED_COSTS_STORAGE_KEY, 'fixedCosts', costs.map(normalizeFixedCost))
   );
 }
 
@@ -108,26 +139,30 @@ export function isPaidOff(cost: FixedCost, now: Date): boolean {
   return last !== null && isMonthBefore(last, now);
 }
 
-/** A first and last payment bound the inclusive months in which a cost is due. */
-export function isFixedCostDue(cost: FixedCost, now: Date): boolean {
-  const current = monthValue(monthOf(now));
-  return !isPaidOff(cost, now) && (cost.firstPayment === null || cost.firstPayment <= current);
+/** Whether a cost's first payment is still in a future month. */
+export function isScheduled(cost: FixedCost, now: Date): boolean {
+  return cost.firstPayment !== null && cost.firstPayment > monthValue(monthOf(now));
 }
 
-/** Costs still paid this month, largest first, then those already paid off. */
+/** A first and last payment bound the inclusive months in which a cost is due. */
+export function isFixedCostDue(cost: FixedCost, now: Date): boolean {
+  return !isPaidOff(cost, now) && !isScheduled(cost, now);
+}
+
+/** Costs still paid this month, largest monthly equivalent first, then scheduled and paid off. */
 export function sortFixedCosts(costs: readonly FixedCost[], now: Date): FixedCost[] {
   return costs.toSorted(
     (first, second) =>
       Number(isFixedCostDue(second, now)) - Number(isFixedCostDue(first, now)) ||
       Number(isPaidOff(first, now)) - Number(isPaidOff(second, now)) ||
-      second.amount - first.amount,
+      monthlyEquivalent(second) - monthlyEquivalent(first),
   );
 }
 
 /** What the costs still paid this month add up to. */
 export function monthlyFixedCosts(costs: readonly FixedCost[], now: Date): number {
   return costs.reduce(
-    (total, cost) => (isFixedCostDue(cost, now) ? total + cost.amount : total),
+    (total, cost) => (isFixedCostDue(cost, now) ? total + monthlyEquivalent(cost) : total),
     0,
   );
 }
@@ -164,9 +199,10 @@ export interface PaymentProgress {
 export function paymentProgress(cost: FixedCost, now: Date): PaymentProgress {
   const first = savedMonth(cost.firstPayment);
   const last = savedMonth(cost.lastPayment);
+  const perMonth = monthlyEquivalent(cost);
   return {
-    paid: first === null ? null : paymentsMade(first, last, now) * cost.amount,
-    left: last === null ? null : paymentsLeft(first, last, now) * cost.amount,
+    paid: first === null ? null : paymentsMade(first, last, now) * perMonth,
+    left: last === null ? null : paymentsLeft(first, last, now) * perMonth,
   };
 }
 

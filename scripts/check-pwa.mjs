@@ -55,6 +55,12 @@ assert(
   manifest.icons?.some((icon) => icon.purpose === 'maskable'),
   'Manifest lacks maskable icon',
 );
+assert(
+  ['/#cost', '/#earnings', '/#monthly'].every((url) =>
+    manifest.shortcuts?.some((shortcut) => shortcut.url === url),
+  ),
+  'Manifest lacks app shortcuts for Cost, Earnings, and Monthly',
+);
 
 // iOS keeps a home screen icon by its URL, so the touch icon must carry a content hash.
 const appleTouchIcon = html.match(

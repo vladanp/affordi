@@ -269,6 +269,31 @@ function useSettingsStorage() {
   };
 }
 
+function useDialogFocus<T extends HTMLElement>() {
+  const [open, setOpen] = useState(false);
+  const openerRef = useRef<T | null>(null);
+  const restoreRef = useRef(false);
+
+  useEffect(() => {
+    if (open || !restoreRef.current) return;
+    restoreRef.current = false;
+    const opener = openerRef.current;
+    if (opener?.isConnected === true) opener.focus();
+  }, [open]);
+
+  function openFrom(opener?: T) {
+    if (opener !== undefined) openerRef.current = opener;
+    setOpen(true);
+  }
+
+  function closeWithFocus() {
+    restoreRef.current = true;
+    setOpen(false);
+  }
+
+  return { open, setOpen, openerRef, openFrom, closeWithFocus };
+}
+
 function useAppState() {
   const {
     settings,
@@ -282,12 +307,10 @@ function useAppState() {
   } = useSettingsStorage();
   const fixedCosts = useSavedList(loadFixedCosts, saveFixedCosts, storedSettings);
   const bills = useSavedList(loadBills, saveBills, storedSettings, mergeBill);
-  const [showData, setShowData] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const dataDialog = useDialogFocus<HTMLElement>();
+  const settingsDialog = useDialogFocus<HTMLButtonElement>();
   const [previewLanguage, setPreviewLanguage] = useState<Locale | null>(null);
   const [previewTheme, setPreviewTheme] = useState<AffordiSettings['theme'] | null>(null);
-  const settingsButtonRef = useRef<HTMLButtonElement>(null);
-  const restoreSettingsFocusRef = useRef(false);
   const language = useLanguage(previewLanguage, settings?.language);
   const theme = previewTheme ?? settings?.theme ?? 'system';
   const copy = createTranslator(language);
@@ -297,11 +320,12 @@ function useAppState() {
     applyTheme(theme);
   }, [language, theme]);
 
-  useEffect(() => {
-    if (showSettings || !restoreSettingsFocusRef.current) return;
-    restoreSettingsFocusRef.current = false;
-    settingsButtonRef.current?.focus();
-  }, [showSettings]);
+  const {
+    open: showSettings,
+    setOpen: setShowSettings,
+    openerRef: settingsButtonRef,
+    closeWithFocus: closeSettingsDialog,
+  } = settingsDialog;
 
   useEffect(() => {
     const refresh = (event: StorageEvent) => {
@@ -315,13 +339,12 @@ function useAppState() {
     };
     window.addEventListener('storage', refresh);
     return () => window.removeEventListener('storage', refresh);
-  }, [showSettings, setSettings, storedSettings]);
+  }, [showSettings, setSettings, setShowSettings, storedSettings]);
 
   function dismissSettings() {
     setPreviewLanguage(null);
     setPreviewTheme(null);
-    restoreSettingsFocusRef.current = true;
-    setShowSettings(false);
+    closeSettingsDialog();
   }
 
   function closeSettings() {
@@ -333,19 +356,22 @@ function useAppState() {
     persist(nextSettings, dismissSettings);
   }
 
-  function reset(): boolean {
-    if (!clearSettings()) {
-      setStorageNotice(true);
-      return false;
-    }
-
-    setPreviewLanguage(null);
-    setPreviewTheme(null);
-    forgetSettings();
-    fixedCosts.forget();
-    bills.forget();
-    setShowSettings(false);
-    return true;
+  function reset(): boolean | Promise<boolean> {
+    let cleared = false;
+    const done = withStorageLock(() => {
+      if (!clearSettings()) {
+        setStorageNotice(true);
+        return;
+      }
+      cleared = true;
+      setPreviewLanguage(null);
+      setPreviewTheme(null);
+      forgetSettings();
+      fixedCosts.forget();
+      bills.forget();
+      setShowSettings(false);
+    });
+    return done === undefined ? cleared : done.then(() => cleared);
   }
 
   return {
@@ -353,8 +379,9 @@ function useAppState() {
     fixedCosts,
     bills,
     showSettings,
-    showData,
-    setShowData,
+    showData: dataDialog.open,
+    openData: dataDialog.openFrom,
+    closeData: dataDialog.closeWithFocus,
     setShowSettings,
     storageNotice,
     setPreviewLanguage,
@@ -376,7 +403,8 @@ export function App() {
     bills,
     showSettings,
     showData,
-    setShowData,
+    openData,
+    closeData,
     setShowSettings,
     storageNotice,
     setPreviewLanguage,
@@ -396,7 +424,11 @@ export function App() {
           <div className="setup-intro">
             <div className="setup-topbar">
               <Brand />
-              <button className="pill-button" type="button" onClick={() => setShowData(true)}>
+              <button
+                className="pill-button"
+                type="button"
+                onClick={(event) => openData(event.currentTarget)}
+              >
                 {copy.t('data.title')}
               </button>
             </div>
@@ -429,7 +461,7 @@ export function App() {
           {showSettings && (
             <SettingsDialog
               onClose={closeSettings}
-              onOpenData={() => setShowData(true)}
+              onOpenData={openData}
               language={language}
               onLanguagePreview={setPreviewLanguage}
               onReset={reset}
@@ -440,7 +472,7 @@ export function App() {
           )}
         </main>
       )}
-      {showData && <DataDialog copy={copy} onClose={() => setShowData(false)} />}
+      {showData && <DataDialog copy={copy} onClose={closeData} />}
       <UpdatePrompt language={language} />
     </>
   );
