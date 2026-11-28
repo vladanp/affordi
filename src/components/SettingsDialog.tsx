@@ -1,26 +1,75 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type SyntheticEvent } from 'react';
-import { X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
-import { IncomeForm } from './IncomeForm';
 import { createTranslator, type Locale } from '../domain/i18n';
 import type { AffordiSettings } from '../domain/storage';
 import type { ThemePreference } from '../domain/theme';
+import { IncomeForm } from './IncomeForm';
+import { ConfirmView, SheetDialog } from './SheetDialog';
 
 interface SettingsDialogProps {
   language: Locale;
   settings: AffordiSettings;
   onClose: () => void;
-  onOpenData: () => void;
+  onOpenData: (opener: HTMLElement) => void;
   onLanguagePreview: (language: Locale) => void;
-  onReset: () => boolean;
+  onReset: () => boolean | Promise<boolean>;
   onSave: (settings: AffordiSettings) => void;
   onThemePreview: (theme: ThemePreference) => void;
 }
 
-function openAsModal(node: HTMLDialogElement | null) {
-  if (node === null || node.open) return;
-  if (typeof node.showModal === 'function') node.showModal();
-  else node.setAttribute('open', '');
+type ConfirmState =
+  | { kind: 'reset'; error: boolean }
+  | { kind: 'currency'; settings: AffordiSettings }
+  | null;
+
+interface SettingsConfirmProps {
+  confirm: Exclude<ConfirmState, null>;
+  copy: ReturnType<typeof createTranslator>;
+  currentCurrency: AffordiSettings['currency'];
+  onCancel: () => void;
+  onConfirmCurrency: (next: AffordiSettings) => void;
+  onConfirmReset: () => void;
+}
+
+function SettingsConfirm({
+  confirm,
+  copy,
+  currentCurrency,
+  onCancel,
+  onConfirmCurrency,
+  onConfirmReset,
+}: SettingsConfirmProps) {
+  if (confirm.kind === 'reset') {
+    return (
+      <ConfirmView
+        cancelLabel={copy.t('settings.keep')}
+        confirmLabel={copy.t('settings.reset')}
+        confirmVariant="danger"
+        description={copy.t('settings.resetDescription')}
+        {...(confirm.error ? { error: copy.t('settings.resetFailure') } : {})}
+        onCancel={onCancel}
+        onConfirm={onConfirmReset}
+      />
+    );
+  }
+  return (
+    <ConfirmView
+      cancelLabel={copy.t('form.cancel')}
+      confirmLabel={copy.t('currency.change')}
+      confirmVariant="primary"
+      description={copy.t('currency.description', {
+        from: currentCurrency,
+        to: confirm.settings.currency,
+      })}
+      onCancel={onCancel}
+      onConfirm={() => onConfirmCurrency(confirm.settings)}
+    />
+  );
+}
+
+function dialogTitle(confirm: ConfirmState, copy: ReturnType<typeof createTranslator>) {
+  if (confirm === null) return copy.t('settings.title');
+  return confirm.kind === 'reset' ? copy.t('settings.resetTitle') : copy.t('currency.change');
 }
 
 export function SettingsDialog({
@@ -33,113 +82,84 @@ export function SettingsDialog({
   onSave,
   onThemePreview,
 }: SettingsDialogProps) {
-  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
-  const [resetError, setResetError] = useState(false);
+  const [confirm, setConfirm] = useState<ConfirmState>(null);
   const resetButtonRef = useRef<HTMLButtonElement>(null);
   const restoreResetFocusRef = useRef(false);
   const copy = createTranslator(language);
 
   useEffect(() => {
-    if (resetConfirmOpen || !restoreResetFocusRef.current) return;
+    if (confirm !== null || !restoreResetFocusRef.current) return;
     restoreResetFocusRef.current = false;
     resetButtonRef.current?.focus();
-  }, [resetConfirmOpen]);
+  }, [confirm]);
 
-  function keepSettings() {
-    restoreResetFocusRef.current = true;
-    setResetConfirmOpen(false);
-    setResetError(false);
-  }
-
-  function handleCancel(event: SyntheticEvent<HTMLDialogElement>) {
-    if (resetConfirmOpen) {
-      event.preventDefault();
-      keepSettings();
-      return;
-    }
-    onClose();
-  }
-
-  function handleKeyDown(event: KeyboardEvent<HTMLDialogElement>) {
-    if (event.key !== 'Escape') return;
-    event.preventDefault();
-    handleCancel(event);
+  function dismissConfirm() {
+    if (confirm?.kind === 'reset') restoreResetFocusRef.current = true;
+    setConfirm(null);
   }
 
   function handleReset() {
-    if (!onReset()) setResetError(true);
+    const result = onReset();
+    if (result === false) setConfirm({ kind: 'reset', error: true });
+    else if (result instanceof Promise) {
+      void result.then((ok) => {
+        if (!ok) setConfirm({ kind: 'reset', error: true });
+      });
+    }
+  }
+
+  function handleFormSubmit(nextSettings: AffordiSettings) {
+    if (nextSettings.currency !== settings.currency) {
+      setConfirm({ kind: 'currency', settings: nextSettings });
+      return;
+    }
+    onSave(nextSettings);
   }
 
   return (
-    <dialog
-      aria-labelledby="settings-title"
-      className="sheet-dialog settings-dialog"
-      onCancel={handleCancel}
-      onKeyDown={handleKeyDown}
-      ref={openAsModal}
+    <SheetDialog
+      className="settings-dialog"
+      closeLabel={copy.t('settings.close')}
+      onBack={confirm === null ? null : dismissConfirm}
+      onClose={onClose}
+      title={dialogTitle(confirm, copy)}
+      titleId="settings-title"
     >
-      <div className="dialog-inner">
-        <div className="dialog-header">
-          <h2 id="settings-title">
-            {copy.t(resetConfirmOpen ? 'settings.resetTitle' : 'settings.title')}
-          </h2>
-          <button
-            aria-label={copy.t('settings.close')}
-            className="icon-button"
-            onClick={onClose}
-            type="button"
-          >
-            <X aria-hidden="true" size={20} strokeWidth={1.75} />
-          </button>
-        </div>
-        {resetConfirmOpen && (
-          <div className="reset-view">
-            <p className="reset-copy">{copy.t('settings.resetDescription')}</p>
-            {resetError && (
-              <p className="field-error" role="status">
-                {copy.t('settings.resetFailure')}
-              </p>
-            )}
-            <div className="form-actions">
-              <button
-                autoFocus
-                className="button button-quiet"
-                onClick={keepSettings}
-                type="button"
-              >
-                {copy.t('settings.keep')}
-              </button>
-              <button className="button button-danger" onClick={handleReset} type="button">
-                {copy.t('settings.reset')}
-              </button>
-            </div>
-          </div>
-        )}
-        <IncomeForm
-          hidden={resetConfirmOpen}
-          initialValues={settings}
-          mode="edit"
-          onCancel={onClose}
-          onLanguagePreview={onLanguagePreview}
-          onSubmit={onSave}
-          onThemePreview={onThemePreview}
+      {confirm !== null && (
+        <SettingsConfirm
+          confirm={confirm}
+          copy={copy}
+          currentCurrency={settings.currency}
+          onCancel={dismissConfirm}
+          onConfirmCurrency={onSave}
+          onConfirmReset={handleReset}
+        />
+      )}
+      <IncomeForm
+        hidden={confirm !== null}
+        initialValues={settings}
+        mode="edit"
+        onCancel={onClose}
+        onLanguagePreview={onLanguagePreview}
+        onSubmit={handleFormSubmit}
+        onThemePreview={onThemePreview}
+      >
+        <button
+          className="text-button form-wide"
+          onClick={(event) => onOpenData(event.currentTarget)}
+          type="button"
         >
-          <button className="text-button form-wide" onClick={onOpenData} type="button">
-            {copy.t('data.title')}
-          </button>
-          <button
-            className="text-button danger-button form-wide"
-            onClick={() => {
-              setResetError(false);
-              setResetConfirmOpen(true);
-            }}
-            ref={resetButtonRef}
-            type="button"
-          >
-            {copy.t('settings.resetSaved')}
-          </button>
-        </IncomeForm>
-      </div>
-    </dialog>
+          {copy.t('data.title')}
+        </button>
+        <button
+          className="text-button danger-button form-wide"
+          onClick={() => setConfirm({ kind: 'reset', error: false })}
+          ref={resetButtonRef}
+          type="button"
+        >
+          {copy.t('settings.resetSaved')}
+        </button>
+      </IncomeForm>
+    </SheetDialog>
   );
 }

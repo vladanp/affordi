@@ -12,6 +12,8 @@ describe('locale and currency', () => {
   it.each([
     ['sr-RS', 'RSD'],
     ['de-DE', 'EUR'],
+    ['el-CY', 'EUR'],
+    ['bg-BG', 'EUR'],
     ['en-US', 'USD'],
     ['ja-JP', 'USD'],
   ] as const)('detects %s as %s', (locale, currency) => {

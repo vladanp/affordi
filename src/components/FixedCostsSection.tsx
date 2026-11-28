@@ -4,8 +4,10 @@ import { formatWorkDuration } from '../domain/duration';
 import { formatProgress } from '../domain/earningsText';
 import {
   isPaidOff,
+  isScheduled,
   MAX_FIXED_COSTS,
   monthlyCostFigures,
+  monthlyEquivalent,
   paidShare,
   paymentProgress,
   sortFixedCosts,
@@ -28,6 +30,20 @@ function lastPaymentNote(lastPayment: string | null, copy: Translator): string |
   const last = lastPayment === null ? null : parseMonth(lastPayment);
   if (last === null) return null;
   return copy.t('fixedCosts.lastPayment', { month: copy.month(monthStart(last), true) });
+}
+
+/** The billed cadence for quarterly or yearly costs, keeping amounts hidden when masked. */
+function cadenceNote(
+  cost: FixedCost,
+  hidden: boolean,
+  settings: AffordiSettings,
+  copy: Translator,
+): string | null {
+  const frequency = cost.frequency ?? 'monthly';
+  if (frequency === 'monthly') return null;
+  if (hidden) return copy.t(`fixedCosts.frequency.${frequency}`);
+  const price = formatCurrency(cost.amount, settings.currency, copy.locale);
+  return copy.t(frequency === 'quarterly' ? 'price.quarterly' : 'price.yearly', { price });
 }
 
 /**
@@ -60,13 +76,9 @@ function progressNote(
 
 /** What a row says under its name: its work time and share of pay, or that it ended. */
 function rowFigures(cost: FixedCost, settings: AffordiSettings, now: Date, copy: Translator) {
-  if (
-    cost.firstPayment !== null &&
-    cost.firstPayment > `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  )
-    return { details: copy.t('fixedCosts.scheduled'), share: null };
+  if (isScheduled(cost, now)) return { details: copy.t('fixedCosts.scheduled'), share: null };
   if (isPaidOff(cost, now)) return { details: copy.t('fixedCosts.ended'), share: null };
-  const figures = monthlyCostFigures(cost.amount, settings);
+  const figures = monthlyCostFigures(monthlyEquivalent(cost), settings);
   if (figures === null) return { details: '', share: null };
   const duration = formatWorkDuration(figures.workHours, settings, settings.language);
   return {
@@ -89,6 +101,7 @@ function FixedCostRow({ changed, copy, cost, hidden, now, onEdit, settings }: Fi
   const { details, share } = rowFigures(cost, settings, now, copy);
   const progress = paymentProgress(cost, now);
   const notes = [
+    cadenceNote(cost, hidden, settings, copy),
     progressNote(progress, hidden, settings, copy) ??
       ((progress.paid !== null && progress.paid > 0) ||
       (progress.left !== null && progress.left > 0)
@@ -98,7 +111,9 @@ function FixedCostRow({ changed, copy, cost, hidden, now, onEdit, settings }: Fi
   ].filter((note) => note !== null);
   return (
     <ItemRow
-      amount={<Money copy={copy} hidden={hidden} settings={settings} value={cost.amount} />}
+      amount={
+        <Money copy={copy} hidden={hidden} settings={settings} value={monthlyEquivalent(cost)} />
+      }
       changed={changed}
       copy={copy}
       details={details}

@@ -8,6 +8,7 @@ import {
   msSinceMidnight,
   paidToday,
   workProgress,
+  type MonthWorkProgress,
   type WorkProgress,
 } from './schedule';
 import type { AffordiSettings } from './storage';
@@ -88,8 +89,9 @@ export function calculateEarnedThisMonth(
   settings: AffordiSettings,
   rates: EarningRates,
   now: Date,
+  monthProgress = monthWorkProgress(settings, now),
 ): EarnedThisMonth {
-  const { workedMs, scheduledMs } = monthWorkProgress(settings, now);
+  const { workedMs, scheduledMs } = monthProgress;
   // Every weekday occurs at least four times a month, so some work is always scheduled.
   const share = workedMs / scheduledMs;
   const total =
@@ -103,13 +105,14 @@ export function calculateEarnedToday(
   settings: AffordiSettings,
   rates: EarningRates,
   now: Date,
+  monthProgress?: MonthWorkProgress,
 ): EarnedToday {
   const progress = workProgress(settings, now);
   return {
     aroundTheClock: (rates.totals.week / MS_PER_WEEK) * msSinceMidnight(now),
     atWork:
       (settings.payFrequency === 'monthly' || settings.payFrequency === 'yearly'
-        ? rates.totals.month / monthWorkProgress(settings, now).scheduledMs
+        ? rates.totals.month / (monthProgress ?? monthWorkProgress(settings, now)).scheduledMs
         : rates.atWork.hour / MS_PER_HOUR) * paidToday(settings, now),
     progress,
   };

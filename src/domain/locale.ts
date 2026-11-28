@@ -7,6 +7,8 @@ const currencyByRegion: Record<string, CurrencyCode> = {
   US: 'USD',
   AT: 'EUR',
   BE: 'EUR',
+  BG: 'EUR',
+  CY: 'EUR',
   DE: 'EUR',
   EE: 'EUR',
   ES: 'EUR',
@@ -79,7 +81,7 @@ export function currentLocale(): string {
 
 const currencyFormats = new Map<string, Intl.NumberFormat | null>();
 
-function currencyFormat(currency: CurrencyCode, locale: string): Intl.NumberFormat | null {
+function currencyFormat(currency: string, locale: string): Intl.NumberFormat | null {
   const key = `${locale}|${currency}`;
   let format = currencyFormats.get(key);
   if (format === undefined) {
@@ -94,7 +96,7 @@ function currencyFormat(currency: CurrencyCode, locale: string): Intl.NumberForm
 }
 
 /** The fraction digits a currency's amounts show, such as 2 for euros. */
-export function currencyDigits(currency: CurrencyCode, locale = currentLocale()): number {
+export function currencyDigits(currency: string, locale = currentLocale()): number {
   return currencyFormat(currency, locale)?.resolvedOptions().maximumFractionDigits ?? 2;
 }
 

@@ -184,6 +184,30 @@
   font-weight: 500;
 }
 
+.price-clear-button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-muted);
+  padding: 0;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    scale 120ms var(--ease-out);
+}
+
+@media (hover: hover) {
+  .price-clear-button:hover {
+    background: var(--color-sunken);
+    color: var(--color-ink);
+  }
+}
+
 .price-done-button {
   display: none;
   flex: none;
@@ -233,9 +257,11 @@
   }
 }
 
+/* A stable reading target across units, values and all five languages. */
 .result-primary {
-  margin: 0 0 1.5rem;
-  font-size: clamp(2.25rem, 10vw, 4.25rem);
+  min-block-size: 3.06em;
+  margin: 0 0 1rem;
+  font-size: clamp(1.75rem, 7vw, 3rem);
   font-weight: 650;
   letter-spacing: -0.05em;
   line-height: 1.02;
@@ -257,6 +283,7 @@
 }
 
 .result-approx {
+  min-block-size: 2.8em;
   font-weight: 600;
 }
 
@@ -271,6 +298,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
+  min-block-size: 2.8em;
 }
 
 .share-multiple {
@@ -318,6 +346,7 @@
   display: flex;
   align-items: flex-start;
   gap: 0.45rem;
+  min-block-size: 2.8em;
 }
 
 .result-note svg {
@@ -380,20 +409,4 @@
 
 .price-repeat-active .select-chevron {
   border-color: var(--color-on-highlight);
-}
-
-/* A stable reading target across units, values and all five languages. */
-.result-primary {
-  min-block-size: 3.06em;
-  margin-block-end: 1rem;
-  font-size: clamp(1.75rem, 7vw, 3rem);
-}
-.result-approx {
-  min-block-size: 2.8em;
-}
-.result-note {
-  min-block-size: 2.8em;
-}
-.share-row {
-  min-block-size: 2.8em;
 }

@@ -3,15 +3,9 @@ import { useRef, type CSSProperties, type KeyboardEvent, type PointerEvent } fro
 import { billAmount, type Bill, type BillsSummary } from '../domain/bills';
 import type { Translator } from '../domain/i18n';
 import { formatCurrency, type CurrencyCode } from '../domain/locale';
-import { monthStart, parseMonth } from '../domain/months';
+import { monthDate } from '../domain/months';
 import { BILL_COLORS, billColor } from './billColor';
-
-const HIDDEN_DOTS = '••••';
-
-function monthDate(value: string): Date {
-  const month = parseMonth(value);
-  return month === null ? new Date(Number.NaN) : monthStart(month);
-}
+import { HiddenAmount } from './HiddenAmount';
 
 interface ColumnPart {
   key: string;
@@ -65,8 +59,9 @@ export function BillsChart({
   const pointerStart = useRef<{ x: number; y: number } | null>(null);
   const { average, totals } = summary;
   const scale = Math.max(average, ...totals.map((month) => month.total ?? 0)) || 1;
-  const money = (value: number) =>
-    hidden ? HIDDEN_DOTS : formatCurrency(value, currency, copy.locale);
+  const [averageBefore = '', averageAfter = ''] = copy
+    .t('bills.chartAverage', { amount: '\u0000' })
+    .split('\u0000');
   const longMonth = (value: string) => copy.month(monthDate(value), true);
   const tableAmount = (value: number | null) => {
     if (value === null) return '–';
@@ -86,6 +81,7 @@ export function BillsChart({
 
   function selectFromPointer(event: PointerEvent<HTMLDivElement>) {
     const box = event.currentTarget.getBoundingClientRect();
+    if (box.width <= 0) return;
     select(Math.floor(((event.clientX - box.left) / box.width) * totals.length));
   }
 
@@ -116,7 +112,17 @@ export function BillsChart({
         <p className="stat-label">{copy.t('bills.chartTitle')}</p>
         <p className="bills-chart-key">
           <span aria-hidden="true" className="bills-average-key" />
-          {copy.t('bills.chartAverage', { amount: money(average) })}
+          {hidden ? (
+            <>
+              {averageBefore}
+              <HiddenAmount copy={copy} />
+              {averageAfter}
+            </>
+          ) : (
+            copy.t('bills.chartAverage', {
+              amount: formatCurrency(average, currency, copy.locale),
+            })
+          )}
         </p>
       </div>
       {named.length > 0 && (

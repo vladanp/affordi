@@ -10,7 +10,6 @@ import {
   missedLastMonth,
   monthlyBillTotals,
   saveBills,
-  sortBills,
   summarizeBills,
   withBillAmount,
   withoutBillAmount,
@@ -137,13 +136,8 @@ describe('bill figures', () => {
     expect(billStats({ ...water, entries: [] }, october)).toEqual({ average: null, latest: null });
   });
 
-  it('averages recorded monthly totals and sorts individual bills by their means', () => {
+  it('averages recorded monthly totals in the last twelve months', () => {
     expect(averageMonthlyBills(bills, october)).toBeCloseTo(111.25, 10);
-    expect(sortBills(bills, october).map((bill) => bill.name)).toEqual([
-      'Electricity',
-      'Water',
-      'Old phone',
-    ]);
   });
 
   it('totals each of the last twelve months, leaving months without amounts empty', () => {

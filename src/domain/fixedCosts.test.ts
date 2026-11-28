@@ -4,10 +4,12 @@ import {
   costsCoverage,
   FIXED_COSTS_STORAGE_KEY,
   isFixedCost,
-  isPaidOff,
   isFixedCostDue,
+  isPaidOff,
+  isScheduled,
   loadFixedCosts,
   monthlyCostFigures,
+  monthlyEquivalent,
   monthlyFixedCosts,
   paidShare,
   paymentProgress,
@@ -250,5 +252,48 @@ describe('loan progress', () => {
       paid: 33 * 950 + 3 * 25,
       lastPayment: '2049-03',
     });
+  });
+});
+
+describe('quarterly and yearly billing cadence', () => {
+  const yearlyInsurance: FixedCost = {
+    id: 'y',
+    name: 'Car insurance',
+    amount: 1_200,
+    frequency: 'yearly',
+    firstPayment: null,
+    lastPayment: null,
+  };
+  const quarterlyDues: FixedCost = {
+    id: 'q',
+    name: 'HOA',
+    amount: 450,
+    frequency: 'quarterly',
+    firstPayment: '2026-01',
+    lastPayment: '2026-12',
+  };
+
+  it('normalizes quarterly and yearly costs to monthly equivalents and validates cadence', () => {
+    expect(isFixedCost(yearlyInsurance)).toBe(true);
+    expect(isFixedCost(quarterlyDues)).toBe(true);
+    expect(isFixedCost({ ...yearlyInsurance, frequency: 'weekly' })).toBe(false);
+    expect(monthlyEquivalent(insurance)).toBe(120);
+    expect(monthlyEquivalent(quarterlyDues)).toBe(150);
+    expect(monthlyEquivalent(yearlyInsurance)).toBe(100);
+    expect(monthlyFixedCosts([insurance, quarterlyDues, yearlyInsurance], october)).toBe(370);
+    expect(
+      sortFixedCosts([yearlyInsurance, insurance, quarterlyDues], october).map((cost) => cost.name),
+    ).toEqual(['HOA', 'Insurance', 'Car insurance']);
+    expect(paymentProgress(quarterlyDues, october)).toEqual({ paid: 9 * 150, left: 3 * 150 });
+    expect(isScheduled({ ...yearlyInsurance, firstPayment: '2027-01' }, october)).toBe(true);
+    expect(isScheduled(yearlyInsurance, october)).toBe(false);
+  });
+
+  it('round-trips non-monthly cadences and omits the default monthly cadence in storage', () => {
+    localStorage.clear();
+    expect(saveFixedCosts([{ ...insurance, frequency: 'monthly' }, yearlyInsurance])).toBe(true);
+    const loaded = loadFixedCosts();
+    expect(loaded).toEqual([insurance, yearlyInsurance]);
+    expect('frequency' in loaded[0]!).toBe(false);
   });
 });

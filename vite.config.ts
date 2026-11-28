@@ -108,6 +108,26 @@ export default defineConfig({
             purpose: 'maskable',
           },
         ],
+        shortcuts: [
+          {
+            name: 'Cost',
+            short_name: 'Cost',
+            url: '/#cost',
+            icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Earnings',
+            short_name: 'Earnings',
+            url: '/#earnings',
+            icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Monthly',
+            short_name: 'Monthly',
+            url: '/#monthly',
+            icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
+          },
+        ],
       },
       workbox: {
         cleanupOutdatedCaches: true,

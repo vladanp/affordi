@@ -649,4 +649,65 @@ describe('Monthly bills', () => {
     const total = screen.getByText('Each month').closest('div')!;
     expect(within(total).getByText('€32.00')).toBeInTheDocument();
   });
+
+  it('does not divide by zero when a zero-average bill has a positive older month', () => {
+    const seasonal: Bill = {
+      id: 's',
+      name: 'Seasonal',
+      entries: [
+        { month: '2024-05', amount: 50 },
+        { month: '2026-10', amount: 0 },
+      ],
+    };
+    render(<MonthlyPage initialBills={[seasonal]} />);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Choose a month' }), {
+      target: { value: '2024-05' },
+    });
+    const note = document.querySelector('.bill-row-note')?.textContent ?? '';
+    expect(note).toBe('Average €0.00');
+    expect(note).not.toContain('∞');
+    expect(note).not.toContain('NaN');
+  });
+
+  it('exposes Hidden text instead of raw dots for masked chart averages', () => {
+    render(<MonthlyPage initialBills={[electricity, water]} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Hide amounts' }));
+    const key = document.querySelector<HTMLElement>('.bills-chart-key')!;
+    expect(key).toHaveTextContent('Average ••••Hidden');
+    expect(within(key).getByText('Hidden')).toHaveClass('visually-hidden');
+  });
+
+  it('adds, edits, displays, and masks quarterly and yearly fixed costs', () => {
+    render(<MonthlyPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Add fixed cost' }));
+    fireEvent.change(dialog().getByRole('textbox', { name: 'Name' }), {
+      target: { value: 'Car insurance' },
+    });
+    fireEvent.click(dialog().getByRole('radio', { name: 'Yearly' }));
+    fireEvent.change(dialog().getByRole('textbox', { name: 'Amount each year' }), {
+      target: { value: '1200' },
+    });
+    fireEvent.click(dialog().getByRole('button', { name: 'Add' }));
+    expect(rows()).toEqual([
+      'Car insurance€100.005 hours and 47 minutes of work3%3% of your pay€1,200.00 a year',
+    ]);
+    const total = screen.getByText('Each month').closest('div')!;
+    expect(within(total).getByText('€100.00')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Car insurance' }));
+    expect(dialog().getByRole('radio', { name: 'Yearly' })).toBeChecked();
+    expect(dialog().getByRole('textbox', { name: 'Amount each year' })).toHaveValue('1200');
+    fireEvent.click(dialog().getByRole('radio', { name: 'Quarterly' }));
+    fireEvent.change(dialog().getByRole('textbox', { name: 'Amount every 3 months' }), {
+      target: { value: '300' },
+    });
+    fireEvent.click(dialog().getByRole('button', { name: 'Save' }));
+    expect(rows()).toEqual([
+      'Car insurance€100.005 hours and 47 minutes of work3%3% of your pay€300.00 every 3 months',
+    ]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hide amounts' }));
+    expect(screen.queryByText(/€/)).not.toBeInTheDocument();
+    expect(rows()[0]).toContain('Quarterly');
+  });
 });

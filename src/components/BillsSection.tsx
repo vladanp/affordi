@@ -27,7 +27,7 @@ import {
 import { createTranslator, type Translator } from '../domain/i18n';
 import { formatDecimalInput, parseDecimalInput } from '../domain/input';
 import { currencyDigits, formatCurrency, getCurrencySymbol } from '../domain/locale';
-import { monthStart, parseMonth } from '../domain/months';
+import { monthDate } from '../domain/months';
 import { formatIncomePercentage } from '../domain/priceText';
 import type { AffordiSettings } from '../domain/storage';
 import { afterStorageSave } from '../domain/storageSync';
@@ -39,11 +39,6 @@ import { FieldError } from './FieldError';
 import { ListHeading, Money, useEditDialog } from './MonthlyCosts';
 
 const MONTH_TITLE_ID = 'bill-month-title';
-
-function monthDate(value: string): Date {
-  const month = parseMonth(value);
-  return month === null ? new Date(Number.NaN) : monthStart(month);
-}
 
 /** A bill's average, and how the month's amount compares with it. */
 function averageNote(
@@ -61,7 +56,7 @@ function averageNote(
           amount: formatCurrency(stats.average, settings.currency, copy.locale),
         }),
       ];
-  const change = amount === null ? 0 : amount / stats.average - 1;
+  const change = amount === null || stats.average <= 0 ? 0 : amount / stats.average - 1;
   // A difference that rounds to a whole 0% is no difference worth naming.
   if (Math.round(Math.abs(change) * 100) > 0) {
     const percentage = formatIncomePercentage(Math.abs(change) * 100, copy.locale);

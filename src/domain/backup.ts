@@ -1,16 +1,18 @@
-import { isBill, loadBills, MAX_BILLS, saveBills, type Bill } from './bills';
+import { BILLS_STORAGE_KEY, isBill, loadBills, MAX_BILLS, saveBills, type Bill } from './bills';
 import {
+  FIXED_COSTS_STORAGE_KEY,
   isFixedCost,
   loadFixedCosts,
   MAX_FIXED_COSTS,
+  normalizeFixedCost,
   saveFixedCosts,
   type FixedCost,
 } from './fixedCosts';
 import {
-  isValidAffordiSettings,
   loadSettings,
   normalizeSettings,
   saveSettings,
+  SETTINGS_STORAGE_KEY,
   type AffordiSettings,
 } from './storage';
 
@@ -35,7 +37,6 @@ export function parseBackup(text: string): Backup | null {
       !('version' in value) ||
       value.version !== 1 ||
       !('settings' in value) ||
-      !isValidAffordiSettings(value.settings) ||
       !('bills' in value) ||
       !Array.isArray(value.bills) ||
       value.bills.length > MAX_BILLS ||
@@ -58,13 +59,7 @@ export function parseBackup(text: string): Backup | null {
         name,
         entries: entries.map(({ month, amount }) => ({ month, amount })),
       })),
-      fixedCosts: value.fixedCosts.map(({ id, name, amount, firstPayment, lastPayment }) => ({
-        id,
-        name,
-        amount,
-        firstPayment,
-        lastPayment,
-      })),
+      fixedCosts: value.fixedCosts.map(normalizeFixedCost),
     };
   } catch {
     return null;
@@ -80,7 +75,7 @@ export function createBackup(): Backup | null {
 
 /** Roll back the original records if any write fails (e.g. the browser's storage quota). */
 function replaceRecords(backup: Backup): boolean {
-  const keys = ['affordi.settings.v1', 'affordi.bills.v1', 'affordi.fixedCosts.v1'];
+  const keys = [SETTINGS_STORAGE_KEY, BILLS_STORAGE_KEY, FIXED_COSTS_STORAGE_KEY];
   const before = keys.map((key) => localStorage.getItem(key));
   if (saveBills(backup.bills) && saveFixedCosts(backup.fixedCosts) && saveSettings(backup.settings))
     return true;

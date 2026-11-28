@@ -8,11 +8,22 @@ test.describe('Affordi accessibility', () => {
     await page.evaluate(() => localStorage.clear());
   });
 
-  test('setup has no critical accessibility violations', async ({ page }) => {
+  test('setup and on-device data dialog have no critical accessibility violations', async ({
+    page,
+  }) => {
     await expectAccessible(page);
+    const dataButton = page.getByRole('button', { name: 'On this device' });
+    await dataButton.click();
+    await expect(page.getByRole('dialog', { name: 'On this device' })).toBeVisible();
+    await expectAccessible(page);
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(dataButton).toBeFocused();
   });
 
-  test('calculator and settings have no critical accessibility violations', async ({ page }) => {
+  test('calculator, settings, and data dialog have no critical accessibility violations', async ({
+    page,
+  }) => {
     await completeSetup(page);
     await page.getByRole('textbox', { name: 'How much does it cost?' }).fill('750');
     await expectAccessible(page);
@@ -21,8 +32,16 @@ test.describe('Affordi accessibility', () => {
     await expectAccessible(page);
 
     await page.getByRole('button', { name: 'Settings' }).click();
-    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Settings' })).toBeVisible();
     await expectAccessible(page);
+
+    const dataButton = page.getByRole('button', { name: 'On this device' });
+    await dataButton.click();
+    await expect(page.getByRole('dialog', { name: 'On this device' })).toBeVisible();
+    await expectAccessible(page);
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog', { name: 'On this device' })).toHaveCount(0);
+    await expect(dataButton).toBeFocused();
   });
 
   test('primary flow is keyboard reachable', async ({ browserName, page }) => {

@@ -4,10 +4,20 @@ import type { Catalog } from '../i18n';
 const german: Catalog = {
   'validation.schedule':
     'Wähle gültige, überschneidungsfreie Schichten und eine kürzere Pause als jede Schicht.',
+  'validation.workBreak': 'Gib eine Pause in Minuten ein, die kürzer als die Schicht ist.',
   'form.customHours': 'Andere Zeiten je Wochentag',
   'form.workBreak': 'Unbezahlte Pause (Minuten)',
+  'calculator.clearPrice': 'Preis löschen',
   'calculator.noDisposable': 'Kein Einkommen nach monatlichen Kosten übrig',
   'calculator.disposable': 'Verbleibendes Einkommen verwenden',
+  'calculator.disposableContext': '{{percentage}}\u00a0% deines {{period}} verfügbaren Einkommens',
+  'fixedCosts.frequencyLabel': 'Wie oft',
+  'fixedCosts.frequency.monthly': 'Monatlich',
+  'fixedCosts.frequency.quarterly': 'Vierteljährlich',
+  'fixedCosts.frequency.yearly': 'Jährlich',
+  'fixedCosts.amountQuarterlyLabel': 'Betrag alle 3 Monate',
+  'fixedCosts.amountYearlyLabel': 'Betrag pro Jahr',
+  'price.quarterly': '{{price}} alle 3 Monate',
   'currency.description':
     'Alle gespeicherten Einkommensdaten, Rechnungen und Fixkosten von {{from}} auf {{to}} umstellen? Zahlen bleiben gleich; es erfolgt keine Umrechnung.',
   'currency.change': 'Währungseinheit ändern',

@@ -272,4 +272,17 @@ describe('overnight, unpaid and variable shifts', () => {
     expect(progress.workedMs).toBe(3 * 3_600_000);
     expect(progress.scheduledMs).toBe((6 + 4 * 8) * 3_600_000);
   });
+  it('marks an overnight shift finished earlier today as done even when today has no shift', () => {
+    const fridayNight: WorkSchedule = { workStart: 1320, workEnd: 360, workDays: [5] };
+    // Saturday 24 October 2026 at 10:00 AM, four hours after Friday night's shift ended at 6:00 AM.
+    const progress = workProgress(fridayNight, new Date(2026, 9, 24, 10));
+    expect(progress).toMatchObject({
+      state: 'done',
+      workedMs: 8 * 3_600_000,
+      remainingMs: 0,
+      end: new Date(2026, 9, 24, 6),
+    });
+    // Sunday has no overnight tail from Saturday, so it stays a day off.
+    expect(workProgress(fridayNight, new Date(2026, 9, 25, 10)).state).toBe('off');
+  });
 });

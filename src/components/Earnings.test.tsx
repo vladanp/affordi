@@ -100,6 +100,32 @@ describe('Earnings', () => {
     expect(liveAmounts()[1]).toBe('€51.14');
   });
 
+  it('pauses live ticks while hidden and catches up immediately on wake', () => {
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    try {
+      render(<EarningsPage />);
+      act(() => {
+        vi.advanceTimersByTime(0);
+      });
+      const initial = liveAmounts()[1];
+
+      visibility.mockReturnValue('hidden');
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'));
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(liveAmounts()[1]).toBe(initial);
+
+      visibility.mockReturnValue('visible');
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      expect(liveAmounts()[1]).toBe('€51.42');
+    } finally {
+      visibility.mockRestore();
+    }
+  });
+
   it('breaks pay down around the clock and at work with shared totals', () => {
     render(<EarningsPage />);
     const table = screen.getByRole('table', { name: 'Average pay rates' });

@@ -245,13 +245,22 @@ describe('review interaction regressions', () => {
     fireEvent.change(screen.getByLabelText('Sprache'), { target: { value: 'en' } });
     expect(screen.getByText('Enter an income greater than 0.')).toBeInTheDocument();
   });
-  it('requires explicit denomination confirmation, and cancellation retains the draft', () => {
+  it('requires explicit denomination confirmation, supports Escape, and keeps income visibility', () => {
     saved();
     render(<App />);
     openSettings();
+    fireEvent.click(screen.getByRole('button', { name: 'Show income' }));
+    expect(screen.getByLabelText('Take home income')).toHaveAttribute('data-masked', 'false');
     fireEvent.click(screen.getByRole('radio', { name: 'RSD' }));
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(loadSettings()?.currency).toBe('EUR');
+    expect(screen.getByRole('heading', { name: 'Change denomination' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus();
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'RSD' })).toBeChecked();
+    expect(screen.getByLabelText('Take home income')).toHaveAttribute('data-masked', 'false');
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.getByRole('radio', { name: 'RSD' })).toBeChecked();
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -276,25 +285,97 @@ describe('review interaction regressions', () => {
     });
     expect(screen.getByRole('button', { name: 'Start calculating' })).toBeInTheDocument();
   });
-  it('supports a budget scenario without claiming a purchase is affordable when nothing is left', () => {
-    saved();
-    localStorage.setItem(
-      'affordi.fixedCosts.v1',
-      JSON.stringify({
-        version: 1,
-        fixedCosts: [
-          { id: 'r', name: 'Rent', amount: 3000, firstPayment: null, lastPayment: null },
-        ],
-      }),
-    );
+  it('supports disposable pay mode, announces no-disposable state, and resets when costs disappear', async () => {
+    vi.useFakeTimers();
+    try {
+      saveSettings({
+        ...defaultSettings(),
+        currency: 'EUR',
+        payFrequency: 'weekly',
+        netIncome: 750,
+      });
+      localStorage.setItem(
+        'affordi.fixedCosts.v1',
+        JSON.stringify({
+          version: 1,
+          fixedCosts: [
+            { id: 'r', name: 'Rent', amount: 1250, firstPayment: null, lastPayment: null },
+          ],
+        }),
+      );
+      const { container } = render(<App />);
+      const price = screen.getByRole('textbox', { name: 'How much does it cost?' });
+      fireEvent.change(price, { target: { value: '1000' } });
+      fireEvent.click(screen.getByRole('checkbox', { name: 'Use pay left after monthly costs' }));
+      expect(screen.getByText('50% of your monthly pay left after costs')).toBeInTheDocument();
+
+      // Clear button empties the price and restores focus to the field.
+      fireEvent.click(screen.getByRole('button', { name: 'Clear price' }));
+      expect(price).toHaveValue('');
+      expect(price).toHaveFocus();
+
+      // When costs consume all pay, the no-disposable state is announced to screen readers.
+      localStorage.setItem(
+        'affordi.fixedCosts.v1',
+        JSON.stringify({
+          version: 1,
+          fixedCosts: [
+            { id: 'r', name: 'Rent', amount: 4000, firstPayment: null, lastPayment: null },
+          ],
+        }),
+      );
+      await act(async () => {
+        window.dispatchEvent(new StorageEvent('storage', { key: 'affordi.fixedCosts.v1' }));
+      });
+      fireEvent.change(price, { target: { value: '750' } });
+      expect(screen.getByText('No pay left after monthly costs')).toBeInTheDocument();
+      await act(() => vi.advanceTimersByTimeAsync(1_000));
+      expect(container.querySelector('[aria-live="polite"]')).toHaveTextContent(
+        'No pay left after monthly costs',
+      );
+
+      // Removing all costs drops the sticky disposable override and restores weekly pay comparison.
+      localStorage.setItem('affordi.fixedCosts.v1', JSON.stringify({ version: 1, fixedCosts: [] }));
+      await act(async () => {
+        window.dispatchEvent(new StorageEvent('storage', { key: 'affordi.fixedCosts.v1' }));
+      });
+      expect(
+        screen.queryByRole('checkbox', { name: 'Use pay left after monthly costs' }),
+      ).not.toBeInTheDocument();
+      expect(screen.getByText('100% of your weekly take home pay')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+  it('validates unpaid break minutes on its own field and clears the error once fixed', () => {
     render(<App />);
-    fireEvent.change(screen.getByRole('textbox', { name: 'How much does it cost?' }), {
-      target: { value: '750' },
-    });
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Use pay left after bills' }));
-    expect(screen.getByText('No pay left after monthly costs')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Use pay left after bills' }));
-    expect(document.querySelector('.result-primary')).toHaveTextContent('43 hours');
+    fireEvent.change(screen.getByLabelText('Take home income'), { target: { value: '3000' } });
+    const breakField = screen.getByLabelText('Unpaid break (minutes)');
+    fireEvent.change(breakField, { target: { value: '480' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Start calculating' }));
+    expect(screen.getByText('Enter break minutes shorter than the shift.')).toBeInTheDocument();
+    expect(breakField).toHaveAttribute('aria-invalid', 'true');
+    expect(breakField).toHaveFocus();
+
+    fireEvent.change(breakField, { target: { value: '30' } });
+    expect(breakField).toHaveAttribute('aria-invalid', 'false');
+
+    fireEvent.change(breakField, { target: { value: 'abc' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Start calculating' }));
+    expect(breakField).toHaveAttribute('aria-invalid', 'true');
+    expect(loadSettings()).toBeNull();
+  });
+  it('serializes reset through the storage lock', async () => {
+    saved();
+    const release = holdStorageWrites();
+    render(<App />);
+    openSettings();
+    fireEvent.click(screen.getByRole('button', { name: 'Reset saved settings' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+    expect(loadSettings()).not.toBeNull();
+    await act(async () => release());
+    expect(loadSettings()).toBeNull();
+    expect(screen.getByRole('button', { name: 'Start calculating' })).toBeInTheDocument();
   });
   it('saves a paid overnight schedule and custom weekday hours', () => {
     render(<App />);
@@ -333,13 +414,15 @@ describe('custom schedule setup', () => {
 });
 
 describe('backup review dialog', () => {
-  it('shows on-device privacy before setup and disables export without data', () => {
+  it('shows on-device privacy before setup, disables export without data, and restores focus', () => {
     render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: 'On this device' }));
+    const trigger = screen.getByRole('button', { name: 'On this device' });
+    fireEvent.click(trigger);
     expect(screen.getByText(/No accounts, tracking or cloud storage/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Export backup' })).toBeDisabled();
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
   });
   it('downloads an on-device backup and asks before replacing data', async () => {
     saved();

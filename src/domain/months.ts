@@ -36,6 +36,12 @@ export function monthStart({ year, month }: CalendarMonth): Date {
   return new Date(year, month - 1, 1);
 }
 
+/** The first day of a saved YYYY-MM month, or an invalid Date when malformed. */
+export function monthDate(value: string): Date {
+  const month = parseMonth(value);
+  return month === null ? new Date(Number.NaN) : monthStart(month);
+}
+
 /** How many months `later` comes after `earlier`, negative when it comes before. */
 export function monthsAfter(later: CalendarMonth, earlier: CalendarMonth): number {
   return monthNumber(later) - monthNumber(earlier);

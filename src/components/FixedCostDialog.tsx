@@ -1,7 +1,12 @@
 import { useState, type FormEvent } from 'react';
 
-import type { FixedCost } from '../domain/fixedCosts';
-import type { Translator } from '../domain/i18n';
+import {
+  fixedCostFrequencies,
+  normalizeFixedCost,
+  type FixedCost,
+  type FixedCostFrequency,
+} from '../domain/fixedCosts';
+import type { TranslationKey, Translator } from '../domain/i18n';
 import { formatDecimalInput, parseDecimalInput } from '../domain/input';
 import { createItemId, isItemName } from '../domain/items';
 import type { CurrencyCode } from '../domain/locale';
@@ -14,6 +19,7 @@ import {
   type CalendarMonth,
 } from '../domain/months';
 import { FieldError } from './FieldError';
+import { Segmented } from './Segmented';
 import {
   AmountField,
   DeleteConfirmation,
@@ -27,9 +33,16 @@ const YEARS_AHEAD = 50;
 const YEARS_BACK = 50;
 const MONTHS = Array.from({ length: 12 }, (_, index) => index + 1);
 
+const AMOUNT_LABELS: Record<FixedCostFrequency, TranslationKey> = {
+  monthly: 'fixedCosts.amountLabel',
+  quarterly: 'fixedCosts.amountQuarterlyLabel',
+  yearly: 'fixedCosts.amountYearlyLabel',
+};
+
 interface FormValues {
   name: string;
   amount: string;
+  frequency: FixedCostFrequency;
   firstMonth: string;
   firstYear: string;
   lastMonth: string;
@@ -39,7 +52,7 @@ interface FormValues {
 type FormErrors = Partial<Record<'name' | 'amount' | 'firstPayment' | 'lastPayment', string>>;
 
 /** The error each field clears when it changes. */
-const errorOf: Record<keyof FormValues, keyof FormErrors> = {
+const errorOf: Partial<Record<keyof FormValues, keyof FormErrors>> = {
   name: 'name',
   amount: 'amount',
   firstMonth: 'firstPayment',
@@ -68,6 +81,7 @@ function initialValues(cost: FixedCost | null, locale: string): FormValues {
   return {
     name: cost?.name ?? '',
     amount: cost === null ? '' : formatDecimalInput(cost.amount, locale),
+    frequency: cost?.frequency ?? 'monthly',
     firstMonth,
     firstYear,
     lastMonth,
@@ -151,7 +165,14 @@ function validate(
   const id = cost?.id ?? createItemId();
   return {
     errors,
-    cost: { id, name, amount, firstPayment: savedMonth(first), lastPayment: savedMonth(last) },
+    cost: normalizeFixedCost({
+      id,
+      name,
+      amount,
+      frequency: values.frequency,
+      firstPayment: savedMonth(first),
+      lastPayment: savedMonth(last),
+    }),
   };
 }
 
@@ -271,9 +292,10 @@ function FixedCostForm({
   );
   const thisYear = now.getFullYear();
 
-  function update(name: keyof FormValues, value: string) {
+  function update<Name extends keyof FormValues>(name: Name, value: FormValues[Name]) {
     setValues((current) => ({ ...current, [name]: value }));
-    setErrors((current) => ({ ...current, [errorOf[name]]: undefined }));
+    const fieldError = errorOf[name];
+    if (fieldError !== undefined) setErrors((current) => ({ ...current, [fieldError]: undefined }));
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -297,11 +319,23 @@ function FixedCostForm({
         copy={copy}
         currency={currency}
         error={errors.amount}
-        label={copy.t('fixedCosts.amountLabel')}
+        label={copy.t(AMOUNT_LABELS[values.frequency])}
         onChange={(value) => update('amount', value)}
         placeholder="950"
         value={values.amount}
       />
+      <fieldset className="field segmented-field form-wide">
+        <legend className="field-label">{copy.t('fixedCosts.frequencyLabel')}</legend>
+        <Segmented
+          name="frequency"
+          onChange={(frequency) => update('frequency', frequency)}
+          options={fixedCostFrequencies.map((frequency) => ({
+            label: copy.t(`fixedCosts.frequency.${frequency}`),
+            value: frequency,
+          }))}
+          value={values.frequency}
+        />
+      </fieldset>
       <label className="form-wide option-toggle">
         <input
           type="checkbox"

@@ -46,6 +46,10 @@ test.describe('Affordi calculator', () => {
     await expect(page.locator('.result-primary')).toHaveText(
       '€36.50 is 2 hours and 7 minutes of work',
     );
+    await page.getByRole('button', { name: 'Clear price' }).click();
+    await expect(price).toHaveValue('');
+    await expect(price).toBeFocused();
+    await expect(page.locator('.result-card')).toHaveCount(0);
   });
 
   test('says when a price will have been earned, working from now', async ({ page }) => {
@@ -227,10 +231,22 @@ test.describe('Affordi calculator', () => {
     ).toBeVisible();
   });
 
-  test('shows useful validation for incomplete setup', async ({ page }) => {
+  test('shows useful validation for incomplete setup and invalid unpaid breaks', async ({
+    page,
+  }) => {
     await page.getByRole('button', { name: 'Start calculating' }).click();
     await expect(page.getByText('Enter an income greater than 0.')).toBeVisible();
     await expect(page.getByLabel('Take home income')).toHaveAttribute('aria-invalid', 'true');
+
+    await page.getByLabel('Take home income').fill('3000');
+    const breakField = page.getByLabel('Unpaid break (minutes)');
+    await breakField.fill('480');
+    await page.getByRole('button', { name: 'Start calculating' }).click();
+    await expect(page.getByText('Enter break minutes shorter than the shift.')).toBeVisible();
+    await expect(breakField).toHaveAttribute('aria-invalid', 'true');
+    await expect(breakField).toBeFocused();
+    await breakField.fill('30');
+    await expect(breakField).toHaveAttribute('aria-invalid', 'false');
   });
 
   test('keeps setup usable in a short phone landscape viewport', async ({ page }) => {

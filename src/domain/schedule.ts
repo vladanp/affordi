@@ -265,14 +265,20 @@ export function paidToday(schedule: WorkSchedule, now: Date): number {
   }, 0);
 }
 
-/** Status follows a running overnight shift before looking at the shift starting today. */
+/** Status follows a running overnight shift, or one that ended today when no new shift starts. */
 export function workProgress(schedule: WorkSchedule, now: Date): WorkProgress {
   const previous = shiftOn(
     schedule,
     new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1),
   );
   const today = shiftOn(schedule, now);
-  const active = previous !== null && previous.end.getTime() > now.getTime() ? previous : today;
+  const midnight = sameDayAt(now, 0).getTime();
+  const active =
+    previous !== null &&
+    (previous.end.getTime() > now.getTime() ||
+      (today === null && previous.end.getTime() > midnight))
+      ? previous
+      : today;
   if (active === null)
     return {
       state: 'off',
